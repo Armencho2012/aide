@@ -164,7 +164,11 @@ const Library = () => {
         ) : (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {filteredContent.map((item) => (
-              <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
+              <Card 
+                key={item.id} 
+                className="overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col cursor-pointer"
+                onClick={() => navigate(`/library/${item.id}`)}
+              >
                 <div className="p-4 flex-1 flex flex-col">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-medium text-lg line-clamp-2">{item.title || 'Untitled'}</h3>
@@ -187,7 +191,8 @@ const Library = () => {
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setItemToDelete(item.id);
                           setDeleteDialogOpen(true);
                         }}

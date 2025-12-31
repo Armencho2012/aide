@@ -2,8 +2,11 @@ import { corsHeaders } from "./_shared-index.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const MIN_QUIZ_QUESTIONS = 5;
-const MAX_QUIZ_QUESTIONS = 12;
-const DAILY_LIMIT = 50;
+const MAX_QUIZ_QUESTIONS_FREE = 10;
+const MAX_QUIZ_QUESTIONS_PRO = 80;
+const MAX_FLASHCARDS_FREE = 15;
+const MAX_FLASHCARDS_PRO = 100;
+const DAILY_LIMIT = 5;
 const MAX_TEXT_LENGTH = 50000;
 
 interface QuizQuestion {
@@ -18,12 +21,18 @@ interface LessonSection {
   summary: string;
 }
 
+interface Flashcard {
+  front: string;
+  back: string;
+}
+
 interface AnalysisResult {
   language_detected?: string;
   three_bullet_summary?: string[];
   key_terms?: string[];
   lesson_sections?: LessonSection[];
   quiz_questions?: QuizQuestion[];
+  flashcards?: Flashcard[];
   quick_quiz_question?: QuizQuestion;
   error?: string;
 }
@@ -179,7 +188,8 @@ Deno.serve(async (req: Request) => {
     const prompt = `You are an academic assistant. Analyze this text and return a JSON object with:
 language_detected, three_bullet_summary (3–7 points), key_terms (6–10),
 lesson_sections (3–6 objects with title and summary),
-quiz_questions (array of EXACTLY 8 objects: question, options[4], correct_answer_index, explanation),
+quiz_questions (array of 10 objects: question, options[4], correct_answer_index, explanation),
+flashcards (array of 15 objects with "front" for term/concept and "back" for definition/explanation),
 quick_quiz_question (duplicate of the first quiz question).
 
 Return only JSON, no markdown, no comments.
@@ -265,9 +275,14 @@ ${text}`;
     }
 
     // --- 10. Final Response Payload ---
+    const flashcards = Array.isArray((mainAnalysis as any).flashcards) 
+      ? (mainAnalysis as any).flashcards.slice(0, MAX_FLASHCARDS_FREE) 
+      : [];
+
     responsePayload = {
       ...mainAnalysis,
-      quiz_questions: quizQuestions.slice(0, MAX_QUIZ_QUESTIONS),
+      quiz_questions: quizQuestions.slice(0, MAX_QUIZ_QUESTIONS_FREE),
+      flashcards,
       quick_quiz_question: quizQuestions[0],
       lesson_sections: normalizeSections(mainAnalysis.lesson_sections)
     };

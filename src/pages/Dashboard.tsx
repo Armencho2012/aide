@@ -52,7 +52,7 @@ const uiLabels = {
   }
 };
 
-const DAILY_LIMIT = 50; // Freemium limit: 5 free uses per day
+const DAILY_LIMIT = 5; // Freemium limit: 5 free uses per day
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);

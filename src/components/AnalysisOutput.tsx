@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Flashcards } from "./Flashcards";
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
 
@@ -18,6 +19,11 @@ interface QuizQuestion {
   explanation: string;
 }
 
+interface Flashcard {
+  front: string;
+  back: string;
+}
+
 interface AnalysisData {
   language_detected: string;
   three_bullet_summary: string[];
@@ -25,6 +31,7 @@ interface AnalysisData {
   lesson_sections?: LessonSection[];
   quick_quiz_question?: QuizQuestion;
   quiz_questions?: QuizQuestion[];
+  flashcards?: Flashcard[];
 }
 
 interface AnalysisOutputProps {
@@ -255,6 +262,11 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
             })}
           </CardContent>
         </Card>
+      )}
+
+      {/* Flashcards */}
+      {data.flashcards && data.flashcards.length > 0 && (
+        <Flashcards flashcards={data.flashcards} language={language} />
       )}
     </div>
   );
