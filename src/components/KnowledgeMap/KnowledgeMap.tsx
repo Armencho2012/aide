@@ -1,0 +1,271 @@
+import { useState, useCallback, useRef, useMemo } from 'react';
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  useNodesState,
+  useEdgesState,
+  Node,
+  Edge,
+  ConnectionLineType,
+  MarkerType,
+  Panel,
+  NodeTypes,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import { toPng } from 'html-to-image';
+import { Trash2, Download, Maximize2, Minimize2, Map, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import ConceptNodeComponent from './ConceptNodeComponent';
+import { initialNodes, initialEdges } from './mockData';
+import { ConceptNode, categoryColors, NodeCategory } from './types';
+
+interface KnowledgeMapProps {
+  onNodeClick?: (nodeName: string) => void;
+  activeNodeId?: string;
+}
+
+const nodeTypes: NodeTypes = {
+  concept: ConceptNodeComponent as any,
+};
+
+// Convert ConceptNodes to React Flow nodes with layout
+const createFlowNodes = (
+  conceptNodes: ConceptNode[],
+  activeNodeId?: string,
+  onNodeClick?: (label: string) => void
+): Node[] => {
+  const centerX = 400;
+  const centerY = 300;
+  const radius = 200;
+  
+  return conceptNodes.map((node, index) => {
+    // Arrange nodes in a circular pattern
+    const angle = (index / conceptNodes.length) * 2 * Math.PI - Math.PI / 2;
+    const isCenter = index === 0;
+    
+    return {
+      id: node.id,
+      type: 'concept',
+      position: isCenter 
+        ? { x: centerX, y: centerY }
+        : { 
+            x: centerX + Math.cos(angle) * radius * (1 + (index % 2) * 0.3),
+            y: centerY + Math.sin(angle) * radius * (1 + (index % 2) * 0.3),
+          },
+      data: {
+        label: node.label,
+        category: node.category,
+        isActive: node.id === activeNodeId || node.isActive,
+        onClick: onNodeClick,
+      },
+    };
+  });
+};
+
+// Convert ConceptEdges to React Flow edges
+const createFlowEdges = (conceptEdges: typeof initialEdges): Edge[] => {
+  return conceptEdges.map((edge) => ({
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    type: 'smoothstep',
+    animated: false,
+    style: {
+      stroke: 'hsl(215, 25%, 45%)',
+      strokeWidth: 2,
+      opacity: 0.6,
+    },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: 'hsl(215, 25%, 45%)',
+      width: 15,
+      height: 15,
+    },
+  }));
+};
+
+export const KnowledgeMap = ({ onNodeClick, activeNodeId }: KnowledgeMapProps) => {
+  const { toast } = useToast();
+  const flowRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [conceptNodes, setConceptNodes] = useState(initialNodes);
+  
+  const flowNodes = useMemo(
+    () => createFlowNodes(conceptNodes, activeNodeId, onNodeClick),
+    [conceptNodes, activeNodeId, onNodeClick]
+  );
+  
+  const flowEdges = useMemo(
+    () => createFlowEdges(initialEdges.filter(edge => 
+      conceptNodes.some(n => n.id === edge.source) && 
+      conceptNodes.some(n => n.id === edge.target)
+    )),
+    [conceptNodes]
+  );
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges);
+
+  // Update nodes when active node changes
+  useMemo(() => {
+    setNodes(flowNodes);
+  }, [flowNodes, setNodes]);
+
+  const handleClearMap = useCallback(() => {
+    setConceptNodes([]);
+    setNodes([]);
+    setEdges([]);
+    toast({
+      title: 'Map Cleared',
+      description: 'The knowledge map has been reset.',
+    });
+  }, [setNodes, setEdges, toast]);
+
+  const handleExportImage = useCallback(async () => {
+    if (!flowRef.current) return;
+
+    try {
+      const dataUrl = await toPng(flowRef.current, {
+        backgroundColor: 'hsl(215, 30%, 12%)',
+        quality: 1,
+        pixelRatio: 2,
+      });
+
+      const link = document.createElement('a');
+      link.download = 'knowledge-map.png';
+      link.href = dataUrl;
+      link.click();
+
+      toast({
+        title: 'Export Successful',
+        description: 'Your knowledge map has been exported as an image.',
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Could not export the map. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
+
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen((prev) => !prev);
+  }, []);
+
+  const getNodeColor = (node: Node): string => {
+    const category = node.data?.category as NodeCategory | undefined;
+    return category ? categoryColors[category]?.bg : 'hsl(215, 25%, 45%)';
+  };
+
+  return (
+    <div
+      className={`relative transition-all duration-300 ${
+        isFullscreen
+          ? 'fixed inset-0 z-50'
+          : 'h-full w-full'
+      }`}
+    >
+      {/* Dark glassmorphism background */}
+      <div
+        className="absolute inset-0 rounded-xl overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, hsl(215 30% 12% / 0.95), hsl(215 28% 8% / 0.98))',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid hsl(215 20% 25% / 0.5)',
+        }}
+      >
+        <div ref={flowRef} className="w-full h-full">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            nodeTypes={nodeTypes}
+            connectionLineType={ConnectionLineType.SmoothStep}
+            fitView
+            fitViewOptions={{ padding: 0.3 }}
+            minZoom={0.3}
+            maxZoom={2}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background
+              color="hsl(215, 20%, 30%)"
+              gap={20}
+              size={1}
+            />
+            <Controls
+              className="!bg-card/80 !backdrop-blur-sm !border-border !rounded-lg !shadow-lg"
+              showInteractive={false}
+            />
+            <MiniMap
+              nodeColor={getNodeColor}
+              maskColor="hsl(215, 30%, 12% / 0.8)"
+              className="!bg-card/60 !backdrop-blur-sm !border-border !rounded-lg"
+            />
+
+            {/* Control Panel */}
+            <Panel position="top-right" className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearMap}
+                className="bg-card/80 backdrop-blur-sm border-border hover:bg-destructive/20 hover:text-destructive hover:border-destructive/50"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear Map
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportImage}
+                className="bg-card/80 backdrop-blur-sm border-border hover:bg-primary/20 hover:text-primary hover:border-primary/50"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleFullscreen}
+                className="bg-card/80 backdrop-blur-sm border-border hover:bg-secondary"
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+            </Panel>
+
+            {/* Title */}
+            <Panel position="top-left">
+              <div className="flex items-center gap-2 bg-card/80 backdrop-blur-sm border border-border rounded-lg px-3 py-2">
+                <Map className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">Knowledge Map</span>
+              </div>
+            </Panel>
+          </ReactFlow>
+        </div>
+      </div>
+
+      {/* Fullscreen close button */}
+      {isFullscreen && (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleFullscreen}
+          className="absolute top-4 right-4 z-10 bg-card/80 backdrop-blur-sm border-border"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
+};
+
+export default KnowledgeMap;

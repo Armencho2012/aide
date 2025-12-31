@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, Send, Bot, User } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, Bot, User, Map } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { KnowledgeMapPanel } from '@/components/KnowledgeMap';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
@@ -72,6 +73,8 @@ const ChatPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showKnowledgeMap, setShowKnowledgeMap] = useState(true);
+  const [activeNode, setActiveNode] = useState<string | undefined>();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -171,6 +174,15 @@ const ChatPage = () => {
     }
   };
 
+  const handleKnowledgeMapNodeClick = (question: string) => {
+    setInput(question);
+    // Extract node name from the question for highlighting
+    const match = question.match(/Tell me more about (.+)/);
+    if (match) {
+      setActiveNode(match[1].toLowerCase().replace(/\s+/g, '-'));
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -200,89 +212,117 @@ const ChatPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
-      <div className="container max-w-4xl mx-auto px-4 py-8 h-screen flex flex-col">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" asChild>
-            <Link to={`/library/${id}`}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {labels.backToContent}
-            </Link>
+      <div className="h-screen flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-border">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" asChild>
+              <Link to={`/library/${id}`}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                {labels.backToContent}
+              </Link>
+            </Button>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent flex items-center gap-2">
+              <Bot className="h-6 w-6" />
+              {labels.title}
+            </h1>
+          </div>
+          <Button
+            variant={showKnowledgeMap ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowKnowledgeMap(!showKnowledgeMap)}
+            className="gap-2"
+          >
+            <Map className="h-4 w-4" />
+            Knowledge Map
           </Button>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent flex items-center gap-2">
-            <Bot className="h-6 w-6" />
-            {labels.title}
-          </h1>
         </div>
 
-        <Card className="flex-1 flex flex-col overflow-hidden">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg truncate">
-              {content.title || 'Untitled'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col p-4 pt-0 overflow-hidden">
-            <ScrollArea className="flex-1 pr-4 mb-4" ref={scrollAreaRef}>
-              <div className="space-y-4">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+        {/* Main content area */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Chat section */}
+          <div className="flex-1 flex flex-col p-4">
+            <Card className="flex-1 flex flex-col overflow-hidden">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg truncate">
+                  {content.title || 'Untitled'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col p-4 pt-0 overflow-hidden">
+                <ScrollArea className="flex-1 pr-4 mb-4" ref={scrollAreaRef}>
+                  <div className="space-y-4">
+                    {messages.map((message, index) => (
+                      <div
+                        key={index}
+                        className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {message.role === 'assistant' && (
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Bot className="h-4 w-4 text-primary" />
+                          </div>
+                        )}
+                        <div
+                          className={`max-w-[80%] rounded-lg p-3 ${
+                            message.role === 'user'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted'
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        </div>
+                        {message.role === 'user' && (
+                          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                            <User className="h-4 w-4" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {isLoading && (
+                      <div className="flex gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Bot className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="bg-muted rounded-lg p-3">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            {labels.thinking}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+                <div className="flex gap-2">
+                  <Textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={labels.placeholder}
+                    className="min-h-[60px] resize-none"
+                    disabled={isLoading}
+                  />
+                  <Button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isLoading}
+                    className="px-4"
                   >
-                    {message.role === 'assistant' && (
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Bot className="h-4 w-4 text-primary" />
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
-                        message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    </div>
-                    {message.role === 'user' && (
-                      <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                        <User className="h-4 w-4" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Bot className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="bg-muted rounded-lg p-3">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {labels.thinking}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-            <div className="flex gap-2">
-              <Textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={labels.placeholder}
-                className="min-h-[60px] resize-none"
-                disabled={isLoading}
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Knowledge Map Panel */}
+          {showKnowledgeMap && (
+            <div className="w-[400px] lg:w-[500px] border-l border-border">
+              <KnowledgeMapPanel 
+                onAskAboutNode={handleKnowledgeMapNodeClick}
+                activeNodeId={activeNode}
               />
-              <Button
-                onClick={handleSend}
-                disabled={!input.trim() || isLoading}
-                className="px-4"
-              >
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              </Button>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
       </div>
     </div>
   );
