@@ -8,6 +8,9 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Library from "./pages/Library";
 import ContentDetail from "./pages/ContentDetail";
+import Quiz from "./pages/Quiz";
+import FlashcardsPage from "./pages/FlashcardsPage";
+import ChatPage from "./pages/ChatPage";
 import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -26,6 +29,9 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/library" element={<Library />} />
           <Route path="/library/:id" element={<ContentDetail />} />
+          <Route path="/library/:id/quiz" element={<Quiz />} />
+          <Route path="/library/:id/flashcards" element={<FlashcardsPage />} />
+          <Route path="/library/:id/chat" element={<ChatPage />} />
           <Route path="/billing" element={<Billing />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />

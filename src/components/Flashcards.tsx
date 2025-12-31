@@ -112,7 +112,7 @@ export const Flashcards = ({ flashcards, language }: FlashcardsProps) => {
           onClick={() => setIsFlipped(!isFlipped)}
         >
           <div 
-            className={`relative w-full min-h-[200px] transition-transform duration-500 transform-style-preserve-3d ${
+            className={`relative w-full min-h-[300px] transition-transform duration-500 transform-style-preserve-3d ${
               isFlipped ? 'rotate-y-180' : ''
             }`}
             style={{

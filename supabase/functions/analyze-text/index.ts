@@ -192,6 +192,8 @@ quiz_questions (array of 10 objects: question, options[4], correct_answer_index,
 flashcards (array of 15 objects with "front" for term/concept and "back" for definition/explanation),
 quick_quiz_question (duplicate of the first quiz question).
 
+IMPORTANT: Respond with all content in the SAME LANGUAGE as the input text. If the text is in Russian, respond in Russian. If in Korean, respond in Korean. Match the input language exactly.
+
 Return only JSON, no markdown, no comments.
 
 Text to analyze:
