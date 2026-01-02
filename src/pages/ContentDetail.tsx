@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Loader2, FileText, Layers, Bot, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,15 +53,15 @@ const uiLabels = {
   },
   hy: {
     backToLibrary: 'Delays delays delays',
-    summary: 'Delays Delays',
+    summary: 'Сelays Сelays',
     sections: 'Delays delays',
-    terms: 'Delays Delays',
-    studyTools: 'Delays delays',
-    quiz: 'Delays delays',
-    flashcards: 'Delays',
-    chat: 'Delays Delays',
-    exportPdf: 'Delays PDF',
-    exporting: 'Delays...'
+    terms: 'Пелays Пelays',
+    studyTools: 'Уdelays delays',
+    quiz: 'Пdelays delays',
+    flashcards: 'Кdelays',
+    chat: 'Хелays Зelays',
+    exportPdf: 'Эdelays PDF',
+    exporting: 'Эdelays...'
   },
   ko: {
     backToLibrary: '라이브러리로 돌아가기',
@@ -295,10 +295,10 @@ const ContentDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading content...</p>
+          <Loader2 className="h-10 w-10 md:h-12 md:w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm md:text-base">Loading content...</p>
         </div>
       </div>
     );
@@ -306,10 +306,10 @@ const ContentDetail = () => {
 
   if (!content) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">Content not found</p>
-          <Button asChild>
+          <p className="text-muted-foreground mb-4 text-sm md:text-base">Content not found</p>
+          <Button asChild size="sm">
             <Link to="/library">Back to Library</Link>
           </Button>
         </div>
@@ -323,52 +323,52 @@ const ContentDetail = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
-      <div className="container max-w-5xl mx-auto px-4 py-8">
+      <div className="container max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" asChild>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <Button variant="ghost" asChild size="sm" className="w-fit">
               <Link to="/library">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {labels.backToLibrary}
+                <span className="text-sm">{labels.backToLibrary}</span>
               </Link>
             </Button>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent truncate">
+            <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent truncate max-w-[280px] sm:max-w-none">
               {content.title || 'Untitled'}
             </h1>
           </div>
-          <Button onClick={handleExportPdf} disabled={exporting} variant="outline">
+          <Button onClick={handleExportPdf} disabled={exporting} variant="outline" size="sm" className="w-fit">
             {exporting ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Download className="h-4 w-4 mr-2" />
             )}
-            {exporting ? labels.exporting : labels.exportPdf}
+            <span className="text-sm">{exporting ? labels.exporting : labels.exportPdf}</span>
           </Button>
         </div>
 
         {/* Study Tools Navigation */}
-        <Card className="mb-8 border-primary/20 shadow-md">
-          <CardHeader>
-            <CardTitle>{labels.studyTools}</CardTitle>
+        <Card className="mb-6 sm:mb-8 border-primary/20 shadow-md">
+          <CardHeader className="pb-3 sm:pb-4">
+            <CardTitle className="text-base sm:text-lg">{labels.studyTools}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-4">
-              <Button asChild size="lg" className="flex-1 min-w-[150px]">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
+              <Button asChild size="default" className="flex-1 min-w-[120px] text-sm sm:text-base">
                 <Link to={`/library/${id}/quiz`}>
-                  <FileText className="h-5 w-5 mr-2" />
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                   {labels.quiz}
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="secondary" className="flex-1 min-w-[150px]">
+              <Button asChild size="default" variant="secondary" className="flex-1 min-w-[120px] text-sm sm:text-base">
                 <Link to={`/library/${id}/flashcards`}>
-                  <Layers className="h-5 w-5 mr-2" />
+                  <Layers className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                   {labels.flashcards}
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="flex-1 min-w-[150px]">
+              <Button asChild size="default" variant="outline" className="flex-1 min-w-[120px] text-sm sm:text-base">
                 <Link to={`/library/${id}/chat`}>
-                  <Bot className="h-5 w-5 mr-2" />
+                  <Bot className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                   {labels.chat}
                 </Link>
               </Button>
@@ -378,14 +378,14 @@ const ContentDetail = () => {
 
         {/* Summary */}
         {analysisData?.three_bullet_summary && (
-          <Card className="mb-6 border-primary/20 shadow-md">
-            <CardHeader>
-              <CardTitle className="text-primary">{labels.summary}</CardTitle>
+          <Card className="mb-4 sm:mb-6 border-primary/20 shadow-md">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-primary text-base sm:text-lg">{labels.summary}</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
                 {analysisData.three_bullet_summary.map((point: string, index: number) => (
-                  <li key={index} className="flex gap-2">
+                  <li key={index} className="flex gap-2 text-sm sm:text-base">
                     <span className="text-primary font-bold">•</span>
                     <span>{point}</span>
                   </li>
@@ -397,15 +397,15 @@ const ContentDetail = () => {
 
         {/* Lesson Sections */}
         {analysisData?.lesson_sections && analysisData.lesson_sections.length > 0 && (
-          <Card className="mb-6 border-secondary/20 shadow-md">
-            <CardHeader>
-              <CardTitle className="text-secondary-foreground">{labels.sections}</CardTitle>
+          <Card className="mb-4 sm:mb-6 border-secondary/20 shadow-md">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-secondary-foreground text-base sm:text-lg">{labels.sections}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 sm:space-y-4">
               {analysisData.lesson_sections.map((section: LessonSection, index: number) => (
-                <div key={index} className="space-y-2">
-                  <p className="font-semibold text-lg text-primary">{section.title}</p>
-                  <p className="text-muted-foreground leading-relaxed">{section.summary}</p>
+                <div key={index} className="space-y-1 sm:space-y-2">
+                  <p className="font-semibold text-base sm:text-lg text-primary">{section.title}</p>
+                  <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">{section.summary}</p>
                 </div>
               ))}
             </CardContent>
@@ -415,13 +415,13 @@ const ContentDetail = () => {
         {/* Key Terms */}
         {analysisData?.key_terms && analysisData.key_terms.length > 0 && (
           <Card className="border-accent/20 shadow-md">
-            <CardHeader>
-              <CardTitle className="text-accent">{labels.terms}</CardTitle>
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-accent text-base sm:text-lg">{labels.terms}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {analysisData.key_terms.map((term: string, index: number) => (
-                  <Badge key={index} variant="secondary" className="px-4 py-2 text-base">
+                  <Badge key={index} variant="secondary" className="px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-base">
                     {term}
                   </Badge>
                 ))}

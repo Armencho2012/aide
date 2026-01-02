@@ -44,12 +44,12 @@ const uiLabels = {
   },
   hy: {
     title: 'Delays',
-    flip: 'Сdelays delays delays delays',
-    card: 'Քdelays',
-    of: 'delays',
-    restart: 'Вdelays delays',
-    noCards: 'Delays delays delays delays',
-    backToContent: 'Delays delays delays'
+    flip: 'Ахdelays delays delays',
+    card: 'Delays',
+    of: '-ից',
+    restart: 'Delays delays',
+    noCards: 'Эdelays delays delays delays',
+    backToContent: 'Hdelays delays delays'
   },
   ko: {
     title: '플래시카드',
@@ -134,10 +134,10 @@ const FlashcardsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading flashcards...</p>
+          <Loader2 className="h-10 w-10 md:h-12 md:w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm md:text-base">Loading flashcards...</p>
         </div>
       </div>
     );
@@ -145,10 +145,10 @@ const FlashcardsPage = () => {
 
   if (!content) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">Content not found</p>
-          <Button asChild>
+          <p className="text-muted-foreground mb-4 text-sm md:text-base">Content not found</p>
+          <Button asChild size="sm">
             <Link to="/library">Back to Library</Link>
           </Button>
         </div>
@@ -161,45 +161,45 @@ const FlashcardsPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" asChild>
+      <div className="container max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <Button variant="ghost" asChild size="sm" className="w-fit">
             <Link to={`/library/${id}`}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              {labels.backToContent}
+              <span className="text-sm">{labels.backToContent}</span>
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent flex items-center gap-2">
-            <Layers className="h-6 w-6" />
+          <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent flex items-center gap-2">
+            <Layers className="h-5 w-5 sm:h-6 sm:w-6" />
             {labels.title}
           </h1>
         </div>
 
         {flashcards.length === 0 ? (
-          <Card className="p-8 text-center">
-            <p className="text-muted-foreground">{labels.noCards}</p>
+          <Card className="p-6 sm:p-8 text-center">
+            <p className="text-muted-foreground text-sm md:text-base">{labels.noCards}</p>
           </Card>
         ) : (
           <Card className="border-primary/20 shadow-md">
-            <CardHeader>
-              <CardTitle className="text-primary flex items-center justify-between">
+            <CardHeader className="pb-2 sm:pb-4">
+              <CardTitle className="text-primary flex items-center justify-between text-base sm:text-lg">
                 <span className="flex items-center gap-2">
-                  <Layers className="h-5 w-5" />
+                  <Layers className="h-4 w-4 sm:h-5 sm:w-5" />
                   {labels.title}
                 </span>
-                <span className="text-sm font-normal text-muted-foreground">
+                <span className="text-xs sm:text-sm font-normal text-muted-foreground">
                   {labels.card} {currentIndex + 1} {labels.of} {flashcards.length}
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 sm:space-y-6">
               {/* Flashcard - Larger */}
               <div 
                 className="relative cursor-pointer perspective-1000"
                 onClick={() => setIsFlipped(!isFlipped)}
               >
                 <div 
-                  className={`relative w-full min-h-[350px] transition-transform duration-500 transform-style-preserve-3d ${
+                  className={`relative w-full min-h-[280px] sm:min-h-[350px] transition-transform duration-500 transform-style-preserve-3d ${
                     isFlipped ? 'rotate-y-180' : ''
                   }`}
                   style={{
@@ -209,50 +209,50 @@ const FlashcardsPage = () => {
                 >
                   {/* Front */}
                   <div 
-                    className="absolute inset-0 backface-hidden bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20 rounded-xl p-8 flex flex-col items-center justify-center"
+                    className="absolute inset-0 backface-hidden bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20 rounded-xl p-4 sm:p-8 flex flex-col items-center justify-center"
                     style={{ backfaceVisibility: 'hidden' }}
                   >
-                    <p className="text-xl font-medium text-center">{currentCard?.front}</p>
-                    <p className="text-sm text-muted-foreground mt-6">{labels.flip}</p>
+                    <p className="text-lg sm:text-xl font-medium text-center">{currentCard?.front}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-4 sm:mt-6">{labels.flip}</p>
                   </div>
                   
                   {/* Back */}
                   <div 
-                    className="absolute inset-0 backface-hidden bg-gradient-to-br from-accent/5 to-primary/5 border-2 border-accent/20 rounded-xl p-8 flex flex-col items-center justify-center"
+                    className="absolute inset-0 backface-hidden bg-gradient-to-br from-accent/5 to-primary/5 border-2 border-accent/20 rounded-xl p-4 sm:p-8 flex flex-col items-center justify-center"
                     style={{ 
                       backfaceVisibility: 'hidden',
                       transform: 'rotateY(180deg)'
                     }}
                   >
-                    <p className="text-xl text-center">{currentCard?.back}</p>
-                    <p className="text-sm text-muted-foreground mt-6">{labels.flip}</p>
+                    <p className="text-lg sm:text-xl text-center">{currentCard?.back}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-4 sm:mt-6">{labels.flip}</p>
                   </div>
                 </div>
               </div>
 
               {/* Navigation */}
               <div className="flex items-center justify-between">
-                <Button variant="outline" size="lg" onClick={handlePrev}>
+                <Button variant="outline" size="default" onClick={handlePrev} className="h-10 w-10 sm:h-12 sm:w-auto sm:px-4">
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
                 
-                <Button variant="ghost" size="lg" onClick={handleRestart}>
-                  <RotateCcw className="h-5 w-5 mr-2" />
-                  {labels.restart}
+                <Button variant="ghost" size="default" onClick={handleRestart} className="text-sm sm:text-base">
+                  <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">{labels.restart}</span>
                 </Button>
                 
-                <Button variant="outline" size="lg" onClick={handleNext}>
+                <Button variant="outline" size="default" onClick={handleNext} className="h-10 w-10 sm:h-12 sm:w-auto sm:px-4">
                   <ChevronRight className="h-5 w-5" />
                 </Button>
               </div>
 
               {/* Progress dots */}
-              <div className="flex justify-center gap-2 flex-wrap">
+              <div className="flex justify-center gap-1.5 sm:gap-2 flex-wrap">
                 {flashcards.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => { setCurrentIndex(index); setIsFlipped(false); }}
-                    className={`w-3 h-3 rounded-full transition-colors ${
+                    className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-colors ${
                       index === currentIndex ? 'bg-primary' : 'bg-muted-foreground/30'
                     }`}
                   />

@@ -46,12 +46,12 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'ԱԲ Զdelays',
-    placeholder: 'Հdelays delays delays delays delays...',
-    send: 'Delays',
-    thinking: 'Мdelays delays...',
-    error: 'Чdelays delays delays delays delays: Хdelays delays delays:',
-    welcome: 'Бdelays delays! Кdelays delays delays delays delays delays delays: Delays delays delays delays delays delays?',
+    title: 'ԱԲ Զрdelays',
+    placeholder: 'Задайте вопрос по этому материалу...',
+    send: 'Уdelay',
+    thinking: 'Мdelays...',
+    error: 'Чdelays delays delays delays delays. Попробуйте delays.',
+    welcome: 'Бdelays delays! Мdelays delays delays delays delays delays. Чdelays delays delays delays?',
     backToContent: 'Delays delays delays'
   },
   ko: {
@@ -73,7 +73,7 @@ const ChatPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showKnowledgeMap, setShowKnowledgeMap] = useState(true);
+  const [showKnowledgeMap, setShowKnowledgeMap] = useState(false);
   const [activeNode, setActiveNode] = useState<string | undefined>();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -185,10 +185,10 @@ const ChatPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading chat...</p>
+          <Loader2 className="h-10 w-10 md:h-12 md:w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm md:text-base">Loading chat...</p>
         </div>
       </div>
     );
@@ -196,10 +196,10 @@ const ChatPage = () => {
 
   if (!content) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">Content not found</p>
-          <Button asChild>
+          <p className="text-muted-foreground mb-4 text-sm md:text-base">Content not found</p>
+          <Button asChild size="sm">
             <Link to="/library">Back to Library</Link>
           </Button>
         </div>
@@ -214,16 +214,16 @@ const ChatPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       <div className="h-screen flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-border">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" asChild>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <Button variant="ghost" asChild size="sm" className="w-fit">
               <Link to={`/library/${id}`}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {labels.backToContent}
+                <span className="text-sm">{labels.backToContent}</span>
               </Link>
             </Button>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent flex items-center gap-2">
-              <Bot className="h-6 w-6" />
+            <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent flex items-center gap-2">
+              <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
               {labels.title}
             </h1>
           </div>
@@ -231,7 +231,7 @@ const ChatPage = () => {
             variant={showKnowledgeMap ? 'default' : 'outline'}
             size="sm"
             onClick={() => setShowKnowledgeMap(!showKnowledgeMap)}
-            className="gap-2"
+            className="gap-2 hidden lg:flex"
           >
             <Map className="h-4 w-4" />
             Knowledge Map
@@ -241,50 +241,50 @@ const ChatPage = () => {
         {/* Main content area */}
         <div className="flex-1 flex overflow-hidden">
           {/* Chat section */}
-          <div className="flex-1 flex flex-col p-4">
+          <div className="flex-1 flex flex-col p-2 sm:p-4 min-w-0">
             <Card className="flex-1 flex flex-col overflow-hidden">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg truncate">
+              <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+                <CardTitle className="text-sm sm:text-lg truncate">
                   {content.title || 'Untitled'}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 flex flex-col p-4 pt-0 overflow-hidden">
-                <ScrollArea className="flex-1 pr-4 mb-4" ref={scrollAreaRef}>
-                  <div className="space-y-4">
+              <CardContent className="flex-1 flex flex-col p-2 sm:p-4 pt-0 overflow-hidden">
+                <ScrollArea className="flex-1 pr-2 sm:pr-4 mb-3 sm:mb-4" ref={scrollAreaRef}>
+                  <div className="space-y-3 sm:space-y-4">
                     {messages.map((message, index) => (
                       <div
                         key={index}
-                        className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex gap-2 sm:gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
                         {message.role === 'assistant' && (
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <Bot className="h-4 w-4 text-primary" />
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                           </div>
                         )}
                         <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
+                          className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-2.5 sm:p-3 ${
                             message.role === 'user'
                               ? 'bg-primary text-primary-foreground'
                               : 'bg-muted'
                           }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          <p className="text-xs sm:text-sm whitespace-pre-wrap">{message.content}</p>
                         </div>
                         {message.role === 'user' && (
-                          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                            <User className="h-4 w-4" />
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                            <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           </div>
                         )}
                       </div>
                     ))}
                     {isLoading && (
-                      <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <Bot className="h-4 w-4 text-primary" />
+                      <div className="flex gap-2 sm:gap-3">
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                         </div>
-                        <div className="bg-muted rounded-lg p-3">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                        <div className="bg-muted rounded-lg p-2.5 sm:p-3">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                            <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
                             {labels.thinking}
                           </div>
                         </div>
@@ -298,13 +298,14 @@ const ChatPage = () => {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={labels.placeholder}
-                    className="min-h-[60px] resize-none"
+                    className="min-h-[50px] sm:min-h-[60px] resize-none text-sm"
                     disabled={isLoading}
                   />
                   <Button
                     onClick={handleSend}
                     disabled={!input.trim() || isLoading}
-                    className="px-4"
+                    className="px-3 sm:px-4"
+                    size="default"
                   >
                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
@@ -313,9 +314,9 @@ const ChatPage = () => {
             </Card>
           </div>
 
-          {/* Knowledge Map Panel */}
+          {/* Knowledge Map Panel - Hidden on mobile/tablet */}
           {showKnowledgeMap && (
-            <div className="w-[400px] lg:w-[500px] border-l border-border">
+            <div className="hidden lg:block w-[400px] xl:w-[500px] border-l border-border">
               <KnowledgeMapPanel 
                 onAskAboutNode={handleKnowledgeMapNodeClick}
                 activeNodeId={activeNode}
