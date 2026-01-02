@@ -197,17 +197,8 @@ const Dashboard = () => {
         throw new Error('No data returned from analysis');
       }
 
-      // Log usage
-      const { error: logError } = await supabase
-        .from('usage_logs')
-        .insert({
-          user_id: user.id,
-          action_type: 'text_analysis'
-        });
-
-      if (logError) {
-        console.error('Error logging usage:', logError);
-      }
+      // Note: Usage is already logged server-side in the edge function
+      // No need to log again here to avoid double-counting
 
       setAnalysisData(data);
       const newCount = Math.max(0, usageCount - 1);

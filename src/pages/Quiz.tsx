@@ -51,14 +51,14 @@ const uiLabels = {
   },
   hy: {
     title: 'Փdelays delays',
-    questionPrefix: 'Հарdelays',
-    checkAnswer: ' Delays delays delays',
-    retry: 'ک delays delays',
-    correct: 'Delays delays!',
-    incorrect: 'Delays',
-    explanation: 'Delays delays',
-    noQuestions: 'Delays delays delays delays',
-    backToContent: 'Delays delays delays'
+    questionPrefix: 'Հdelay',
+    checkAnswer: ' Delays delays',
+    retry: 'Кdelays delays',
+    correct: 'Чdelays!',
+    incorrect: 'Сdelays',
+    explanation: 'Бdelays',
+    noQuestions: 'Вdelays delays delays delays',
+    backToContent: 'Hdelays delays delays'
   },
   ko: {
     title: '연습 퀴즈',
@@ -145,10 +145,10 @@ const Quiz = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading quiz...</p>
+          <Loader2 className="h-10 w-10 md:h-12 md:w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm md:text-base">Loading quiz...</p>
         </div>
       </div>
     );
@@ -156,10 +156,10 @@ const Quiz = () => {
 
   if (!content) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">Content not found</p>
-          <Button asChild>
+          <p className="text-muted-foreground mb-4 text-sm md:text-base">Content not found</p>
+          <Button asChild size="sm">
             <Link to="/library">Back to Library</Link>
           </Button>
         </div>
@@ -173,25 +173,25 @@ const Quiz = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" asChild>
+      <div className="container max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <Button variant="ghost" asChild size="sm" className="w-fit">
             <Link to={`/library/${id}`}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              {labels.backToContent}
+              <span className="text-sm">{labels.backToContent}</span>
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             {labels.title}
           </h1>
         </div>
 
         {quizQuestions.length === 0 ? (
-          <Card className="p-8 text-center">
-            <p className="text-muted-foreground">{labels.noQuestions}</p>
+          <Card className="p-6 sm:p-8 text-center">
+            <p className="text-muted-foreground text-sm md:text-base">{labels.noQuestions}</p>
           </Card>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {quizQuestions.map((question, questionIndex) => {
               const questionState = questionStates[questionIndex];
               const selectedAnswer = questionState?.selectedAnswer ?? null;
@@ -200,13 +200,13 @@ const Quiz = () => {
 
               return (
                 <Card key={questionIndex} className="border-primary/20 shadow-md">
-                  <CardHeader>
-                    <CardTitle className="text-lg">
+                  <CardHeader className="pb-2 sm:pb-4">
+                    <CardTitle className="text-base sm:text-lg">
                       {labels.questionPrefix} {questionIndex + 1}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="font-medium text-lg leading-relaxed">{question.question}</p>
+                  <CardContent className="space-y-3 sm:space-y-4">
+                    <p className="font-medium text-base sm:text-lg leading-relaxed">{question.question}</p>
 
                     <div className="space-y-2">
                       {question.options.map((option, optionIndex) => (
@@ -214,7 +214,7 @@ const Quiz = () => {
                           key={optionIndex}
                           onClick={() => !showResult && handleSelectOption(questionIndex, optionIndex)}
                           disabled={showResult}
-                          className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                          className={`w-full text-left p-3 sm:p-4 rounded-lg border-2 transition-all text-sm sm:text-base ${
                             selectedAnswer === optionIndex
                               ? showResult
                                 ? isCorrect
@@ -224,42 +224,44 @@ const Quiz = () => {
                               : 'border-border hover:border-primary/50'
                           } ${showResult && optionIndex === question.correct_answer_index ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}`}
                         >
-                          <div className="flex items-center justify-between">
-                            <span>{option}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="flex-1">{option}</span>
                             {showResult && optionIndex === question.correct_answer_index && (
-                              <CheckCircle2 className="h-5 w-5 text-green-600" />
+                              <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
                             )}
                             {showResult && selectedAnswer === optionIndex && !isCorrect && (
-                              <XCircle className="h-5 w-5 text-red-600" />
+                              <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" />
                             )}
                           </div>
                         </button>
                       ))}
                     </div>
 
-                    <div className="flex flex-col gap-2 sm:flex-row">
+                    <div className="flex flex-col gap-2">
                       {!showResult ? (
                         <Button
                           onClick={() => handleCheckAnswer(questionIndex)}
                           disabled={selectedAnswer === null}
-                          className="w-full sm:flex-1"
+                          className="w-full"
+                          size="sm"
                         >
                           {labels.checkAnswer}
                         </Button>
                       ) : (
                         <>
-                          <div className={`w-full sm:flex-1 p-4 rounded-lg ${isCorrect ? 'bg-green-50 dark:bg-green-950' : 'bg-red-50 dark:bg-red-950'}`}>
-                            <p className={`font-bold mb-2 ${isCorrect ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                          <div className={`w-full p-3 sm:p-4 rounded-lg ${isCorrect ? 'bg-green-50 dark:bg-green-950' : 'bg-red-50 dark:bg-red-950'}`}>
+                            <p className={`font-bold mb-1 sm:mb-2 text-sm sm:text-base ${isCorrect ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
                               {isCorrect ? labels.correct : labels.incorrect}
                             </p>
-                            <p className="text-sm leading-relaxed">
+                            <p className="text-xs sm:text-sm leading-relaxed">
                               <strong>{labels.explanation}:</strong> {question.explanation}
                             </p>
                           </div>
                           <Button
                             onClick={() => handleRetry(questionIndex)}
                             variant="outline"
-                            className="w-full sm:flex-[0.4]"
+                            className="w-full"
+                            size="sm"
                           >
                             {labels.retry}
                           </Button>
