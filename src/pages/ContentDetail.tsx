@@ -52,16 +52,16 @@ const uiLabels = {
     exporting: 'Экспортируем...'
   },
   hy: {
-    backToLibrary: 'Delays delays delays',
-    summary: 'Сelays Сelays',
-    sections: 'Delays delays',
-    terms: 'Пелays Пelays',
-    studyTools: 'Уdelays delays',
-    quiz: 'Пdelays delays',
-    flashcards: 'Кdelays',
-    chat: 'Хелays Зelays',
-    exportPdf: 'Эdelays PDF',
-    exporting: 'Эdelays...'
+    backToLibrary: 'Հետ դեպի գրադարան',
+    summary: 'Հիմնական ամփոփում',
+    sections: 'Դասի բաժիններ',
+    terms: 'Հիմնական տերմիններ',
+    studyTools: 'Ուսումնական գործիքներ',
+    quiz: 'Պրակտիկայի քվիզ',
+    flashcards: 'Քարտեր',
+    chat: 'Հարցրեք ԱԲ-ին',
+    exportPdf: 'Արտահանել PDF',
+    exporting: 'Արտահանվում է...'
   },
   ko: {
     backToLibrary: '라이브러리로 돌아가기',

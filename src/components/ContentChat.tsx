@@ -37,12 +37,12 @@ const uiLabels = {
     welcome: 'Привет! Я могу ответить на вопросы об этом контенте. Что бы вы хотели узнать?'
   },
   hy: {
-    title: 'Հdelays delays delays delays delays delays',
-    placeholder: 'Հdelays delays delays delays delays...',
-    send: ' Delays',
-    thinking: 'Մdelays delays...',
-    error: 'Չdelays delays delays delays delays: Խdelays delays delays:',
-    welcome: 'Բdelays delays! Կdelays delays delays delays delays delays delays: Delays delays delays delays delays delays?'
+    title: 'Հարցրեք ԱԲ-ին այս բովանդակության մասին',
+    placeholder: 'Հարց տվեք այս նյութի մասին...',
+    send: 'Ուղարկել',
+    thinking: 'Մտածում եմ...',
+    error: 'Չհաջողվեց պատասխան ստանալ: Խնդրում ենք կրկին փորձել:',
+    welcome: 'Բարև: Ես կարող եմ պատասխանել այս բովանդակության վերաբերյալ հարցերին: Ի՞նչ կցանկանայիք իմանալ:'
   },
   ko: {
     title: 'AI에게 이 콘텐츠에 대해 질문하기',

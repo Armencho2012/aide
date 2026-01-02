@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Sparkles, Globe, Zap, Shield, Clock, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SettingsModal } from "@/components/SettingsModal";
+import { useSettings } from "@/hooks/useSettings";
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
 type Theme = 'light' | 'dark';
@@ -204,15 +205,10 @@ const uiLabels = {
 };
 
 const Landing = () => {
-  const [language, setLanguage] = useState<Language>('en');
-  const [theme, setTheme] = useState<Theme>('light');
+  const { language, theme, setLanguage, setTheme } = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
   
   const labels = uiLabels[language];
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">

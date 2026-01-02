@@ -46,13 +46,13 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'ԱԲ Զрdelays',
-    placeholder: 'Задайте вопрос по этому материалу...',
-    send: 'Уdelay',
-    thinking: 'Мdelays...',
-    error: 'Чdelays delays delays delays delays. Попробуйте delays.',
-    welcome: 'Бdelays delays! Мdelays delays delays delays delays delays. Чdelays delays delays delays?',
-    backToContent: 'Delays delays delays'
+    title: 'ԱԲ Զրույց',
+    placeholder: 'Հարց տվեք այս նյութի մասին...',
+    send: 'Ուղարկել',
+    thinking: 'Մտածում եմ...',
+    error: 'Չհաջողվեց պատասխան ստանալ: Խնդրում ենք կրկին փորձել:',
+    welcome: 'Բարև: Ես կարող եմ պատասխանել այս բովանդակության վերաբերյալ հարցերին: Ի՞նչ կցանկանայիք իմանալ:',
+    backToContent: 'Հետ դեպի բովանդակություն'
   },
   ko: {
     title: 'AI 채팅',

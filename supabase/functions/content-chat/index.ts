@@ -60,7 +60,7 @@ Deno.serve(async (req: Request) => {
     const languageInstruction = {
       'en': 'Respond in English.',
       'ru': 'Отвечайте на русском языке.',
-      'hy': 'Պdelays delays delays delays:',
+      'hy': 'Պատասխանեք հայերեն:',
       'ko': '한국어로 답변하세요.'
     }[language as string] || 'Respond in English.';
 
@@ -70,7 +70,20 @@ Deno.serve(async (req: Request) => {
       ?.map((msg: { role: string; content: string }) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
       ?.join('\n') || '';
 
-    const prompt = `You are a helpful study assistant. The user has analyzed the following educational content and has questions about it.
+    const prompt = `You are an expert academic study assistant with deep knowledge in educational content analysis. Your role is to help students understand complex material through clear, structured explanations.
+
+PERSONA:
+- Academic and professional tone
+- Patient and encouraging
+- Focused on learning outcomes
+- Uses examples and analogies when helpful
+
+OUTPUT CONSTRAINTS:
+- Respond in the same language as the user's question
+- Be concise but comprehensive
+- Structure your answer clearly (use bullet points or numbered lists when appropriate)
+- Cite specific parts of the content when relevant
+- If information is not in the provided content, acknowledge this politely and suggest what might help
 
 ${languageInstruction}
 
@@ -89,7 +102,7 @@ ${historyContext}
 --- USER'S QUESTION ---
 ${question}
 
-Provide a helpful, clear answer based on the content above. Be concise but thorough. If the question cannot be answered from the provided content, say so politely.`;
+Provide a helpful, clear, and academically sound answer based on the content above. Structure your response for maximum clarity and learning value.`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,

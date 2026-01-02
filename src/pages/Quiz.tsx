@@ -50,15 +50,15 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'Փdelays delays',
-    questionPrefix: 'Հdelay',
-    checkAnswer: ' Delays delays',
-    retry: 'Кdelays delays',
-    correct: 'Чdelays!',
-    incorrect: 'Сdelays',
-    explanation: 'Бdelays',
-    noQuestions: 'Вdelays delays delays delays',
-    backToContent: 'Hdelays delays delays'
+    title: 'Պրակտիկայի Քվիզ',
+    questionPrefix: 'Հարց',
+    checkAnswer: 'Ստուգել պատասխանը',
+    retry: 'Կրկին փորձել',
+    correct: 'Ճիշտ է:',
+    incorrect: 'Սխալ',
+    explanation: 'Բացատրություն',
+    noQuestions: 'Հարցեր հասանելի չեն',
+    backToContent: 'Հետ դեպի բովանդակություն'
   },
   ko: {
     title: '연습 퀴즈',

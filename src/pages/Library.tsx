@@ -129,56 +129,56 @@ const Library = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
-      <div className="container max-w-6xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" asChild>
+      <div className="container max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="ghost" asChild size="sm">
               <Link to="/dashboard">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                <span className="text-sm sm:text-base">Back</span>
               </Link>
             </Button>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               My Library
             </h1>
           </div>
         </div>
 
-        <div className="relative max-w-md mb-6">
+        <div className="relative w-full max-w-md mb-4 sm:mb-6">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search your content..."
-            className="pl-10"
+            className="pl-10 text-sm sm:text-base"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
         {filteredContent.length === 0 ? (
-          <Card className="p-8 text-center">
-            <p className="text-muted-foreground">
+          <Card className="p-6 sm:p-8 text-center">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {searchQuery ? 'No content matches your search.' : 'No content saved yet. Analyze some text to get started!'}
             </p>
           </Card>
         ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {filteredContent.map((item) => (
               <Card 
                 key={item.id} 
                 className="overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col cursor-pointer"
                 onClick={() => navigate(`/library/${item.id}`)}
               >
-                <div className="p-4 flex-1 flex flex-col">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium text-lg line-clamp-2">{item.title || 'Untitled'}</h3>
+                <div className="p-3 sm:p-4 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-2 gap-2">
+                    <h3 className="font-medium text-base sm:text-lg line-clamp-2 flex-1">{item.title || 'Untitled'}</h3>
                     {item.language && (
-                      <span className="text-xs px-2 py-1 bg-muted rounded-full whitespace-nowrap ml-2">
+                      <span className="text-xs px-2 py-1 bg-muted rounded-full whitespace-nowrap flex-shrink-0">
                         {item.language}
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-3 flex-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 line-clamp-3 flex-1">
                     {item.original_text}
                   </p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-2 border-t">

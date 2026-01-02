@@ -18,7 +18,7 @@ export const KnowledgeMapPanel = ({ onAskAboutNode, activeNodeId }: KnowledgeMap
   return (
     <div
       className={`relative h-full transition-all duration-300 ease-out ${
-        isOpen ? 'w-[400px] lg:w-[500px]' : 'w-12'
+        isOpen ? 'w-full sm:w-[350px] md:w-[400px] lg:w-[500px]' : 'w-12'
       }`}
     >
       {/* Toggle Button */}

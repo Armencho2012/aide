@@ -43,13 +43,13 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'Delays',
-    flip: 'Ахdelays delays delays',
-    card: 'Delays',
+    title: 'Քարտեր',
+    flip: 'Սեղմեք շրջելու համար',
+    card: 'Քարտ',
     of: '-ից',
-    restart: 'Delays delays',
-    noCards: 'Эdelays delays delays delays',
-    backToContent: 'Hdelays delays delays'
+    restart: 'Վերագործարկել',
+    noCards: 'Քարտեր հասանելի չեն',
+    backToContent: 'Հետ դեպի բովանդակություն'
   },
   ko: {
     title: '플래시카드',

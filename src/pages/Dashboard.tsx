@@ -7,11 +7,9 @@ import { Settings, Sparkles, Loader2, LogOut, BookOpen, CreditCard, User as User
 import { SettingsModal } from "@/components/SettingsModal";
 import { AnalysisOutput } from "@/components/AnalysisOutput";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/hooks/useSettings";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
-
-type Language = 'en' | 'ru' | 'hy' | 'ko';
-type Theme = 'light' | 'dark';
 
 const uiLabels = {
   en: {
@@ -56,8 +54,7 @@ const DAILY_LIMIT = 5; // Freemium limit: 5 free uses per day
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [language, setLanguage] = useState<Language>('en');
-  const [theme, setTheme] = useState<Theme>('light');
+  const { language, theme, setLanguage, setTheme, isLoaded: settingsLoaded } = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [text, setText] = useState('');
   const [analysisData, setAnalysisData] = useState<any>(null);
@@ -130,10 +127,6 @@ const Dashboard = () => {
     };
   }, [navigate]);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
-
   const fetchUsageCount = async (userId: string) => {
     try {
       const { data, error } = await supabase.rpc('get_daily_usage_count', {
@@ -198,12 +191,13 @@ const Dashboard = () => {
       }
 
       // Note: Usage is already logged server-side in the edge function
-      // No need to log again here to avoid double-counting
-
+      // Refetch usage count from server to ensure accuracy and prevent race conditions
       setAnalysisData(data);
-      const newCount = Math.max(0, usageCount - 1);
-      setUsageCount(newCount);
-      setIsLocked(newCount <= 0);
+      
+      // Refetch usage count from server to get accurate value
+      if (user) {
+        await fetchUsageCount(user.id);
+      }
       
       // Save to user_content archive
       if (user) {
@@ -246,35 +240,35 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       <div className="container max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
-        <header className="flex items-center justify-between mb-8 animate-in fade-in-50 slide-in-from-top-4">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8 animate-in fade-in-50 slide-in-from-top-4">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               {labels.title}
             </h1>
-            <p className="text-muted-foreground mt-1">{labels.subtitle}</p>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">{labels.subtitle}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild>
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Button variant="ghost" asChild size="sm" className="text-xs sm:text-sm">
               <Link to="/library">
-                <BookOpen className="h-4 w-4 mr-2" />
-                Library
+                <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Library</span>
               </Link>
             </Button>
-            <Button variant="ghost" asChild>
+            <Button variant="ghost" asChild size="sm" className="text-xs sm:text-sm">
               <Link to="/billing">
-                <CreditCard className="h-4 w-4 mr-2" />
-                Upgrade
+                <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Upgrade</span>
               </Link>
             </Button>
-            <Button variant="ghost" asChild>
+            <Button variant="ghost" asChild size="sm" className="text-xs sm:text-sm">
               <Link to="/settings">
-                <UserIcon className="h-4 w-4 mr-2" />
-                Profile
+                <UserIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Profile</span>
               </Link>
             </Button>
-            <Card className="px-4 py-2 shadow-sm">
-              <p className="text-sm text-muted-foreground">{labels.usage}</p>
-              <p className={`text-2xl font-bold ${usageCount === 0 ? 'text-destructive' : 'text-primary'}`}>
+            <Card className="px-2 sm:px-4 py-1.5 sm:py-2 shadow-sm">
+              <p className="text-xs sm:text-sm text-muted-foreground">{labels.usage}</p>
+              <p className={`text-lg sm:text-2xl font-bold ${usageCount === 0 ? 'text-destructive' : 'text-primary'}`}>
                 {usageCount}/{DAILY_LIMIT}
               </p>
             </Card>
@@ -298,18 +292,18 @@ const Dashboard = () => {
         </header>
 
         {/* Usage Meter - Prominent Display */}
-        <Card className="p-6 mb-6 bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-primary/20">
-          <div className="flex items-center justify-between">
+        <Card className="p-4 sm:p-6 mb-4 sm:mb-6 bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-primary/20">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div>
-              <h3 className="text-lg font-semibold mb-1">Free Tier Usage</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="text-base sm:text-lg font-semibold mb-1">Free Tier Usage</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {usageCount > 0 
                   ? `${usageCount} of ${DAILY_LIMIT} free analyses remaining today`
                   : 'You\'ve reached your daily limit'}
               </p>
             </div>
-            <div className="text-right">
-              <div className={`text-4xl font-bold ${usageCount === 0 ? 'text-destructive' : 'text-primary'}`}>
+            <div className="text-left sm:text-right">
+              <div className={`text-2xl sm:text-4xl font-bold ${usageCount === 0 ? 'text-destructive' : 'text-primary'}`}>
                 {usageCount}/{DAILY_LIMIT}
               </div>
             </div>
@@ -336,13 +330,13 @@ const Dashboard = () => {
         )}
 
         {/* Input Area */}
-        <Card className={`p-6 mb-8 shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 ${isLocked ? 'opacity-50' : ''}`}>
-          <div className="space-y-4">
+        <Card className={`p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 ${isLocked ? 'opacity-50' : ''}`}>
+          <div className="space-y-3 sm:space-y-4">
             <Textarea
               placeholder={isLocked ? "Upgrade to Pro to continue analyzing..." : labels.placeholder}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="min-h-[200px] text-base resize-none"
+              className="min-h-[150px] sm:min-h-[200px] text-sm sm:text-base resize-none"
               disabled={isLocked}
             />
             <Button 

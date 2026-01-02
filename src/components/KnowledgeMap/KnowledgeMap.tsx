@@ -209,44 +209,46 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId }: KnowledgeMapProps) =
             />
 
             {/* Control Panel */}
-            <Panel position="top-right" className="flex gap-2">
+            <Panel position="top-right" className="flex flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleClearMap}
-                className="bg-card/80 backdrop-blur-sm border-border hover:bg-destructive/20 hover:text-destructive hover:border-destructive/50"
+                className="bg-card/90 backdrop-blur-sm border-border hover:bg-destructive/20 hover:text-destructive hover:border-destructive/50 shadow-md text-xs sm:text-sm"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Clear Map
+                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Clear Map</span>
+                <span className="sm:hidden">Clear</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleExportImage}
-                className="bg-card/80 backdrop-blur-sm border-border hover:bg-primary/20 hover:text-primary hover:border-primary/50"
+                className="bg-card/90 backdrop-blur-sm border-border hover:bg-primary/20 hover:text-primary hover:border-primary/50 shadow-md text-xs sm:text-sm"
               >
-                <Download className="h-4 w-4 mr-2" />
-                Export
+                <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Export</span>
+                <span className="sm:hidden">Save</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={toggleFullscreen}
-                className="bg-card/80 backdrop-blur-sm border-border hover:bg-secondary"
+                className="bg-card/90 backdrop-blur-sm border-border hover:bg-secondary shadow-md"
               >
                 {isFullscreen ? (
-                  <Minimize2 className="h-4 w-4" />
+                  <Minimize2 className="h-3 w-3 sm:h-4 sm:w-4" />
                 ) : (
-                  <Maximize2 className="h-4 w-4" />
+                  <Maximize2 className="h-3 w-3 sm:h-4 sm:w-4" />
                 )}
               </Button>
             </Panel>
 
             {/* Title */}
             <Panel position="top-left">
-              <div className="flex items-center gap-2 bg-card/80 backdrop-blur-sm border border-border rounded-lg px-3 py-2">
-                <Map className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">Knowledge Map</span>
+              <div className="flex items-center gap-2 bg-card/90 backdrop-blur-sm border border-border rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 shadow-md">
+                <Map className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                <span className="text-xs sm:text-sm font-medium text-foreground">Knowledge Map</span>
               </div>
             </Panel>
           </ReactFlow>
