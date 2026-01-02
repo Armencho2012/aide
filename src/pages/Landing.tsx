@@ -106,52 +106,52 @@ const uiLabels = {
     footer: '© 2025 Aide. Расширяем возможности учащихся с помощью инструментов для обучения на основе ИИ.'
   },
   hy: {
-    subtitle: 'Կառուցվածքային ԱԲ Ուսումնական Շարժիչ',
-    description: 'Փոխակերպեք ցանկացած տեքստ համապարփակ ուսումնական նյութերի՝ օգտագործելով ԱԲ-ի վերլուծություն, հիմնական ամփոփումներ, բառապաշարի արդյունահանում և պրակտիկայի վիկտորինաներ բազմաթիվ լեզուներով:',
-    getStarted: 'Սկսել անվճար',
-    signIn: 'Մուտք',
-    featuresTitle: 'Հզոր հնարավորություններ ավելի խելացի ուսուման համար',
+    subtitle: 'Structured AI Study Engine',
+    description: 'Transform any text into comprehensive learning materials with AI-powered analysis, key summaries, vocabulary extraction, and practice quizzes.',
+    getStarted: 'Start Free',
+    signIn: 'Sign In',
+    featuresTitle: 'Powerful Features for Smarter Learning',
     aiAnalysis: {
-      title: 'ԱԲ-ով վերլուծություն',
-      description: 'Ընդլայնված ԱԲ տեխնոլոգիան ակնթարթորեն արդյունահանում է հիմնական պատկերացումները, ամփոփումները և ուսումնական կետերը ցանկացած տեքստից:'
+      title: 'AI-Powered Analysis',
+      description: 'Advanced AI technology extracts key insights, summaries, and learning points from any text instantly.'
     },
     multilingual: {
-      title: 'Բազմալեզու աջակցություն',
-      description: 'Սովորեք անգլերեն, ռուսերեն, հայերեն կամ կորեերեն՝ անխափան լեզվի փոխարկումով և թարգմանությամբ:'
+      title: 'Multilingual Support',
+      description: 'Learn in English, Russian, Armenian, or Korean with seamless language switching and translation.'
     },
     instantResults: {
-      title: 'Ակնթարթային արդյունքներ',
-      description: 'Ստացեք համապարփակ ուսումնական նյութեր վայրկյանների ընթացքում: Առանց սպասման, առանց ձեռքով աշխատանքի:'
+      title: 'Instant Results',
+      description: 'Get comprehensive study materials in seconds. No waiting, no manual work required.'
     },
     smartVocabulary: {
-      title: 'Խելացի բառապաշար',
-      description: 'Ավտոմատ կերպով արդյունահանեք և սահմանեք հիմնական տերմինները և հասկացությունները համատեքստային նշանակություններով:'
+      title: 'Smart Vocabulary',
+      description: 'Automatically extract and define key terms and concepts with contextual meanings.'
     },
     practiceQuizzes: {
-      title: 'Պրակտիկայի վիկտորինաներ',
-      description: 'Ավտոմատ կերպով ստեղծեք հատուկ վիկտորինաներ ձեր հասկացողությունը և պահպանումը ստուգելու համար:'
+      title: 'Practice Quizzes',
+      description: 'Automatically generate custom quizzes to test your understanding and retention.'
     },
     structuredLearning: {
-      title: 'Կառուցվածքային ուսուցում',
-      description: 'Կազմակերպված ելք հստակ բաժիններով. ամփոփում, հիմնական կետեր, բառապաշար և վիկտորինայի հարցեր:'
+      title: 'Structured Learning',
+      description: 'Organized output with clear sections: summary, key points, vocabulary, and quiz questions.'
     },
-    howItWorksTitle: 'Ինչպես է աշխատում Aide-ը',
+    howItWorksTitle: 'How Aide Works',
     step1: {
-      title: 'Տեղադրեք ձեր տեքստը',
-      description: 'Պատճենեք և տեղադրեք ցանկացած հոդված, ուսումնական նյութ կամ փաստաթուղթ, որից ցանկանում եք սովորել:'
+      title: 'Paste Your Text',
+      description: 'Copy and paste any article, study material, or document you want to learn from.'
     },
     step2: {
-      title: 'ԱԲ վերլուծություն',
-      description: 'Մեր ԱԲ շարժիչը մշակում է ձեր տեքստը, արդյունահանելով հիմնական տեղեկատվությունը և ստեղծելով կառուցվածքային ուսումնական նյութեր:'
+      title: 'AI Analysis',
+      description: 'Our AI engine processes your text, extracting key information and creating structured learning materials.'
     },
     step3: {
-      title: 'Սովորեք և պրակտիկեք',
-      description: 'Դիտեք ամփոփումները, սովորեք բառապաշարը և ստուգեք ինքներդ ձեզ ավտոմատ ստեղծված վիկտորինաներով:'
+      title: 'Learn & Practice',
+      description: 'Review summaries, study vocabulary, and test yourself with auto-generated quizzes.'
     },
-    ctaTitle: 'Պատրա՞ստ եք վերափոխել ձեր ուսուցումը',
-    ctaDescription: 'Սկսեք 50 անվճար վերլուծությունով: Բանկային քարտ չի պահանջվում:',
-    startLearning: 'Սկսել ուսուցումը հիմա',
-    footer: '© 2025 Aide. Ուժեղացնում ենք սովորողներին ԱԲ-ով շարժվող ուսումնական գործիքներով:'
+    ctaTitle: 'Ready to Transform Your Learning?',
+    ctaDescription: 'Start with 5 free analyses per day. No credit card required.',
+    startLearning: 'Start Learning Now',
+    footer: '© 2025 Aide. Empowering learners with AI-driven study tools.'
   },
   ko: {
     subtitle: 'AI 기반 학습 엔진',
@@ -216,7 +216,6 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
-      {/* Settings Button */}
       <div className="container max-w-6xl mx-auto px-4 pt-8">
         <div className="flex justify-end">
           <Button 
@@ -230,28 +229,16 @@ const Landing = () => {
         </div>
       </div>
 
-      {/* Hero Section */}
       <header className="container max-w-6xl mx-auto px-4 py-16 text-center">
         <div className="animate-in fade-in-50 slide-in-from-bottom-4">
           <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
             Aide
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-4">
-            {labels.subtitle}
-          </p>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            {labels.description}
-          </p>
+          <p className="text-xl md:text-2xl text-muted-foreground mb-4">{labels.subtitle}</p>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">{labels.description}</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              asChild 
-              size="lg" 
-              className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg"
-            >
-              <Link to="/auth">
-                {labels.getStarted}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+            <Button asChild size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
+              <Link to="/auth">{labels.getStarted}<ArrowRight className="ml-2 h-5 w-5" /></Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="shadow-md">
               <Link to="/auth">{labels.signIn}</Link>
@@ -260,140 +247,89 @@ const Landing = () => {
         </div>
       </header>
 
-      {/* Features Section */}
       <section className="container max-w-6xl mx-auto px-4 py-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-          {labels.featuresTitle}
-        </h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">{labels.featuresTitle}</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <Sparkles className="h-12 w-12 text-primary mb-4" />
             <h3 className="text-xl font-semibold mb-2">{labels.aiAnalysis.title}</h3>
-            <p className="text-muted-foreground">
-              {labels.aiAnalysis.description}
-            </p>
+            <p className="text-muted-foreground">{labels.aiAnalysis.description}</p>
           </Card>
-
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <Globe className="h-12 w-12 text-accent mb-4" />
             <h3 className="text-xl font-semibold mb-2">{labels.multilingual.title}</h3>
-            <p className="text-muted-foreground">
-              {labels.multilingual.description}
-            </p>
+            <p className="text-muted-foreground">{labels.multilingual.description}</p>
           </Card>
-
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <Zap className="h-12 w-12 text-primary mb-4" />
             <h3 className="text-xl font-semibold mb-2">{labels.instantResults.title}</h3>
-            <p className="text-muted-foreground">
-              {labels.instantResults.description}
-            </p>
+            <p className="text-muted-foreground">{labels.instantResults.description}</p>
           </Card>
-
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <Shield className="h-12 w-12 text-accent mb-4" />
             <h3 className="text-xl font-semibold mb-2">{labels.smartVocabulary.title}</h3>
-            <p className="text-muted-foreground">
-              {labels.smartVocabulary.description}
-            </p>
+            <p className="text-muted-foreground">{labels.smartVocabulary.description}</p>
           </Card>
-
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <Clock className="h-12 w-12 text-primary mb-4" />
             <h3 className="text-xl font-semibold mb-2">{labels.practiceQuizzes.title}</h3>
-            <p className="text-muted-foreground">
-              {labels.practiceQuizzes.description}
-            </p>
+            <p className="text-muted-foreground">{labels.practiceQuizzes.description}</p>
           </Card>
-
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <Sparkles className="h-12 w-12 text-accent mb-4" />
             <h3 className="text-xl font-semibold mb-2">{labels.structuredLearning.title}</h3>
-            <p className="text-muted-foreground">
-              {labels.structuredLearning.description}
-            </p>
+            <p className="text-muted-foreground">{labels.structuredLearning.description}</p>
           </Card>
         </div>
       </section>
 
-      {/* How It Works */}
       <section className="container max-w-4xl mx-auto px-4 py-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-          {labels.howItWorksTitle}
-        </h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">{labels.howItWorksTitle}</h2>
         <div className="space-y-8">
           <Card className="p-6">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                1
-              </div>
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
               <div>
                 <h3 className="text-xl font-semibold mb-2">{labels.step1.title}</h3>
-                <p className="text-muted-foreground">
-                  {labels.step1.description}
-                </p>
+                <p className="text-muted-foreground">{labels.step1.description}</p>
               </div>
             </div>
           </Card>
-
           <Card className="p-6">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                2
-              </div>
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>
               <div>
                 <h3 className="text-xl font-semibold mb-2">{labels.step2.title}</h3>
-                <p className="text-muted-foreground">
-                  {labels.step2.description}
-                </p>
+                <p className="text-muted-foreground">{labels.step2.description}</p>
               </div>
             </div>
           </Card>
-
           <Card className="p-6">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                3
-              </div>
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">3</div>
               <div>
                 <h3 className="text-xl font-semibold mb-2">{labels.step3.title}</h3>
-                <p className="text-muted-foreground">
-                  {labels.step3.description}
-                </p>
+                <p className="text-muted-foreground">{labels.step3.description}</p>
               </div>
             </div>
           </Card>
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="container max-w-4xl mx-auto px-4 py-16 text-center">
         <Card className="p-12 bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            {labels.ctaTitle}
-          </h2>
-          <p className="text-lg text-muted-foreground mb-8">
-            {labels.ctaDescription}
-          </p>
-          <Button 
-            asChild 
-            size="lg" 
-            className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg"
-          >
-            <Link to="/auth">
-              {labels.startLearning}
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">{labels.ctaTitle}</h2>
+          <p className="text-lg text-muted-foreground mb-8">{labels.ctaDescription}</p>
+          <Button asChild size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
+            <Link to="/auth">{labels.startLearning}<ArrowRight className="ml-2 h-5 w-5" /></Link>
           </Button>
         </Card>
       </section>
 
-      {/* Footer */}
       <footer className="container max-w-6xl mx-auto px-4 py-8 text-center text-muted-foreground border-t">
         <p>{labels.footer}</p>
       </footer>
 
-      {/* Settings Modal */}
       <SettingsModal
         open={settingsOpen}
         onOpenChange={setSettingsOpen}

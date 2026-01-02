@@ -300,7 +300,7 @@ const Auth = () => {
                   ) : "Create Account"}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
-                  Start with 50 free analyses!
+                  Start with 5 free analyses per day!
                 </p>
               </form>
             </TabsContent>
