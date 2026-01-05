@@ -107,52 +107,52 @@ const uiLabels = {
     footer: '© 2025 Aide. Расширяем возможности учащихся с помощью инструментов для обучения на основе ИИ.'
   },
   hy: {
-    subtitle: 'Structured AI Study Engine',
-    description: 'Transform any text into comprehensive learning materials with AI-powered analysis, key summaries, vocabulary extraction, and practice quizzes.',
-    getStarted: 'Start Free',
-    signIn: 'Sign In',
-    featuresTitle: 'Powerful Features for Smarter Learning',
+    subtitle: 'Կառուցվածքային AI ուսման շարժիչ',
+    description: 'Փոխակերպեք ցանկացած տեքստ համապարփակ ուսումնական նյութերի՝ AI-ով ուժեղացված վերլուծության, կարևոր ամփոփումների, բառապաշարի առանձնացման և պրակտիկ թեստերի միջոցով։',
+    getStarted: 'Սկսել անվճար',
+    signIn: 'Մուտք',
+    featuresTitle: 'Խելացի ուսման համար հզոր հնարավորություններ',
     aiAnalysis: {
-      title: 'AI-Powered Analysis',
-      description: 'Advanced AI technology extracts key insights, summaries, and learning points from any text instantly.'
+      title: 'AI-վերլուծություն',
+      description: 'Ուժեղ AI տեխնոլոգիան անմիջապես հանում է գլխավոր պատկերացումները, ամփոփումները և ուսումնական կետերը ցանկացած տեքստից։'
     },
     multilingual: {
-      title: 'Multilingual Support',
-      description: 'Learn in English, Russian, Armenian, or Korean with seamless language switching and translation.'
+      title: 'Բազմալեզու աջակցություն',
+      description: 'Սովորեք անգլերեն, ռուսերեն, հայերեն կամ կորեա՝ հարմար լեզվային փոփոխությամբ և թարգմանությամբ։'
     },
     instantResults: {
-      title: 'Instant Results',
-      description: 'Get comprehensive study materials in seconds. No waiting, no manual work required.'
+      title: 'Ամեն վայրկյան արդյունքներ',
+      description: 'Ստացեք համապարփակ նյութեր վայրկյանների ընթացքում՝ առանց սպասման կամ ձեռքով աշխատանքների։'
     },
     smartVocabulary: {
-      title: 'Smart Vocabulary',
-      description: 'Automatically extract and define key terms and concepts with contextual meanings.'
+      title: 'Խելացի բառապաշար',
+      description: 'Ավտոմատ կերպով հանեք և սահմանեք կարևոր տերմինները և հասկացությունները՝ համատեքստային նշանակությամբ։'
     },
     practiceQuizzes: {
-      title: 'Practice Quizzes',
-      description: 'Automatically generate custom quizzes to test your understanding and retention.'
+      title: 'Պրակտիկ թեստեր',
+      description: 'Ընթացքի ընթացքում ավտոմատ ձևով ստեղծեք թեստեր՝ ձեր ըմբռնումը և հիշողությունը ստուգելու համար։'
     },
     structuredLearning: {
-      title: 'Structured Learning',
-      description: 'Organized output with clear sections: summary, key points, vocabulary, and quiz questions.'
+      title: 'Կառուցված ուսուցում',
+      description: 'Կազմակերպված արդյունք՝ հստակ բաժիններով՝ ամփոփում, հիմնական կետեր, բառապաշար և թեստային հարցեր։'
     },
-    howItWorksTitle: 'How Aide Works',
+    howItWorksTitle: 'Ինչպես է աշխատում Aide',
     step1: {
-      title: 'Paste Your Text',
-      description: 'Copy and paste any article, study material, or document you want to learn from.'
+      title: 'Տեքստը տեղադրեք',
+      description: 'Պատճենեք և տեղադրեք ցանկացած հոդված, ուսումնական նյութ կամ փաստաթուղթ, որով ցանկանում եք սովորել։'
     },
     step2: {
-      title: 'AI Analysis',
-      description: 'Our AI engine processes your text, extracting key information and creating structured learning materials.'
+      title: 'AI վերլուծություն',
+      description: 'Մեր AI շարժիչը մշակում է ձեր տեքստը՝ հանելու համար հիմնական տեղեկությունները և ստեղծելու կառուցված ուսումնական նյութեր։'
     },
     step3: {
-      title: 'Learn & Practice',
-      description: 'Review summaries, study vocabulary, and test yourself with auto-generated quizzes.'
+      title: 'Ուսումնացեք և պրակտիկա արեք',
+      description: 'Ստուգեք ամփոփումները, ուսումնասիրեք բառապաշարը և փորձեք ինքներդ՝ ավտոմատ ստեղծված թեստերով։'
     },
-    ctaTitle: 'Ready to Transform Your Learning?',
-    ctaDescription: 'Start with 5 free analyses per day. No credit card required.',
-    startLearning: 'Start Learning Now',
-    footer: '© 2025 Aide. Empowering learners with AI-driven study tools.'
+    ctaTitle: 'Պատրաստ եք փոխել ձեր ուսումը?',
+    ctaDescription: 'Սկսեք օրական 5 անվճար վերլուծությամբ. կրեդիտ քարտը չի պահանջվում.',
+    startLearning: 'Սկսեք սովորելը հիմա',
+    footer: '© 2025 Aide. Ուժեղացնում ենք սովորողներին՝ AI-ով ղեկավարվող ուսումնական գործիքներով։'
   },
   ko: {
     subtitle: 'AI 기반 학습 엔진',
