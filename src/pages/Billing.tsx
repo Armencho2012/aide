@@ -107,7 +107,7 @@ const Billing = () => {
             )}
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold mb-2">Pro</h3>
-              <div className="text-4xl font-bold mb-1">$9.99</div>
+              <div className="text-4xl font-bold mb-1">$15.99</div>
               <p className="text-sm text-muted-foreground">Per month</p>
             </div>
             <ul className="space-y-3 mb-6">
@@ -179,4 +179,5 @@ const Billing = () => {
 };
 
 export default Billing;
+
 
