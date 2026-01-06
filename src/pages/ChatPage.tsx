@@ -320,6 +320,7 @@ const ChatPage = () => {
               <KnowledgeMapPanel 
                 onAskAboutNode={handleKnowledgeMapNodeClick}
                 activeNodeId={activeNode}
+                data={content?.analysis_data?.knowledge_map}
               />
             </div>
           )}

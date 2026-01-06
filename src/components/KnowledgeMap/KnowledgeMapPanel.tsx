@@ -3,12 +3,15 @@ import { Map, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import KnowledgeMap from './KnowledgeMap';
 
+import { KnowledgeMapData } from './types';
+
 interface KnowledgeMapPanelProps {
   onAskAboutNode?: (nodeName: string) => void;
   activeNodeId?: string;
+  data?: KnowledgeMapData | null;
 }
 
-export const KnowledgeMapPanel = ({ onAskAboutNode, activeNodeId }: KnowledgeMapPanelProps) => {
+export const KnowledgeMapPanel = ({ onAskAboutNode, activeNodeId, data }: KnowledgeMapPanelProps) => {
   const [isOpen, setIsOpen] = useState(true);
 
   const handleNodeClick = (nodeName: string) => {
@@ -53,6 +56,7 @@ export const KnowledgeMapPanel = ({ onAskAboutNode, activeNodeId }: KnowledgeMap
           <KnowledgeMap
             onNodeClick={handleNodeClick}
             activeNodeId={activeNodeId}
+            data={data}
           />
         </div>
       )}

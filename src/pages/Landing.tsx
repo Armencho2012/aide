@@ -225,98 +225,128 @@ const Landing = () => {
         </div>
       </div>
 
-      <header className="container max-w-6xl mx-auto px-4 py-16 text-center">
-        <div className="animate-in fade-in-50 slide-in-from-bottom-4">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-            Aide
-          </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-4">{labels.subtitle}</p>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">{labels.description}</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
-              <Link to="/auth">{labels.getStarted}<ArrowRight className="ml-2 h-5 w-5" /></Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="shadow-md">
-              <Link to="/auth">{labels.signIn}</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* Hero Section - Bento Style */}
+      <section className="container max-w-7xl mx-auto px-4 py-12 md:py-20">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
+          {/* Main Hero Card - Large */}
+          <Card className="md:col-span-8 p-8 md:p-12 bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 border-2 border-primary/30 hover:border-primary/50 transition-all duration-300">
+            <div className="animate-in fade-in-50 slide-in-from-bottom-4">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent leading-tight">
+                Aide
+              </h1>
+              <p className="text-xl md:text-2xl font-semibold text-foreground mb-3">{labels.subtitle}</p>
+              <p className="text-base md:text-lg text-muted-foreground mb-6 max-w-2xl">{labels.description}</p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button asChild size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg text-base">
+                  <Link to="/auth">{labels.getStarted}<ArrowRight className="ml-2 h-5 w-5" /></Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="shadow-md text-base">
+                  <Link to="/auth">{labels.signIn}</Link>
+                </Button>
+              </div>
+            </div>
+          </Card>
 
-      <section className="container max-w-6xl mx-auto px-4 py-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">{labels.featuresTitle}</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <Sparkles className="h-12 w-12 text-primary mb-4" />
-            <h3 className="text-xl font-semibold mb-2">{labels.aiAnalysis.title}</h3>
-            <p className="text-muted-foreground">{labels.aiAnalysis.description}</p>
-          </Card>
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <Globe className="h-12 w-12 text-accent mb-4" />
-            <h3 className="text-xl font-semibold mb-2">{labels.multilingual.title}</h3>
-            <p className="text-muted-foreground">{labels.multilingual.description}</p>
-          </Card>
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <Zap className="h-12 w-12 text-primary mb-4" />
-            <h3 className="text-xl font-semibold mb-2">{labels.instantResults.title}</h3>
-            <p className="text-muted-foreground">{labels.instantResults.description}</p>
-          </Card>
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <Shield className="h-12 w-12 text-accent mb-4" />
-            <h3 className="text-xl font-semibold mb-2">{labels.smartVocabulary.title}</h3>
-            <p className="text-muted-foreground">{labels.smartVocabulary.description}</p>
-          </Card>
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <Clock className="h-12 w-12 text-primary mb-4" />
-            <h3 className="text-xl font-semibold mb-2">{labels.practiceQuizzes.title}</h3>
-            <p className="text-muted-foreground">{labels.practiceQuizzes.description}</p>
-          </Card>
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <Sparkles className="h-12 w-12 text-accent mb-4" />
-            <h3 className="text-xl font-semibold mb-2">{labels.structuredLearning.title}</h3>
-            <p className="text-muted-foreground">{labels.structuredLearning.description}</p>
+          {/* Quick Stats Card */}
+          <Card className="md:col-span-4 p-6 md:p-8 bg-gradient-to-br from-accent/20 to-primary/10 border-2 border-accent/30 flex flex-col justify-center items-center text-center">
+            <div className="space-y-2">
+              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">5</div>
+              <p className="text-sm md:text-base text-muted-foreground font-medium">Free Analyses</p>
+              <p className="text-xs text-muted-foreground">Per Day</p>
+            </div>
           </Card>
         </div>
       </section>
 
-      <section className="container max-w-4xl mx-auto px-4 py-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">{labels.howItWorksTitle}</h2>
-        <div className="space-y-8">
-          <Card className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
-              <div>
-                <h3 className="text-xl font-semibold mb-2">{labels.step1.title}</h3>
-                <p className="text-muted-foreground">{labels.step1.description}</p>
-              </div>
-            </div>
+      {/* Features Bento Grid */}
+      <section className="container max-w-7xl mx-auto px-4 py-12 md:py-16">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12">{labels.featuresTitle}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {/* Large Feature Card */}
+          <Card className="lg:col-span-2 p-6 md:p-8 bg-gradient-to-br from-primary/10 to-transparent border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-xl">
+            <Sparkles className="h-10 w-10 md:h-12 md:w-12 text-primary mb-4" />
+            <h3 className="text-xl md:text-2xl font-bold mb-3">{labels.aiAnalysis.title}</h3>
+            <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{labels.aiAnalysis.description}</p>
           </Card>
-          <Card className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>
-              <div>
-                <h3 className="text-xl font-semibold mb-2">{labels.step2.title}</h3>
-                <p className="text-muted-foreground">{labels.step2.description}</p>
-              </div>
-            </div>
+
+          {/* Medium Feature Cards */}
+          <Card className="p-6 md:p-8 bg-gradient-to-br from-accent/10 to-transparent border-2 border-accent/20 hover:border-accent/40 transition-all duration-300 hover:shadow-xl">
+            <Globe className="h-10 w-10 md:h-12 md:w-12 text-accent mb-4" />
+            <h3 className="text-lg md:text-xl font-bold mb-2">{labels.multilingual.title}</h3>
+            <p className="text-sm text-muted-foreground">{labels.multilingual.description}</p>
           </Card>
-          <Card className="p-6">
+
+          <Card className="p-6 md:p-8 bg-gradient-to-br from-primary/10 to-transparent border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-xl">
+            <Zap className="h-10 w-10 md:h-12 md:w-12 text-primary mb-4" />
+            <h3 className="text-lg md:text-xl font-bold mb-2">{labels.instantResults.title}</h3>
+            <p className="text-sm text-muted-foreground">{labels.instantResults.description}</p>
+          </Card>
+
+          {/* Small Feature Cards */}
+          <Card className="p-6 bg-gradient-to-br from-accent/10 to-transparent border-2 border-accent/20 hover:border-accent/40 transition-all duration-300 hover:shadow-xl">
+            <Shield className="h-8 w-8 md:h-10 md:w-10 text-accent mb-3" />
+            <h3 className="text-base md:text-lg font-bold mb-2">{labels.smartVocabulary.title}</h3>
+            <p className="text-xs md:text-sm text-muted-foreground">{labels.smartVocabulary.description}</p>
+          </Card>
+
+          <Card className="p-6 bg-gradient-to-br from-primary/10 to-transparent border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-xl">
+            <Clock className="h-8 w-8 md:h-10 md:w-10 text-primary mb-3" />
+            <h3 className="text-base md:text-lg font-bold mb-2">{labels.practiceQuizzes.title}</h3>
+            <p className="text-xs md:text-sm text-muted-foreground">{labels.practiceQuizzes.description}</p>
+          </Card>
+
+          <Card className="lg:col-span-2 p-6 md:p-8 bg-gradient-to-br from-accent/10 to-primary/10 border-2 border-accent/20 hover:border-accent/40 transition-all duration-300 hover:shadow-xl">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">3</div>
+              <Sparkles className="h-10 w-10 md:h-12 md:w-12 text-accent flex-shrink-0" />
               <div>
-                <h3 className="text-xl font-semibold mb-2">{labels.step3.title}</h3>
-                <p className="text-muted-foreground">{labels.step3.description}</p>
+                <h3 className="text-lg md:text-xl font-bold mb-2">{labels.structuredLearning.title}</h3>
+                <p className="text-sm md:text-base text-muted-foreground">{labels.structuredLearning.description}</p>
               </div>
             </div>
           </Card>
         </div>
       </section>
 
-      <section className="container max-w-4xl mx-auto px-4 py-16 text-center">
-        <Card className="p-12 bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">{labels.ctaTitle}</h2>
-          <p className="text-lg text-muted-foreground mb-8">{labels.ctaDescription}</p>
-          <Button asChild size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
+      {/* How It Works - Bento Style */}
+      <section className="container max-w-7xl mx-auto px-4 py-12 md:py-16">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12">{labels.howItWorksTitle}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          <Card className="p-6 md:p-8 bg-gradient-to-br from-primary/10 to-transparent border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-xl">
+            <div className="flex flex-col items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">1</div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">{labels.step1.title}</h3>
+                <p className="text-sm md:text-base text-muted-foreground">{labels.step1.description}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-6 md:p-8 bg-gradient-to-br from-accent/10 to-transparent border-2 border-accent/20 hover:border-accent/40 transition-all duration-300 hover:shadow-xl">
+            <div className="flex flex-col items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-accent text-accent-foreground flex items-center justify-center font-bold text-lg">2</div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">{labels.step2.title}</h3>
+                <p className="text-sm md:text-base text-muted-foreground">{labels.step2.description}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-6 md:p-8 bg-gradient-to-br from-primary/10 to-accent/10 border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-xl">
+            <div className="flex flex-col items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-r from-primary to-accent text-primary-foreground flex items-center justify-center font-bold text-lg">3</div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">{labels.step3.title}</h3>
+                <p className="text-sm md:text-base text-muted-foreground">{labels.step3.description}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </section>
+
+      {/* CTA Section - Bento Style */}
+      <section className="container max-w-7xl mx-auto px-4 py-12 md:py-16">
+        <Card className="p-8 md:p-12 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 border-2 border-primary/30 hover:border-primary/50 transition-all duration-300 text-center">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{labels.ctaTitle}</h2>
+          <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">{labels.ctaDescription}</p>
+          <Button asChild size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg text-base md:text-lg px-8 py-6">
             <Link to="/auth">{labels.startLearning}<ArrowRight className="ml-2 h-5 w-5" /></Link>
           </Button>
         </Card>

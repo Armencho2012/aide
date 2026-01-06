@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -20,11 +20,12 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import ConceptNodeComponent from './ConceptNodeComponent';
 import { initialNodes, initialEdges } from './mockData';
-import { ConceptNode, categoryColors, NodeCategory } from './types';
+import { ConceptNode, ConceptEdge, KnowledgeMapData, categoryColors, NodeCategory } from './types';
 
 interface KnowledgeMapProps {
   onNodeClick?: (nodeName: string) => void;
   activeNodeId?: string;
+  data?: KnowledgeMapData | null;
 }
 
 const nodeTypes: NodeTypes = {
@@ -87,11 +88,31 @@ const createFlowEdges = (conceptEdges: typeof initialEdges): Edge[] => {
   }));
 };
 
-export const KnowledgeMap = ({ onNodeClick, activeNodeId }: KnowledgeMapProps) => {
+export const KnowledgeMap = ({ onNodeClick, activeNodeId, data }: KnowledgeMapProps) => {
   const { toast } = useToast();
   const flowRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [conceptNodes, setConceptNodes] = useState(initialNodes);
+  
+  // Use provided data or fallback to mock data
+  const conceptNodes: ConceptNode[] = useMemo(() => {
+    if (data?.nodes && data.nodes.length > 0) {
+      return data.nodes.map(node => ({
+        ...node,
+        category: (node.category || 'general') as NodeCategory
+      }));
+    }
+    return initialNodes;
+  }, [data]);
+  
+  const conceptEdges: ConceptEdge[] = useMemo(() => {
+    if (data?.edges && data.edges.length > 0) {
+      return data.edges;
+    }
+    return initialEdges.filter(edge => 
+      conceptNodes.some(n => n.id === edge.source) && 
+      conceptNodes.some(n => n.id === edge.target)
+    );
+  }, [data, conceptNodes]);
   
   const flowNodes = useMemo(
     () => createFlowNodes(conceptNodes, activeNodeId, onNodeClick),
@@ -99,23 +120,20 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId }: KnowledgeMapProps) =
   );
   
   const flowEdges = useMemo(
-    () => createFlowEdges(initialEdges.filter(edge => 
-      conceptNodes.some(n => n.id === edge.source) && 
-      conceptNodes.some(n => n.id === edge.target)
-    )),
-    [conceptNodes]
+    () => createFlowEdges(conceptEdges),
+    [conceptEdges]
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges);
 
-  // Update nodes when active node changes
-  useMemo(() => {
+  // Update nodes and edges when data changes - clear old data first
+  useEffect(() => {
     setNodes(flowNodes);
-  }, [flowNodes, setNodes]);
+    setEdges(flowEdges);
+  }, [flowNodes, flowEdges, setNodes, setEdges]);
 
   const handleClearMap = useCallback(() => {
-    setConceptNodes([]);
     setNodes([]);
     setEdges([]);
     toast({

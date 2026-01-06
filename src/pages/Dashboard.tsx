@@ -249,10 +249,6 @@ const Dashboard = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
@@ -297,14 +293,6 @@ const Dashboard = () => {
               className="shadow-sm"
             >
               <Settings className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleSignOut}
-              title={labels.signOut}
-            >
-              <LogOut className="h-5 w-5" />
             </Button>
           </div>
         </header>

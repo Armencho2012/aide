@@ -7,14 +7,102 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, User, Mail, Calendar, Key, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/hooks/useSettings";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+
+type Language = 'en' | 'ru' | 'hy' | 'ko';
+
+const uiLabels = {
+  en: {
+    backToDashboard: 'Back to Dashboard',
+    title: 'Profile & Preferences',
+    description: 'Manage your account settings and preferences',
+    accountInformation: 'Account Information',
+    fullName: 'Full Name',
+    email: 'Email',
+    accountCreated: 'Account Created',
+    userId: 'User ID (for support)',
+    userIdHelp: 'Share this ID with support if you need help',
+    copied: 'Copied!',
+    copiedDescription: 'User ID copied to clipboard',
+    subscriptionStatus: 'Subscription Status',
+    currentPlan: 'Current Plan',
+    freeTier: 'Free Tier',
+    upgradeToPro: 'Upgrade to Pro',
+    security: 'Security',
+    passwordChange: 'To change your password, please sign out and use the "Forgot Password" option on the login page.',
+    signOut: 'Sign Out'
+  },
+  ru: {
+    backToDashboard: 'Назад к панели управления',
+    title: 'Профиль и настройки',
+    description: 'Управляйте настройками и предпочтениями вашей учетной записи',
+    accountInformation: 'Информация об учетной записи',
+    fullName: 'Полное имя',
+    email: 'Электронная почта',
+    accountCreated: 'Аккаунт создан',
+    userId: 'ID пользователя (для поддержки)',
+    userIdHelp: 'Поделитесь этим ID со службой поддержки, если вам нужна помощь',
+    copied: 'Скопировано!',
+    copiedDescription: 'ID пользователя скопирован в буфер обмена',
+    subscriptionStatus: 'Статус подписки',
+    currentPlan: 'Текущий план',
+    freeTier: 'Бесплатный тариф',
+    upgradeToPro: 'Обновить до Pro',
+    security: 'Безопасность',
+    passwordChange: 'Чтобы изменить пароль, выйдите из системы и используйте опцию "Забыли пароль" на странице входа.',
+    signOut: 'Выйти'
+  },
+  hy: {
+    backToDashboard: 'Հետ դեպի վահանակ',
+    title: 'Պրոֆիլ և նախապատվություններ',
+    description: 'Կառավարեք ձեր հաշվի կարգավորումները և նախապատվությունները',
+    accountInformation: 'Հաշվի տեղեկություն',
+    fullName: 'Ամբողջական անուն',
+    email: 'Էլ. փոստ',
+    accountCreated: 'Հաշիվը ստեղծվել է',
+    userId: 'Օգտագործողի ID (աջակցության համար)',
+    userIdHelp: 'Կիսվեք այս ID-ով աջակցության հետ, եթե օգնության կարիք ունեք',
+    copied: 'Պատճենված է:',
+    copiedDescription: 'Օգտագործողի ID-ն պատճենվել է',
+    subscriptionStatus: 'Բաժանորդագրության կարգավիճակ',
+    currentPlan: 'Ընթացիկ պլան',
+    freeTier: 'Անվճար տարբերակ',
+    upgradeToPro: 'Թարմացնել Pro',
+    security: 'Անվտանգություն',
+    passwordChange: 'Գաղտնաբառը փոխելու համար դուրս եկեք և օգտագործեք "Մոռացել եմ գաղտնաբառը" տարբերակը մուտքի էջում:',
+    signOut: 'Դուրս գալ'
+  },
+  ko: {
+    backToDashboard: '대시보드로 돌아가기',
+    title: '프로필 및 기본 설정',
+    description: '계정 설정 및 기본 설정 관리',
+    accountInformation: '계정 정보',
+    fullName: '전체 이름',
+    email: '이메일',
+    accountCreated: '계정 생성일',
+    userId: '사용자 ID (지원용)',
+    userIdHelp: '도움이 필요하면 이 ID를 지원팀과 공유하세요',
+    copied: '복사됨!',
+    copiedDescription: '사용자 ID가 클립보드에 복사되었습니다',
+    subscriptionStatus: '구독 상태',
+    currentPlan: '현재 플랜',
+    freeTier: '무료 요금제',
+    upgradeToPro: '프로로 업그레이드',
+    security: '보안',
+    passwordChange: '비밀번호를 변경하려면 로그아웃하고 로그인 페이지의 "비밀번호 찾기" 옵션을 사용하세요.',
+    signOut: '로그아웃'
+  }
+};
 
 const Settings = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [copied, setCopied] = useState(false);
+  const { language } = useSettings();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const labels = uiLabels[language];
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -58,8 +146,8 @@ const Settings = () => {
       navigator.clipboard.writeText(user.id);
       setCopied(true);
       toast({
-        title: "Copied!",
-        description: "User ID copied to clipboard"
+        title: labels.copied,
+        description: labels.copiedDescription
       });
       setTimeout(() => setCopied(false), 2000);
     }
@@ -79,26 +167,26 @@ const Settings = () => {
         <Button variant="ghost" asChild className="mb-8">
           <Link to="/dashboard">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            {labels.backToDashboard}
           </Link>
         </Button>
 
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-2">
-            Profile & Preferences
+            {labels.title}
           </h1>
-          <p className="text-muted-foreground">Manage your account settings and preferences</p>
+          <p className="text-muted-foreground">{labels.description}</p>
         </div>
 
         {/* Account Information */}
         <Card className="p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <User className="h-5 w-5" />
-            Account Information
+            {labels.accountInformation}
           </h2>
           <div className="space-y-4">
             <div>
-              <Label>Full Name</Label>
+              <Label>{labels.fullName}</Label>
               <Input
                 value={profile?.full_name || user.user_metadata?.full_name || ''}
                 disabled
@@ -108,7 +196,7 @@ const Settings = () => {
             <div>
               <Label className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                Email
+                {labels.email}
               </Label>
               <Input
                 value={user.email || ''}
@@ -119,7 +207,7 @@ const Settings = () => {
             <div>
               <Label className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                Account Created
+                {labels.accountCreated}
               </Label>
               <Input
                 value={new Date(user.created_at).toLocaleDateString()}
@@ -130,7 +218,7 @@ const Settings = () => {
             <div>
               <Label className="flex items-center gap-2">
                 <Key className="h-4 w-4" />
-                User ID (for support)
+                {labels.userId}
               </Label>
               <div className="flex gap-2 mt-1">
                 <Input
@@ -147,7 +235,7 @@ const Settings = () => {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Share this ID with support if you need help
+                {labels.userIdHelp}
               </p>
             </div>
           </div>
@@ -155,30 +243,30 @@ const Settings = () => {
 
         {/* Subscription Status */}
         <Card className="p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Subscription Status</h2>
+          <h2 className="text-xl font-semibold mb-4">{labels.subscriptionStatus}</h2>
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Current Plan</p>
-              <p className="text-sm text-muted-foreground">Free Tier</p>
+              <p className="font-medium">{labels.currentPlan}</p>
+              <p className="text-sm text-muted-foreground">{labels.freeTier}</p>
             </div>
             <Button asChild>
-              <Link to="/billing">Upgrade to Pro</Link>
+              <Link to="/billing">{labels.upgradeToPro}</Link>
             </Button>
           </div>
         </Card>
 
         {/* Security */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Security</h2>
+          <h2 className="text-xl font-semibold mb-4">{labels.security}</h2>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              To change your password, please sign out and use the "Forgot Password" option on the login page.
+              {labels.passwordChange}
             </p>
             <Button variant="outline" onClick={() => {
               supabase.auth.signOut();
               navigate("/auth");
             }}>
-              Sign Out
+              {labels.signOut}
             </Button>
           </div>
         </Card>

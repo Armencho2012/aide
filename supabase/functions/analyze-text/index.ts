@@ -213,6 +213,7 @@ OUTPUT CONSTRAINTS:
 - Ensure all quiz questions are meaningful and test understanding, not just recall
 - Flashcards should cover key concepts, not trivial details
 - Lesson sections should be logically organized and comprehensive
+- Knowledge map entities and relationships MUST be extracted ONLY from the provided text - do not add outside information or general knowledge
 
 REQUIRED JSON STRUCTURE:
 {
@@ -236,10 +237,29 @@ REQUIRED JSON STRUCTURE:
     {"front": "term or concept", "back": "clear definition/explanation"},
     ...
   ], // exactly 15 flashcards covering key concepts
-  "quick_quiz_question": {same structure as first quiz_question}
+  "quick_quiz_question": {same structure as first quiz_question},
+  "knowledge_map": {
+    "nodes": [
+      {
+        "id": "unique-id",
+        "label": "Entity name from text",
+        "category": "general",
+        "connectedTo": ["other-node-id"]
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-id",
+        "source": "node-id-1",
+        "target": "node-id-2"
+      }
+    ]
+  }
 }
 
-CRITICAL: Return ONLY valid JSON. No markdown formatting, no code blocks, no explanatory text. The JSON must be parseable.
+CRITICAL: 
+- Return ONLY valid JSON. No markdown formatting, no code blocks, no explanatory text. The JSON must be parseable.
+- For knowledge_map: Extract key entities and relationships STRICTLY from the provided text. Do not add outside information, general knowledge, or concepts not mentioned in the text. Only include entities and relationships that are explicitly present in the provided text.
 
 Text to analyze:
 ${text}`;
@@ -326,12 +346,21 @@ ${text}`;
       ? (mainAnalysis as any).flashcards.slice(0, MAX_FLASHCARDS_FREE) 
       : [];
 
+    // Normalize knowledge map data
+    const normalizeKnowledgeMap = (km: any) => {
+      if (!km || typeof km !== 'object') return null;
+      const nodes = Array.isArray(km.nodes) ? km.nodes.slice(0, 20) : [];
+      const edges = Array.isArray(km.edges) ? km.edges.slice(0, 30) : [];
+      return { nodes, edges };
+    };
+
     responsePayload = {
       ...mainAnalysis,
       quiz_questions: quizQuestions.slice(0, MAX_QUIZ_QUESTIONS_FREE),
       flashcards,
       quick_quiz_question: quizQuestions[0],
-      lesson_sections: normalizeSections(mainAnalysis.lesson_sections)
+      lesson_sections: normalizeSections(mainAnalysis.lesson_sections),
+      knowledge_map: normalizeKnowledgeMap((mainAnalysis as any).knowledge_map)
     };
 
     console.log(`✅ Success: ${quizQuestions.length} quiz questions generated for user ${user.id}`);
