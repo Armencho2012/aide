@@ -38,14 +38,31 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(210, 90%, 48%), hsl(195, 85%, 55%));
+    /* Modern gradients with subtle transitions */
+    --gradient-primary: linear-gradient(135deg, hsl(210, 90%, 48%), hsl(35, 95%, 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(195, 85%, 55%), hsl(210, 90%, 48%));
     --gradient-subtle: linear-gradient(180deg, hsl(210, 20%, 98%), hsl(210, 30%, 96%));
+    --gradient-hero: linear-gradient(135deg, hsl(210, 90%, 48%) 0%, hsl(195, 85%, 55%) 50%, hsl(35, 95%, 55%) 100%);
     
+    /* Standardized spacing system (4px/8px grid) */
+    --spacing-xs: 0.25rem; /* 4px */
+    --spacing-sm: 0.5rem;  /* 8px */
+    --spacing-md: 1rem;    /* 16px */
+    --spacing-lg: 1.5rem;  /* 24px */
+    --spacing-xl: 2rem;    /* 32px */
+    --spacing-2xl: 3rem;   /* 48px */
+    --spacing-3xl: 4rem;   /* 64px */
+    
+    /* Enhanced shadows */
     --shadow-sm: 0 1px 2px 0 hsl(210 20% 15% / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(210 20% 15% / 0.1);
     --shadow-lg: 0 10px 15px -3px hsl(210 20% 15% / 0.15);
+    --shadow-xl: 0 20px 25px -5px hsl(210 20% 15% / 0.2);
     
+    /* Smooth transitions with spring-like feel */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
 
   .dark {
@@ -77,13 +94,33 @@ All colors MUST be HSL.
     --input: 215 20% 25%;
     --ring: 195 85% 55%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(195, 85%, 55%), hsl(210, 80%, 60%));
+    /* Dark mode gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(195, 85%, 55%), hsl(35, 95%, 60%));
+    --gradient-accent: linear-gradient(135deg, hsl(210, 80%, 60%), hsl(195, 85%, 55%));
     --gradient-subtle: linear-gradient(180deg, hsl(215, 30%, 12%), hsl(215, 28%, 15%));
+    --gradient-hero: linear-gradient(135deg, hsl(195, 85%, 55%) 0%, hsl(210, 80%, 60%) 50%, hsl(35, 95%, 60%) 100%);
     
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.15);
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.25);
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.35);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.45);
   }
+
+  /* Utility classes for standardized spacing */
+  .space-grid-1 { gap: var(--spacing-xs); }
+  .space-grid-2 { gap: var(--spacing-sm); }
+  .space-grid-3 { gap: var(--spacing-md); }
+  .space-grid-4 { gap: var(--spacing-lg); }
+  .space-grid-5 { gap: var(--spacing-xl); }
+  
+  /* Enhanced gradient utilities */
+  .gradient-primary { background: var(--gradient-primary); }
+  .gradient-accent { background: var(--gradient-accent); }
+  .gradient-hero { background: var(--gradient-hero); }
+  
+  /* Spring animation utilities */
+  .transition-spring { transition: var(--transition-spring); }
+  .transition-bounce { transition: var(--transition-bounce); }
 }
 
 @layer base {

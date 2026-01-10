@@ -75,6 +75,7 @@ const ChatPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showKnowledgeMap, setShowKnowledgeMap] = useState(false);
   const [activeNode, setActiveNode] = useState<string | undefined>();
+  const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set());
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -174,12 +175,54 @@ const ChatPage = () => {
     }
   };
 
-  const handleKnowledgeMapNodeClick = (question: string) => {
+  // Visual breadcrumbs: pulse/highlight map nodes when mentioned in chat
+  useEffect(() => {
+    if (messages.length > 0 && content?.analysis_data?.knowledge_map?.nodes) {
+      const latestMessage = messages[messages.length - 1];
+      const nodes = content.analysis_data.knowledge_map.nodes;
+      const mentionedNodes = new Set<string>();
+      
+      // Check if any node labels are mentioned in the latest message
+      nodes.forEach((node: any) => {
+        const nodeLabel = node.label?.toLowerCase() || '';
+        const messageContent = latestMessage.content.toLowerCase();
+        
+        // Simple mention detection (can be enhanced with better NLP)
+        if (nodeLabel && messageContent.includes(nodeLabel.toLowerCase())) {
+          mentionedNodes.add(node.id);
+        }
+      });
+      
+      if (mentionedNodes.size > 0) {
+        setHighlightedNodes(mentionedNodes);
+        setActiveNode(Array.from(mentionedNodes)[0]);
+        
+        // Clear highlight after animation
+        setTimeout(() => {
+          setHighlightedNodes(new Set());
+        }, 2000);
+      }
+    }
+  }, [messages, content]);
+
+  const handleKnowledgeMapNodeClick = (question: string, description?: string, category?: string) => {
+    // Contextual injection: pass description and category as metadata
     setInput(question);
+    
     // Extract node name from the question for highlighting
-    const match = question.match(/Tell me more about (.+)/);
+    const match = question.match(/Tell me more about (.+?)(?:\s|\.|$)/);
     if (match) {
-      setActiveNode(match[1].toLowerCase().replace(/\s+/g, '-'));
+      const nodeName = match[1].trim();
+      
+      // Find node ID from knowledge map
+      if (content?.analysis_data?.knowledge_map?.nodes) {
+        const node = content.analysis_data.knowledge_map.nodes.find(
+          (n: any) => n.label?.toLowerCase() === nodeName.toLowerCase()
+        );
+        if (node) {
+          setActiveNode(node.id);
+        }
+      }
     }
   };
 
@@ -318,16 +361,28 @@ const ChatPage = () => {
             </Card>
           </div>
 
-          {/* Knowledge Map Panel - Hidden on mobile/tablet */}
+          {/* Knowledge Map Panel - Desktop */}
           {showKnowledgeMap && (
             <div className="hidden lg:block w-[400px] xl:w-[500px] border-l border-border">
               <KnowledgeMapPanel 
                 onAskAboutNode={handleKnowledgeMapNodeClick}
                 activeNodeId={activeNode}
                 data={content?.analysis_data?.knowledge_map}
+                highlightedNodes={highlightedNodes}
               />
             </div>
           )}
+          
+          {/* Knowledge Map Panel - Mobile (Sheet/Drawer) */}
+          <div className="lg:hidden">
+            <KnowledgeMapPanel
+              onAskAboutNode={handleKnowledgeMapNodeClick}
+              activeNodeId={activeNode}
+              data={content?.analysis_data?.knowledge_map}
+              highlightedNodes={highlightedNodes}
+              isMobile={true}
+            />
+          </div>
         </div>
       </div>
     </div>

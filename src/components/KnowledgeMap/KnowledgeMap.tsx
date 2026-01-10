@@ -23,29 +23,55 @@ import { initialNodes, initialEdges } from './mockData';
 import { ConceptNode, ConceptEdge, KnowledgeMapData, categoryColors, NodeCategory } from './types';
 
 interface KnowledgeMapProps {
-  onNodeClick?: (nodeName: string) => void;
+  onNodeClick?: (nodeName: string, description?: string, category?: string) => void;
   activeNodeId?: string;
   data?: KnowledgeMapData | null;
+  highlightedNodes?: Set<string>;
 }
 
 const nodeTypes: NodeTypes = {
   concept: ConceptNodeComponent as any,
 };
 
-// Convert ConceptNodes to React Flow nodes with layout
+// Calculate degree centrality (number of connections) for each node
+const calculateDegreeCentrality = (nodes: ConceptNode[], edges: ConceptEdge[]): Record<string, number> => {
+  const centrality: Record<string, number> = {};
+  nodes.forEach(node => {
+    centrality[node.id] = 0;
+  });
+  edges.forEach(edge => {
+    if (centrality[edge.source] !== undefined) centrality[edge.source]++;
+    if (centrality[edge.target] !== undefined) centrality[edge.target]++;
+  });
+  return centrality;
+};
+
+// Convert ConceptNodes to React Flow nodes with layout - node sizing based on degree centrality
 const createFlowNodes = (
   conceptNodes: ConceptNode[],
+  edges: ConceptEdge[],
   activeNodeId?: string,
-  onNodeClick?: (label: string) => void
+  onNodeClick?: (label: string, description?: string, category?: string) => void
 ): Node[] => {
   const centerX = 400;
   const centerY = 300;
   const radius = 200;
   
-  return conceptNodes.map((node, index) => {
-    // Arrange nodes in a circular pattern
-    const angle = (index / conceptNodes.length) * 2 * Math.PI - Math.PI / 2;
+  // Calculate degree centrality for node sizing
+  const centrality = calculateDegreeCentrality(conceptNodes, edges);
+  const maxCentrality = Math.max(...Object.values(centrality), 1);
+  
+  // Sort nodes by centrality (most connected first) for better layout
+  const sortedNodes = [...conceptNodes].sort((a, b) => (centrality[b.id] || 0) - (centrality[a.id] || 0));
+  
+  return sortedNodes.map((node, index) => {
+    // Arrange nodes in a circular pattern with center node as most connected
+    const angle = (index / sortedNodes.length) * 2 * Math.PI - Math.PI / 2;
     const isCenter = index === 0;
+    const nodeCentrality = centrality[node.id] || 0;
+    
+    // Scale node size based on degree centrality (min 40px, max 80px)
+    const nodeSize = 40 + (nodeCentrality / maxCentrality) * 40;
     
     return {
       id: node.id,
@@ -59,8 +85,12 @@ const createFlowNodes = (
       data: {
         label: node.label,
         category: node.category,
-        isActive: node.id === activeNodeId || node.isActive,
+        isActive: node.id === activeNodeId || node.isActive || highlightedNodes?.has(node.id),
         onClick: onNodeClick,
+        description: (node as any).description || '',
+        size: nodeSize,
+        centrality: nodeCentrality,
+        masteryStatus: (node as any).masteryStatus || 'unlocked',
       },
     };
   });
@@ -100,7 +130,7 @@ const createFlowEdges = (conceptEdges: ConceptEdge[]): Edge[] => {
   });
 };
 
-export const KnowledgeMap = ({ onNodeClick, activeNodeId, data }: KnowledgeMapProps) => {
+export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes }: KnowledgeMapProps) => {
   const { toast } = useToast();
   const flowRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -152,8 +182,8 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data }: KnowledgeMapPr
   }, [data, conceptNodes]);
   
   const flowNodes = useMemo(
-    () => createFlowNodes(conceptNodes, activeNodeId, onNodeClick),
-    [conceptNodes, activeNodeId, onNodeClick]
+    () => createFlowNodes(conceptNodes, conceptEdges, activeNodeId, onNodeClick),
+    [conceptNodes, conceptEdges, activeNodeId, onNodeClick, highlightedNodes]
   );
   
   const flowEdges = useMemo(

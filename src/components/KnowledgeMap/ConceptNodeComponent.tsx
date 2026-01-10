@@ -17,7 +17,11 @@ interface ConceptNodeData {
   label: string;
   category: NodeCategory;
   isActive?: boolean;
-  onClick?: (label: string) => void;
+  description?: string;
+  size?: number;
+  centrality?: number;
+  masteryStatus?: 'locked' | 'unlocked' | 'mastered';
+  onClick?: (label: string, description?: string, category?: string) => void;
 }
 
 interface ConceptNodeProps {
@@ -36,12 +40,31 @@ const iconMap: Record<NodeCategory, LucideIcon> = {
 };
 
 const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
-  const { label, category, isActive, onClick } = data;
+  const { label, category, isActive, description, size = 40, centrality = 0, masteryStatus = 'unlocked', onClick } = data;
   const colors = categoryColors[category] || categoryColors.general;
   const Icon = iconMap[category] || Lightbulb;
 
+  // Determine visual state based on mastery
+  const isLocked = masteryStatus === 'locked';
+  const isMastered = masteryStatus === 'mastered';
+  
+  // Adjust colors based on mastery status
+  const nodeBg = isLocked 
+    ? 'hsl(215, 25%, 30%)' 
+    : isMastered 
+    ? 'linear-gradient(135deg, hsl(45, 90%, 55%), hsl(35, 95%, 60%))'
+    : `linear-gradient(135deg, ${colors.bg}20, ${colors.bg}40)`;
+  const nodeBorder = isLocked 
+    ? 'hsl(215, 25%, 40%)'
+    : isMastered
+    ? 'hsl(45, 90%, 60%)'
+    : isActive ? colors.border : `${colors.border}60`;
+  const nodeGlow = isMastered ? 'hsl(45, 90%, 60%)' : colors.glow;
+
   const handleClick = () => {
-    onClick?.(label);
+    if (!isLocked) {
+      onClick?.(label, description, category);
+    }
   };
 
   return (
@@ -52,25 +75,45 @@ const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
         filter: isActive ? `drop-shadow(0 0 20px ${colors.glow})` : 'none',
       }}
     >
-      {/* Glassmorphism card */}
+      {/* Glassmorphism card with dynamic sizing based on centrality */}
       <div
-        className="relative px-4 py-3 rounded-xl backdrop-blur-xl border transition-all duration-300 hover:scale-105 min-w-[120px]"
+        className={`relative px-4 py-3 rounded-xl backdrop-blur-xl border transition-all duration-300 hover:scale-105 ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${isMastered ? 'ring-2 ring-yellow-400 ring-offset-2' : ''}`}
         style={{
-          background: `linear-gradient(135deg, ${colors.bg}20, ${colors.bg}40)`,
-          borderColor: isActive ? colors.border : `${colors.border}60`,
+          background: nodeBg,
+          borderColor: nodeBorder,
+          minWidth: `${Math.max(120, size)}px`,
+          width: 'auto',
           boxShadow: isActive 
-            ? `0 8px 32px -4px ${colors.glow}40, inset 0 1px 0 ${colors.border}30`
+            ? `0 8px 32px -4px ${nodeGlow}40, inset 0 1px 0 ${nodeBorder}30`
+            : isMastered
+            ? `0 4px 16px -2px hsl(45 90% 55% / 0.4), inset 0 1px 0 hsl(45 90% 60% / 0.3)`
             : `0 4px 16px -2px hsl(0 0% 0% / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.1)`,
+          transform: isLocked ? 'scale(0.9)' : undefined,
         }}
+        title={isLocked ? 'Complete related quiz to unlock' : isMastered ? 'Mastered!' : description || label}
       >
-        {/* Active glow ring */}
+        {/* Active glow ring or pulse animation */}
         {isActive && (
           <div
             className="absolute inset-0 rounded-xl animate-pulse"
             style={{
-              background: `radial-gradient(ellipse at center, ${colors.glow}15, transparent 70%)`,
+              background: `radial-gradient(ellipse at center, ${nodeGlow}15, transparent 70%)`,
             }}
           />
+        )}
+        
+        {/* Mastery badge */}
+        {isMastered && (
+          <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 border-2 border-background flex items-center justify-center shadow-lg">
+            <span className="text-xs">✓</span>
+          </div>
+        )}
+        
+        {/* Locked indicator */}
+        {isLocked && (
+          <div className="absolute inset-0 rounded-xl bg-black/20 backdrop-blur-sm flex items-center justify-center">
+            <span className="text-xs text-muted-foreground">🔒</span>
+          </div>
         )}
 
         {/* Content */}

@@ -1,23 +1,75 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Map, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 import KnowledgeMap from './KnowledgeMap';
-
 import { KnowledgeMapData } from './types';
 
 interface KnowledgeMapPanelProps {
-  onAskAboutNode?: (nodeName: string) => void;
+  onAskAboutNode?: (nodeName: string, description?: string, category?: string) => void;
   activeNodeId?: string;
   data?: KnowledgeMapData | null;
+  highlightedNodes?: Set<string>;
+  isMobile?: boolean;
 }
 
-export const KnowledgeMapPanel = ({ onAskAboutNode, activeNodeId, data }: KnowledgeMapPanelProps) => {
+export const KnowledgeMapPanel = ({ onAskAboutNode, activeNodeId, data, highlightedNodes, isMobile }: KnowledgeMapPanelProps) => {
   const [isOpen, setIsOpen] = useState(true);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const isMobileDevice = useIsMobile();
+  const isSmallScreen = window.innerWidth < 1024;
 
-  const handleNodeClick = (nodeName: string) => {
-    onAskAboutNode?.(`Tell me more about ${nodeName}`);
+  const handleNodeClick = (nodeName: string, description?: string, category?: string) => {
+    // Contextual injection: pass description and category as metadata for more precise deep dives
+    const contextualPrompt = description 
+      ? `Tell me more about ${nodeName}. Context: ${description}. Category: ${category || 'general'}.`
+      : `Tell me more about ${nodeName}`;
+    onAskAboutNode?.(contextualPrompt, description, category);
+    
+    // Close mobile sheet after clicking
+    if (isMobileDevice || isMobile) {
+      setMobileSheetOpen(false);
+    }
   };
 
+  // Auto-open on desktop, closed on mobile
+  useEffect(() => {
+    setIsOpen(!isMobileDevice && !isMobile);
+  }, [isMobileDevice, isMobile]);
+
+  // Mobile: Use Sheet/Drawer component
+  if (isMobileDevice || isMobile || isSmallScreen) {
+    return (
+      <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 lg:hidden"
+          >
+            <Map className="h-4 w-4" />
+            Knowledge Map
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="bottom" className="h-[90vh] overflow-hidden p-0">
+          <SheetHeader className="px-6 py-4 border-b">
+            <SheetTitle>Knowledge Map</SheetTitle>
+          </SheetHeader>
+          <div className="h-[calc(90vh-5rem)] p-4 overflow-auto">
+            <KnowledgeMap
+              onNodeClick={handleNodeClick}
+              activeNodeId={activeNodeId}
+              data={data}
+              highlightedNodes={highlightedNodes}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  // Desktop: Side panel with toggle
   return (
     <div
       className={`relative h-full transition-all duration-300 ease-out ${
@@ -57,6 +109,7 @@ export const KnowledgeMapPanel = ({ onAskAboutNode, activeNodeId, data }: Knowle
             onNodeClick={handleNodeClick}
             activeNodeId={activeNodeId}
             data={data}
+            highlightedNodes={highlightedNodes}
           />
         </div>
       )}
