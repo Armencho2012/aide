@@ -287,10 +287,10 @@ const Billing = () => {
     setLoading(false);
   };
 
-  // Show loading skeleton to prevent FOUC
+  // Show loading skeleton to prevent FOUC - ensure styles are applied
   if (!isMounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20" style={{ visibility: 'visible' }}>
         <div className="container max-w-5xl mx-auto px-4 py-8">
           <div className="animate-pulse space-y-8">
             <div className="h-10 bg-muted rounded w-32"></div>

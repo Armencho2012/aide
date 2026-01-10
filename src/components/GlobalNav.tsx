@@ -27,43 +27,10 @@ export const GlobalNav = () => {
     });
   };
 
-  if (!shouldShow) return null;
-
-  return (
-    <>
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setSettingsOpen(true)}
-          className="shadow-md bg-background/80 backdrop-blur-sm"
-          title="Settings"
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleSignOut}
-          className="shadow-md bg-background/80 backdrop-blur-sm"
-          title="Sign Out"
-        >
-          <LogOut className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <SettingsModal
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        language={language}
-        onLanguageChange={setLanguage}
-        theme={theme}
-        onThemeChange={setTheme}
-        showPlanStatus={false}
-        showDeleteAccount={false}
-      />
-    </>
-  );
+  // Removed duplicate Settings and Sign Out buttons - they're now in Dashboard header
+  return null;
 };
+
+
 
 

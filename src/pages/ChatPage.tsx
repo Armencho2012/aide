@@ -214,28 +214,32 @@ const ChatPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       <div className="h-screen flex flex-col">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-border">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
-            <Button variant="ghost" asChild size="sm" className="w-fit">
-              <Link to={`/library/${id}`}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                <span className="text-sm">{labels.backToContent}</span>
-              </Link>
-            </Button>
-            <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent flex items-center gap-2">
-              <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
-              {labels.title}
-            </h1>
+        <div className="flex flex-col gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-border">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              <Button variant="ghost" asChild size="sm" className="w-fit">
+                <Link to={`/library/${id}`}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <span className="text-sm">{labels.backToContent}</span>
+                </Link>
+              </Button>
+              <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent flex items-center gap-2">
+                <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
+                {labels.title}
+              </h1>
+            </div>
           </div>
-          <Button
-            variant={showKnowledgeMap ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setShowKnowledgeMap(!showKnowledgeMap)}
-            className="gap-2 hidden lg:flex"
-          >
-            <Map className="h-4 w-4" />
-            Knowledge Map
-          </Button>
+          <div className="flex justify-end">
+            <Button
+              variant={showKnowledgeMap ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowKnowledgeMap(!showKnowledgeMap)}
+              className="gap-2 hidden lg:flex"
+            >
+              <Map className="h-4 w-4" />
+              Knowledge Map
+            </Button>
+          </div>
         </div>
 
         {/* Main content area */}

@@ -95,23 +95,38 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data }: KnowledgeMapPr
   
   // Use provided data or fallback to mock data
   const conceptNodes: ConceptNode[] = useMemo(() => {
-    if (data?.nodes && data.nodes.length > 0) {
+    if (data?.nodes && Array.isArray(data.nodes) && data.nodes.length > 0) {
       return data.nodes.map(node => ({
-        ...node,
-        category: (node.category || 'general') as NodeCategory
+        id: node.id || String(Math.random()),
+        label: node.label || '',
+        category: (node.category || 'general') as NodeCategory,
+        isActive: node.isActive || false,
+        connectedTo: node.connectedTo || []
       }));
     }
-    return initialNodes;
+    // Only return initialNodes if we have no data at all (not just empty)
+    if (data === null || data === undefined) {
+      return initialNodes;
+    }
+    return [];
   }, [data]);
   
   const conceptEdges: ConceptEdge[] = useMemo(() => {
-    if (data?.edges && data.edges.length > 0) {
-      return data.edges;
+    if (data?.edges && Array.isArray(data.edges) && data.edges.length > 0) {
+      return data.edges.map(edge => ({
+        id: edge.id || `${edge.source}-${edge.target}`,
+        source: edge.source,
+        target: edge.target
+      }));
     }
-    return initialEdges.filter(edge => 
-      conceptNodes.some(n => n.id === edge.source) && 
-      conceptNodes.some(n => n.id === edge.target)
-    );
+    // Only return initial edges if we have initial nodes and no data was provided
+    if ((data === null || data === undefined) && conceptNodes.length > 0) {
+      return initialEdges.filter(edge => 
+        conceptNodes.some(n => n.id === edge.source) && 
+        conceptNodes.some(n => n.id === edge.target)
+      );
+    }
+    return [];
   }, [data, conceptNodes]);
   
   const flowNodes = useMemo(
@@ -133,15 +148,12 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data }: KnowledgeMapPr
     setEdges([]);
   }, [setNodes, setEdges]);
 
-  // Update nodes and edges when data changes - clear old data first
+  // Update nodes and edges when data changes
   useEffect(() => {
-    if (!data || (!data.nodes || data.nodes.length === 0)) {
-      clearState();
-    } else {
-      setNodes(flowNodes);
-      setEdges(flowEdges);
-    }
-  }, [flowNodes, flowEdges, setNodes, setEdges, data, clearState]);
+    // Always update with current flowNodes and flowEdges
+    setNodes(flowNodes);
+    setEdges(flowEdges);
+  }, [flowNodes, flowEdges, setNodes, setEdges]);
 
   const handleClearMap = useCallback(() => {
     clearState();
@@ -206,20 +218,29 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data }: KnowledgeMapPr
           border: '1px solid hsl(215 20% 25% / 0.5)',
         }}
       >
-        <div ref={flowRef} className="w-full h-full">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            nodeTypes={nodeTypes}
-            connectionLineType={ConnectionLineType.SmoothStep}
-            fitView
-            fitViewOptions={{ padding: 0.3 }}
-            minZoom={0.3}
-            maxZoom={2}
-            proOptions={{ hideAttribution: true }}
-          >
+        <div ref={flowRef} className="w-full h-full" style={{ minHeight: '400px' }}>
+          {nodes.length === 0 && edges.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="text-center">
+                <Map className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No knowledge map data available</p>
+                <p className="text-sm mt-2">The map will appear here once analysis is complete</p>
+              </div>
+            </div>
+          ) : (
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              nodeTypes={nodeTypes}
+              connectionLineType={ConnectionLineType.SmoothStep}
+              fitView
+              fitViewOptions={{ padding: 0.3 }}
+              minZoom={0.3}
+              maxZoom={2}
+              proOptions={{ hideAttribution: true }}
+            >
             <Background
               color="hsl(215, 20%, 30%)"
               gap={20}
@@ -279,6 +300,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data }: KnowledgeMapPr
               </div>
             </Panel>
           </ReactFlow>
+          )}
         </div>
       </div>
 
