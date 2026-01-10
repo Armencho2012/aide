@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Settings, Sparkles, Loader2, LogOut, BookOpen, CreditCard, User as UserIcon, Lock, Upload, File, X } from "lucide-react";
+import { Settings, Sparkles, Loader2, LogOut, BookOpen, CreditCard, User as UserIcon, Lock } from "lucide-react";
 import { SettingsModal } from "@/components/SettingsModal";
 import { AnalysisOutput } from "@/components/AnalysisOutput";
 import { useToast } from "@/hooks/use-toast";
@@ -14,11 +14,11 @@ import type { User } from "@supabase/supabase-js";
 const uiLabels = {
   en: {
     title: 'Aide',
-    subtitle: 'Your AI Study Companion',
-    placeholder: 'Paste any text here—articles, notes, lectures—and let AI do the rest...',
-    analyze: 'Analyze',
-    usage: 'Free Uses Left:',
-    analyzing: 'Generating...',
+    subtitle: 'Structured AI Study Engine',
+    placeholder: 'Paste your text here to analyze...',
+    analyze: 'Analyze Text',
+    usage: 'Analyses Left Today:',
+    analyzing: 'Analyzing...',
     signOut: 'Sign Out'
   },
   ru: {
@@ -61,9 +61,6 @@ const Dashboard = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [usageCount, setUsageCount] = useState(5);
   const [isLocked, setIsLocked] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -198,21 +195,8 @@ const Dashboard = () => {
     setIsAnalyzing(true);
     
     try {
-      let body: any = { text: text.trim() };
-      
-      // If file is uploaded, include it in the request
-      if (uploadedFile) {
-        const base64File = await fileToBase64(uploadedFile);
-        body = {
-          ...body,
-          file: base64File,
-          fileName: uploadedFile.name,
-          fileType: uploadedFile.type,
-        };
-      }
-      
       const { data, error } = await supabase.functions.invoke('analyze-text', {
-        body
+        body: { text }
       });
 
       if (error) {
@@ -329,11 +313,11 @@ const Dashboard = () => {
         <Card className="p-4 sm:p-6 mb-4 sm:mb-6 bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-primary/20">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div>
-              <h3 className="text-base sm:text-lg font-semibold mb-1">Daily Credits</h3>
+              <h3 className="text-base sm:text-lg font-semibold mb-1">Free Tier Usage</h3>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 {usageCount > 0 
-                  ? `${usageCount} of ${DAILY_LIMIT} analyses available today`
-                  : 'Come back tomorrow or upgrade for more'}
+                  ? `${usageCount} of ${DAILY_LIMIT} free analyses remaining today`
+                  : 'You\'ve reached your daily limit'}
               </p>
             </div>
             <div className="text-left sm:text-right">
@@ -349,9 +333,9 @@ const Dashboard = () => {
           <Card className="p-8 mb-8 bg-gradient-to-br from-destructive/10 to-destructive/5 border-2 border-destructive/20">
             <div className="text-center space-y-4">
               <Lock className="h-16 w-16 mx-auto text-destructive" />
-              <h2 className="text-2xl font-bold">Out of Credits</h2>
+              <h2 className="text-2xl font-bold">Daily Limit Reached</h2>
               <p className="text-muted-foreground">
-                You have used all {DAILY_LIMIT} free analyses today. Unlock more with Pro!
+                You've used all {DAILY_LIMIT} free analyses for today. Upgrade to Pro for unlimited access!
               </p>
               <Button asChild size="lg" className="bg-gradient-to-r from-primary to-accent">
                 <Link to="/billing">
@@ -366,52 +350,6 @@ const Dashboard = () => {
         {/* Input Area */}
         <Card className={`p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 ${isLocked ? 'opacity-50' : ''}`}>
           <div className="space-y-3 sm:space-y-4">
-            {/* File Upload Section */}
-            <div className="space-y-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,.pdf"
-                onChange={handleFileInputChange}
-                className="hidden"
-                disabled={isLocked}
-                id="file-upload"
-              />
-              <label htmlFor="file-upload" className="cursor-pointer">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  disabled={isLocked}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  {uploadedFile ? uploadedFile.name : "Upload Image or PDF (OCR/PDF Analysis)"}
-                </Button>
-              </label>
-              
-              {/* File Preview */}
-              {uploadedFile && (
-                <div className="relative p-2 bg-muted rounded-lg">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1 right-1 h-6 w-6"
-                    onClick={removeFile}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                  {filePreview ? (
-                    <img src={filePreview} alt="Preview" className="max-h-32 w-auto rounded" />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <File className="h-8 w-8 text-primary" />
-                      <span className="text-sm">{uploadedFile.name}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            
             <Textarea
               placeholder={isLocked ? "Upgrade to Pro to continue analyzing..." : labels.placeholder}
               value={text}
@@ -421,7 +359,7 @@ const Dashboard = () => {
             />
             <Button 
               onClick={handleAnalyze} 
-              disabled={isAnalyzing || (!text.trim() && !uploadedFile) || isLocked}
+              disabled={isAnalyzing || !text.trim() || isLocked}
               className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-md"
               size="lg"
             >

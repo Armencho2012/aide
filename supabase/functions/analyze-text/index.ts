@@ -138,57 +138,17 @@ Deno.serve(async (req: Request) => {
 
     // --- 4. Input Validation ---
     const body = await req.json().catch(() => ({}));
-    const { text, file, fileName, fileType } = body;
+    const { text } = body;
     
-    // Handle file upload (OCR/PDF) if provided
-    let processedText = text || '';
-    
-    if (file && fileType) {
-      try {
-        // Extract text from image/PDF using Gemini 1.5 vision API
-        const visionResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${Deno.env.get("GEMINI_API_KEY")}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{
-                parts: [
-                  { text: "Extract all text from this document. Preserve formatting and structure. Output only the extracted text without any additional commentary." },
-                  {
-                    inlineData: {
-                      mimeType: fileType,
-                      data: file.split(',')[1] || file // Remove data URL prefix if present
-                    }
-                  }
-                ]
-              }]
-            })
-          }
-        );
-        
-        if (visionResponse.ok) {
-          const visionData = await visionResponse.json();
-          const extractedText = visionData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          processedText = extractedText + (processedText ? '\n\n' + processedText : '');
-        } else {
-          console.warn("Failed to extract text from file, proceeding with text only");
-        }
-      } catch (err) {
-        console.error("Error processing file:", err);
-        // Continue with text-only processing
-      }
-    }
-    
-    if (!processedText || processedText.trim().length === 0) {
-      return new Response(JSON.stringify({ error: "Text or file is required and must be non-empty" }), {
+    if (!text || typeof text !== "string" || text.trim().length === 0) {
+      return new Response(JSON.stringify({ error: "Text is required and must be non-empty" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    if (processedText.length > MAX_TEXT_LENGTH) {
-      return new Response(JSON.stringify({ error: `Content exceeds maximum length of ${MAX_TEXT_LENGTH} characters` }), {
+    if (text.length > MAX_TEXT_LENGTH) {
+      return new Response(JSON.stringify({ error: `Text exceeds maximum length of ${MAX_TEXT_LENGTH} characters` }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -368,7 +328,7 @@ The 'knowledge_map' is the most critical part of this task. You must create a "S
 ### FINAL INSTRUCTION
 Analyze the input text below. Apply your expert knowledge. Construct the map efficiently. Output only the JSON.`;
 
-    const prompt = `[INPUT TEXT TO ANALYZE]:\n${processedText}`;
+    const prompt = `[INPUT TEXT TO ANALYZE]:\n${text}`;
 
     const mainAnalysis = await callGemini(prompt, systemInstruction);
 

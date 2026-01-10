@@ -11,52 +11,52 @@ type Theme = 'light' | 'dark';
 
 const uiLabels = {
   en: {
-    subtitle: 'Your AI-Powered Study Companion',
-    description: 'Turn any text into bite-sized lessons, flashcards, and quizzes in seconds. Master concepts faster with intelligent summaries and spaced repetition.',
-    getStarted: 'Start Learning Free',
+    subtitle: 'Structured AI Study Engine',
+    description: 'Transform any text into comprehensive learning materials with AI-powered analysis, key summaries, vocabulary extraction, and practice quizzes in multiple languages.',
+    getStarted: 'Get Started Free',
     signIn: 'Sign In',
-    featuresTitle: 'Everything You Need to Learn Smarter',
+    featuresTitle: 'Powerful Features for Smarter Learning',
     aiAnalysis: {
-      title: 'Instant Breakdown',
-      description: 'Drop in any text and watch AI distill it into clear summaries, key takeaways, and actionable study notes.'
+      title: 'AI-Powered Analysis',
+      description: 'Advanced AI technology extracts key insights, summaries, and learning points from any text instantly.'
     },
     multilingual: {
-      title: 'Learn in Your Language',
-      description: 'Study seamlessly in English, Russian, Armenian, or Korean with native language support.'
+      title: 'Multilingual Support',
+      description: 'Learn in English, Russian, Armenian, or Korean with seamless language switching and translation.'
     },
     instantResults: {
-      title: 'Zero Wait Time',
-      description: 'Get complete study materials the moment you paste. No setup, no delays—just learning.'
+      title: 'Instant Results',
+      description: 'Get comprehensive study materials in seconds. No waiting, no manual work required.'
     },
     smartVocabulary: {
-      title: 'Vocabulary Builder',
-      description: 'Key terms are automatically highlighted and defined in context so nothing slips by.'
+      title: 'Smart Vocabulary',
+      description: 'Automatically extract and define key terms and concepts with contextual meanings.'
     },
     practiceQuizzes: {
-      title: 'Test Yourself',
-      description: 'Auto-generated quizzes help you retain what you learn and spot knowledge gaps.'
+      title: 'Practice Quizzes',
+      description: 'Generate custom quizzes automatically to test your understanding and retention.'
     },
     structuredLearning: {
-      title: 'Organized for Recall',
-      description: 'Summaries, sections, terms, and quizzes—all structured so you can review fast.'
+      title: 'Structured Learning',
+      description: 'Organized output with clear sections: summary, key points, vocabulary, and quiz questions.'
     },
-    howItWorksTitle: 'Three Steps to Mastery',
+    howItWorksTitle: 'How Aide Works',
     step1: {
-      title: '1. Drop Your Text',
-      description: 'Paste an article, lecture notes, or any content you want to understand.'
+      title: 'Paste Your Text',
+      description: 'Copy and paste any article, study material, or document you want to learn from.'
     },
     step2: {
-      title: '2. Let AI Work',
-      description: 'Our engine extracts the essentials and creates tailored study materials instantly.'
+      title: 'AI Analysis',
+      description: 'Our AI engine processes your text, extracting key information and creating structured learning materials.'
     },
     step3: {
-      title: '3. Learn & Retain',
-      description: 'Review summaries, practice with quizzes, and lock in knowledge with flashcards.'
+      title: 'Learn & Practice',
+      description: 'Review summaries, study vocabulary, and test yourself with auto-generated quizzes.'
     },
-    ctaTitle: 'Start Mastering Any Subject Today',
-    ctaDescription: '5 free analyses every day. No credit card. No strings attached.',
-    startLearning: 'Begin Now',
-    footer: '© 2025 Aide. Learn smarter, not harder.'
+    ctaTitle: 'Ready to Transform Your Learning?',
+    ctaDescription: 'Start with 5 free analyses per day. No credit card required.',
+    startLearning: 'Start Learning Now',
+    footer: '© 2025 Aide. Empowering learners with AI-driven study tools.'
   },
   ru: {
     subtitle: 'Структурированный ИИ-движок для обучения',

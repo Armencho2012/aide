@@ -51,8 +51,7 @@ const createFlowNodes = (
   conceptNodes: ConceptNode[],
   edges: ConceptEdge[],
   activeNodeId?: string,
-  onNodeClick?: (label: string, description?: string, category?: string) => void,
-  highlightedNodes?: Set<string>
+  onNodeClick?: (label: string, description?: string, category?: string) => void
 ): Node[] => {
   const centerX = 400;
   const centerY = 300;
@@ -183,7 +182,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
   }, [data, conceptNodes]);
   
   const flowNodes = useMemo(
-    () => createFlowNodes(conceptNodes, conceptEdges, activeNodeId, onNodeClick, highlightedNodes),
+    () => createFlowNodes(conceptNodes, conceptEdges, activeNodeId, onNodeClick),
     [conceptNodes, conceptEdges, activeNodeId, onNodeClick, highlightedNodes]
   );
   
@@ -259,7 +258,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
       className={`relative transition-all duration-300 ${
         isFullscreen
           ? 'fixed inset-0 z-50'
-          : 'h-full w-full min-h-[400px]'
+          : 'h-full w-full'
       }`}
     >
       {/* Dark glassmorphism background */}

@@ -1,18 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { ChevronLeft, ChevronRight, RotateCcw, Layers, CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { ChevronLeft, ChevronRight, RotateCcw, Layers } from 'lucide-react';
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
 
 interface Flashcard {
   front: string;
   back: string;
-  confidence?: 'easy' | 'medium' | 'hard';
 }
 
 interface FlashcardsProps {
@@ -27,12 +22,7 @@ const uiLabels = {
     card: 'Card',
     of: 'of',
     restart: 'Restart',
-    noCards: 'No flashcards available',
-    confidence: 'Confidence Level',
-    easy: 'Easy',
-    medium: 'Medium',
-    hard: 'Hard',
-    confidenceSaved: 'Confidence level saved for spaced repetition'
+    noCards: 'No flashcards available'
   },
   ru: {
     title: 'Карточки',
@@ -63,8 +53,6 @@ const uiLabels = {
 export const Flashcards = ({ flashcards, language }: FlashcardsProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [confidenceLevels, setConfidenceLevels] = useState<Record<number, 'easy' | 'medium' | 'hard'>>({});
-  const { toast } = useToast();
   const labels = uiLabels[language];
 
   const validFlashcards = useMemo(() => {
@@ -102,46 +90,6 @@ export const Flashcards = ({ flashcards, language }: FlashcardsProps) => {
   const handleRestart = () => {
     setCurrentIndex(0);
     setIsFlipped(false);
-  };
-
-  const handleConfidenceChange = async (value: number[]) => {
-    const confidenceMap: Record<number, 'easy' | 'medium' | 'hard'> = { 0: 'easy', 1: 'medium', 2: 'hard' };
-    const confidence = confidenceMap[value[0] as keyof typeof confidenceMap] || 'medium';
-    
-    setConfidenceLevels(prev => ({
-      ...prev,
-      [currentIndex]: confidence
-    }));
-
-    // Save confidence level to Supabase for spaced repetition
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && currentCard) {
-        // Store flashcard confidence in user's progress tracking
-        await supabase.from('flashcard_progress').upsert({
-          user_id: user.id,
-          flashcard_id: `${currentCard.front}-${currentCard.back}`,
-          confidence_level: confidence,
-          reviewed_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,flashcard_id'
-        });
-
-        toast({
-          title: "Progress Saved",
-          description: labels.confidenceSaved || "Your confidence level has been saved",
-        });
-      }
-    } catch (error) {
-      console.error('Error saving confidence level:', error);
-      // Non-critical, don't show error to user
-    }
-  };
-
-  const getConfidenceValue = (): number[] => {
-    const confidence = confidenceLevels[currentIndex] || 'medium';
-    const map: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
-    return [map[confidence] || 1];
   };
 
   return (
@@ -194,36 +142,6 @@ export const Flashcards = ({ flashcards, language }: FlashcardsProps) => {
             </div>
           </div>
         </div>
-
-        {/* Confidence Level Slider - Only show when card is flipped */}
-        {isFlipped && (
-          <div className="space-y-2 p-4 bg-muted rounded-lg">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              {labels.confidence || 'Confidence Level'}
-            </Label>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground min-w-[40px]">{labels.easy || 'Easy'}</span>
-              <Slider
-                value={getConfidenceValue()}
-                onValueChange={handleConfidenceChange}
-                min={0}
-                max={2}
-                step={1}
-                className="flex-1"
-              />
-              <span className="text-xs text-muted-foreground min-w-[60px] text-right">{labels.hard || 'Hard'}</span>
-            </div>
-            <div className="flex justify-center">
-              <span className="text-xs font-medium text-primary">
-                {confidenceLevels[currentIndex] === 'easy' && labels.easy}
-                {confidenceLevels[currentIndex] === 'medium' && labels.medium}
-                {confidenceLevels[currentIndex] === 'hard' && labels.hard}
-                {!confidenceLevels[currentIndex] && labels.medium}
-              </span>
-            </div>
-          </div>
-        )}
 
         {/* Navigation */}
         <div className="flex items-center justify-between">
