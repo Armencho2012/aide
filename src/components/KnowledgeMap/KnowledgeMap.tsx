@@ -228,7 +228,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data }: KnowledgeMapPr
       className={`relative transition-all duration-300 ${
         isFullscreen
           ? 'fixed inset-0 z-50'
-          : 'h-full w-full'
+          : 'h-full w-full min-h-[400px]'
       }`}
     >
       {/* Dark glassmorphism background */}

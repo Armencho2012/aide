@@ -52,12 +52,14 @@ export const KnowledgeMapPanel = ({ onAskAboutNode, activeNodeId, data }: Knowle
 
       {/* Expanded state */}
       {isOpen && (
-        <div className="h-full p-4">
-          <KnowledgeMap
-            onNodeClick={handleNodeClick}
-            activeNodeId={activeNodeId}
-            data={data}
-          />
+        <div className="h-full p-4 flex flex-col">
+          <div className="flex-1 min-h-0">
+            <KnowledgeMap
+              onNodeClick={handleNodeClick}
+              activeNodeId={activeNodeId}
+              data={data}
+            />
+          </div>
         </div>
       )}
     </div>
