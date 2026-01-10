@@ -156,9 +156,9 @@ Deno.serve(async (req: Request) => {
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
-      console.error("❌ GEMINI_API_KEY missing in environment");
-      return new Response(JSON.stringify({ error: "Server misconfigured: missing API key" }), {
-        status: 500,
+      console.error("GEMINI_API_KEY missing in environment");
+      return new Response(JSON.stringify({ error: "Service temporarily unavailable" }), {
+        status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
