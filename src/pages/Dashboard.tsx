@@ -3,6 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Settings, Sparkles, Loader2, LogOut, BookOpen, CreditCard, User as UserIcon, Lock } from "lucide-react";
 import { SettingsModal } from "@/components/SettingsModal";
 import { AnalysisOutput } from "@/components/AnalysisOutput";
@@ -19,7 +21,8 @@ const uiLabels = {
     analyze: 'Analyze Text',
     usage: 'Analyses Left Today:',
     analyzing: 'Analyzing...',
-    signOut: 'Sign Out'
+    signOut: 'Sign Out',
+    errorNoInput: 'Please enter text or attach a file to analyze'
   },
   ru: {
     title: 'Aide',
@@ -28,7 +31,8 @@ const uiLabels = {
     analyze: 'Анализировать текст',
     usage: 'Анализов осталось сегодня:',
     analyzing: 'Анализируем...',
-    signOut: 'Выйти'
+    signOut: 'Выйти',
+    errorNoInput: 'Введите текст или прикрепите файл для анализа'
   },
   hy: {
     title: 'Aide',
@@ -37,7 +41,8 @@ const uiLabels = {
     analyze: 'Վերլուծել տեքստը',
     usage: 'Մնացել է վերլուծություն այսօր:',
     analyzing: 'Վերլուծում...',
-    signOut: 'Դուրս գալ'
+    signOut: 'Դուրս գալ',
+    errorNoInput: 'Խնդրում ենք մուտքագրել տեքստ կամ կցել ֆայլ վերլուծության համար'
   },
   ko: {
     title: 'Aide',
@@ -46,7 +51,8 @@ const uiLabels = {
     analyze: '텍스트 분석',
     usage: '오늘 남은 분석:',
     analyzing: '분석 중...',
-    signOut: '로그아웃'
+    signOut: '로그아웃',
+    errorNoInput: '분석할 텍스트를 입력하거나 파일을 첨부하세요'
   }
 };
 
@@ -58,19 +64,34 @@ const Dashboard = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [text, setText] = useState('');
   const [analysisData, setAnalysisData] = useState<any>(null);
+  const [media, setMedia] = useState<{ data: string; mimeType: string } | null>(null);
+  const [isCourseMode, setIsCourseMode] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [usageCount, setUsageCount] = useState(5);
   const [isLocked, setIsLocked] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = (reader.result as string).split(',')[1];
+        setMedia({ data: base64String, mimeType: file.type });
+        toast({ title: "File attached", description: file.name });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   const { toast } = useToast();
   const navigate = useNavigate();
-  
+
   const labels = uiLabels[language];
 
   useEffect(() => {
     // Check if Supabase is properly configured
     const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
     const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    
+
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
       console.warn('Supabase not configured - redirecting to auth');
       navigate("/auth");
@@ -79,20 +100,20 @@ const Dashboard = () => {
 
     // Set up auth state listener
     let subscription: { unsubscribe: () => void } | null = null;
-    
+
     try {
       const { data: { subscription: sub } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      
-      if (!session) {
-        navigate("/auth");
-      } else {
-        // Fetch usage count when user changes
-        setTimeout(() => {
-          fetchUsageCount(session.user.id);
-        }, 0);
-      }
-    });
+        setUser(session?.user ?? null);
+
+        if (!session) {
+          navigate("/auth");
+        } else {
+          // Fetch usage count when user changes
+          setTimeout(() => {
+            fetchUsageCount(session.user.id);
+          }, 0);
+        }
+      });
       subscription = sub;
     } catch (err) {
       console.error('Failed to set up auth state listener:', err);
@@ -107,9 +128,9 @@ const Dashboard = () => {
         navigate("/auth");
         return;
       }
-      
+
       setUser(session?.user ?? null);
-      
+
       if (!session) {
         navigate("/auth");
       } else {
@@ -139,7 +160,7 @@ const Dashboard = () => {
       if (user) {
         fetchUsageCount(user.id);
       }
-      
+
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -174,10 +195,10 @@ const Dashboard = () => {
       return;
     }
 
-    if (!text.trim()) {
+    if (!text.trim() && !media) {
       toast({
         title: language === 'en' ? 'Error' : language === 'ru' ? 'Ошибка' : language === 'hy' ? 'Սխալ' : '오류',
-        description: language === 'en' ? 'Please enter text to analyze' : language === 'ru' ? 'Пожалуйста, введите текст для анализа' : language === 'hy' ? 'Խնդրում ենք մուտքագրել տեքստ վերլուծության համար' : '분석할 텍스트를 입력하세요',
+        description: labels.errorNoInput,
         variant: 'destructive'
       });
       return;
@@ -193,30 +214,33 @@ const Dashboard = () => {
     }
 
     setIsAnalyzing(true);
-    
+
     try {
       const { data, error } = await supabase.functions.invoke('analyze-text', {
-        body: { text }
+        body: {
+          text,
+          media, // Multi-modal support
+          isCourse: isCourseMode
+        }
       });
 
       if (error) {
         console.error('Edge function error:', error);
-        throw new Error(error.message || 'Failed to analyze text');
+        throw new Error(error.message || 'Failed to analyze content');
       }
 
       if (!data) {
         throw new Error('No data returned from analysis');
       }
 
-      // Note: Usage is already logged server-side in the edge function
-      // Refetch usage count from server to ensure accuracy and prevent race conditions
       setAnalysisData(data);
-      
+      setMedia(null); // Clear media after successful analysis
+
       // Refetch usage count from server to get accurate value
       if (user) {
         await fetchUsageCount(user.id);
       }
-      
+
       // Save to user_content archive
       if (user) {
         try {
@@ -232,7 +256,7 @@ const Dashboard = () => {
           // Non-critical, don't show error to user
         }
       }
-      
+
       toast({
         title: language === 'en' ? 'Great job!' : language === 'ru' ? 'Отлично!' : language === 'hy' ? 'Հիանալի է!' : '훌륭합니다!',
         description: language === 'en' ? "You're mastering this subject. Keep it up!" : language === 'ru' ? 'Вы осваиваете этот предмет. Продолжайте в том же духе!' : language === 'hy' ? 'Դուք տիրապետում եք այս առարկային: Շարունակեք այդպես!' : '이 주제를 잘 이해하고 있습니다. 계속 노력하세요!'
@@ -286,8 +310,8 @@ const Dashboard = () => {
                 {usageCount}/{DAILY_LIMIT}
               </p>
             </Card>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="icon"
               onClick={() => setSettingsOpen(true)}
               className="shadow-sm"
@@ -315,7 +339,7 @@ const Dashboard = () => {
             <div>
               <h3 className="text-base sm:text-lg font-semibold mb-1">Free Tier Usage</h3>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                {usageCount > 0 
+                {usageCount > 0
                   ? `${usageCount} of ${DAILY_LIMIT} free analyses remaining today`
                   : 'You\'ve reached your daily limit'}
               </p>
@@ -349,7 +373,41 @@ const Dashboard = () => {
 
         {/* Input Area */}
         <Card className={`p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 ${isLocked ? 'opacity-50' : ''}`}>
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  id="media-upload"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  accept="image/*,application/pdf"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById('media-upload')?.click()}
+                  className="gap-2"
+                  disabled={isLocked}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Attach PDF/Image (Gemini 1.5)
+                </Button>
+                {media && <Badge variant="secondary">File Attached</Badge>}
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="course-mode">Course Mode</Label>
+                <input
+                  type="checkbox"
+                  id="course-mode"
+                  checked={isCourseMode}
+                  onChange={(e) => setIsCourseMode(e.target.checked)}
+                  className="w-4 h-4 cursor-pointer"
+                />
+              </div>
+            </div>
+
             <Textarea
               placeholder={isLocked ? "Upgrade to Pro to continue analyzing..." : labels.placeholder}
               value={text}
@@ -357,9 +415,9 @@ const Dashboard = () => {
               className="min-h-[150px] sm:min-h-[200px] text-sm sm:text-base resize-none"
               disabled={isLocked}
             />
-            <Button 
-              onClick={handleAnalyze} 
-              disabled={isAnalyzing || !text.trim() || isLocked}
+            <Button
+              onClick={handleAnalyze}
+              disabled={isAnalyzing || (!text.trim() && !media) || isLocked}
               className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-md"
               size="lg"
             >

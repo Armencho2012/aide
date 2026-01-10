@@ -22,7 +22,7 @@ Deno.serve(async (req: Request) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } }
     });
@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { question, contentText, analysisData, language, chatHistory } = body;
+    const { question, contentText, analysisData, language, chatHistory, activeNodeContext } = body;
 
     if (!question || !contentText) {
       return new Response(JSON.stringify({ error: "Question and content required" }), {
@@ -57,6 +57,11 @@ Deno.serve(async (req: Request) => {
     const summaryContext = analysisData?.three_bullet_summary?.join('\n') || '';
     const termsContext = analysisData?.key_terms?.join(', ') || '';
 
+    // CONTEXTUAL INJECTION: Add selected node context if provided
+    const nodeContext = activeNodeContext
+      ? `\n--- ACTIVE NODE CONTEXT ---\nFocused Node: ${activeNodeContext.label}\nDescription: ${activeNodeContext.description}\nCategory: ${activeNodeContext.category}\nPlease prioritize this context in your explanation if relevant.`
+      : '';
+
     const languageInstruction = {
       'en': 'Respond in English.',
       'ru': 'Отвечайте на русском языке.',
@@ -70,58 +75,94 @@ Deno.serve(async (req: Request) => {
       ?.map((msg: { role: string; content: string }) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
       ?.join('\n') || '';
 
-    const prompt = `You are an expert academic study assistant with deep knowledge in educational content analysis. Your role is to help students understand complex material through clear, structured explanations.
-
-PERSONA:
-- Academic and professional tone
-- Patient and encouraging
-- Focused on learning outcomes
-- Uses examples and analogies when helpful
+    const prompt = `You are a powerful education engine. Help the student understand the material.
 
 OUTPUT CONSTRAINTS:
-- Respond in the same language as the user's question
-- Be concise but comprehensive
-- Structure your answer clearly (use bullet points or numbered lists when appropriate)
-- Cite specific parts of the content when relevant
-- If information is not in the provided content, acknowledge this politely and suggest what might help
-
-${languageInstruction}
+1. ${languageInstruction}
+2. Structure your answer using markdown.
+3. FACT-CHECKING: When making a specific claim based on the provided content, append a source tag like [[source:Snippet of text]] at the end of the sentence.
+4. If you use math, use LaTeX format like $x^2$.
 
 --- ORIGINAL CONTENT ---
-${contentText.substring(0, 5000)}
-
---- KEY POINTS ---
-${summaryContext}
-
---- KEY TERMS ---
-${termsContext}
+${contentText.substring(0, 10000)}
+${nodeContext}
 
 --- PREVIOUS CONVERSATION ---
 ${historyContext}
 
 --- USER'S QUESTION ---
-${question}
+${question}`;
 
-Provide a helpful, clear, and academically sound answer based on the content above. Structure your response for maximum clarity and learning value.`;
-
+    // GEMINI 1.5 FLASH STREAMING
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7 }
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048,
+          }
         })
       }
     );
 
-    const result = await response.json();
-    const answer = result?.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't generate a response. Please try again.";
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Gemini streaming error");
+    }
 
-    return new Response(JSON.stringify({ answer }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    // Proxy the stream back to the client
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+
+    (async () => {
+      const reader = response.body?.getReader();
+      if (!reader) {
+        await writer.close();
+        return;
+      }
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.substring(6));
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                  await writer.write(encoder.encode(text));
+                }
+              } catch (e) {
+                // Ignore parse errors for incomplete chunks
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Streaming error:", e);
+      } finally {
+        await writer.close();
+      }
+    })();
+
+    return new Response(readable, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive"
+      }
     });
   } catch (err) {
     const error = err as Error;

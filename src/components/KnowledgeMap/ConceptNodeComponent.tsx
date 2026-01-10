@@ -1,15 +1,15 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { 
-  Beaker, 
-  BookOpen, 
-  Calculator, 
-  Languages, 
-  Cpu, 
-  Brain, 
-  Palette, 
+import {
+  Beaker,
+  BookOpen,
+  Calculator,
+  Languages,
+  Cpu,
+  Brain,
+  Palette,
   Lightbulb,
-  type LucideIcon 
+  type LucideIcon
 } from 'lucide-react';
 import { NodeCategory, categoryColors } from './types';
 
@@ -17,6 +17,7 @@ interface ConceptNodeData {
   label: string;
   category: NodeCategory;
   isActive?: boolean;
+  isHighlighted?: boolean; // New
   description?: string;
   size?: number;
   centrality?: number;
@@ -40,25 +41,25 @@ const iconMap: Record<NodeCategory, LucideIcon> = {
 };
 
 const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
-  const { label, category, isActive, description, size = 40, centrality = 0, masteryStatus = 'unlocked', onClick } = data;
+  const { label, category, isActive, isHighlighted, description, size = 40, centrality = 0, masteryStatus = 'unlocked', onClick } = data;
   const colors = categoryColors[category] || categoryColors.general;
   const Icon = iconMap[category] || Lightbulb;
 
   // Determine visual state based on mastery
   const isLocked = masteryStatus === 'locked';
   const isMastered = masteryStatus === 'mastered';
-  
+
   // Adjust colors based on mastery status
-  const nodeBg = isLocked 
-    ? 'hsl(215, 25%, 30%)' 
-    : isMastered 
-    ? 'linear-gradient(135deg, hsl(45, 90%, 55%), hsl(35, 95%, 60%))'
-    : `linear-gradient(135deg, ${colors.bg}20, ${colors.bg}40)`;
-  const nodeBorder = isLocked 
+  const nodeBg = isLocked
+    ? 'hsl(215, 25%, 30%)'
+    : isMastered
+      ? 'linear-gradient(135deg, hsl(45, 90%, 55%), hsl(35, 95%, 60%))'
+      : `linear-gradient(135deg, ${colors.bg}20, ${colors.bg}40)`;
+  const nodeBorder = isLocked
     ? 'hsl(215, 25%, 40%)'
     : isMastered
-    ? 'hsl(45, 90%, 60%)'
-    : isActive ? colors.border : `${colors.border}60`;
+      ? 'hsl(45, 90%, 60%)'
+      : isActive ? colors.border : `${colors.border}60`;
   const nodeGlow = isMastered ? 'hsl(45, 90%, 60%)' : colors.glow;
 
   const handleClick = () => {
@@ -83,32 +84,37 @@ const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
           borderColor: nodeBorder,
           minWidth: `${Math.max(120, size)}px`,
           width: 'auto',
-          boxShadow: isActive 
+          boxShadow: isActive
             ? `0 8px 32px -4px ${nodeGlow}40, inset 0 1px 0 ${nodeBorder}30`
             : isMastered
-            ? `0 4px 16px -2px hsl(45 90% 55% / 0.4), inset 0 1px 0 hsl(45 90% 60% / 0.3)`
-            : `0 4px 16px -2px hsl(0 0% 0% / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.1)`,
+              ? `0 4px 16px -2px hsl(45 90% 55% / 0.4), inset 0 1px 0 hsl(45 90% 60% / 0.3)`
+              : `0 4px 16px -2px hsl(0 0% 0% / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.1)`,
           transform: isLocked ? 'scale(0.9)' : undefined,
         }}
         title={isLocked ? 'Complete related quiz to unlock' : isMastered ? 'Mastered!' : description || label}
       >
         {/* Active glow ring or pulse animation */}
-        {isActive && (
+        {(isActive || isHighlighted) && (
           <div
-            className="absolute inset-0 rounded-xl animate-pulse"
+            className={`absolute inset-0 rounded-xl ${isHighlighted ? 'animate-[pulse_1.5s_ease-in-out_infinite]' : 'animate-pulse'}`}
             style={{
-              background: `radial-gradient(ellipse at center, ${nodeGlow}15, transparent 70%)`,
+              background: isHighlighted
+                ? `radial-gradient(ellipse at center, hsl(var(--primary)) 30%, transparent 70%)`
+                : `radial-gradient(ellipse at center, ${nodeGlow}15, transparent 70%)`,
+              border: isHighlighted ? '2px solid hsl(var(--primary))' : 'none',
+              boxShadow: isHighlighted ? `0 0 30px hsl(var(--primary) / 0.8)` : 'none',
+              zIndex: isHighlighted ? 10 : 0
             }}
           />
         )}
-        
+
         {/* Mastery badge */}
         {isMastered && (
           <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 border-2 border-background flex items-center justify-center shadow-lg">
             <span className="text-xs">✓</span>
           </div>
         )}
-        
+
         {/* Locked indicator */}
         {isLocked && (
           <div className="absolute inset-0 rounded-xl bg-black/20 backdrop-blur-sm flex items-center justify-center">

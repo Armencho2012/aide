@@ -51,41 +51,47 @@ const createFlowNodes = (
   conceptNodes: ConceptNode[],
   edges: ConceptEdge[],
   activeNodeId?: string,
-  onNodeClick?: (label: string, description?: string, category?: string) => void
+  onNodeClick?: (label: string, description?: string, category?: string) => void,
+  highlightedNodes?: Set<string>
 ): Node[] => {
   const centerX = 400;
   const centerY = 300;
-  const radius = 200;
-  
+  const radius = 250; // Increased radius for better spread
+
   // Calculate degree centrality for node sizing
   const centrality = calculateDegreeCentrality(conceptNodes, edges);
   const maxCentrality = Math.max(...Object.values(centrality), 1);
-  
+
   // Sort nodes by centrality (most connected first) for better layout
   const sortedNodes = [...conceptNodes].sort((a, b) => (centrality[b.id] || 0) - (centrality[a.id] || 0));
-  
+
   return sortedNodes.map((node, index) => {
     // Arrange nodes in a circular pattern with center node as most connected
     const angle = (index / sortedNodes.length) * 2 * Math.PI - Math.PI / 2;
     const isCenter = index === 0;
     const nodeCentrality = centrality[node.id] || 0;
-    
-    // Scale node size based on degree centrality (min 40px, max 80px)
-    const nodeSize = 40 + (nodeCentrality / maxCentrality) * 40;
-    
+
+    // SCALE NODE RADIUS: Nodes with more connections appear larger
+    // Base size 60, scaling up based on centrality relative to max
+    const nodeSize = 65 + (nodeCentrality / maxCentrality) * 45;
+
+    const isHighlighted = highlightedNodes?.has(node.id);
+    const isActive = node.id === activeNodeId || node.isActive || isHighlighted;
+
     return {
       id: node.id,
       type: 'concept',
-      position: isCenter 
+      position: isCenter
         ? { x: centerX, y: centerY }
-        : { 
-            x: centerX + Math.cos(angle) * radius * (1 + (index % 2) * 0.3),
-            y: centerY + Math.sin(angle) * radius * (1 + (index % 2) * 0.3),
-          },
+        : {
+          x: centerX + Math.cos(angle) * radius * (1 + (index % 2) * 0.2),
+          y: centerY + Math.sin(angle) * radius * (1 + (index % 2) * 0.2),
+        },
       data: {
         label: node.label,
         category: node.category,
-        isActive: node.id === activeNodeId || node.isActive || highlightedNodes?.has(node.id),
+        isActive,
+        isHighlighted, // New prop for pulse effect
         onClick: onNodeClick,
         description: (node as any).description || '',
         size: nodeSize,
@@ -96,33 +102,38 @@ const createFlowNodes = (
   });
 };
 
-// Convert ConceptEdges to React Flow edges - handle new structure with label and strength
+// Convert ConceptEdges to React Flow edges - handle structure with label and strength
 const createFlowEdges = (conceptEdges: ConceptEdge[]): Edge[] => {
   return conceptEdges.map((edge) => {
     const strength = edge.strength ? (typeof edge.strength === 'string' ? parseInt(edge.strength) : edge.strength) : 5;
-    const opacity = 0.4 + (strength / 10) * 0.4; // Opacity based on strength (0.4 to 0.8)
-    const strokeWidth = 1 + (strength / 10) * 2; // Stroke width based on strength (1 to 3)
-    
+    const opacity = 0.5 + (strength / 10) * 0.3; // Opacity based on strength
+    const strokeWidth = 1.5 + (strength / 10) * 2.5; // Stroke width based on strength
+
     return {
       id: edge.id,
       source: edge.source,
       target: edge.target,
       type: 'smoothstep',
       animated: false,
+      // EDGE LABELS: Display relationship type directly on edges
       label: edge.label || '',
       labelStyle: {
-        fill: 'hsl(215, 25%, 75%)',
-        fontWeight: 500,
-        fontSize: 11,
+        fill: 'hsl(var(--foreground))',
+        fontWeight: 600,
+        fontSize: 10,
+        backgroundColor: 'hsl(var(--background) / 0.8)',
       },
+      labelBgPadding: [4, 2],
+      labelBgBorderRadius: 4,
+      labelBgStyle: { fill: 'hsl(var(--card))', fillOpacity: 0.8 },
       style: {
-        stroke: 'hsl(215, 25%, 45%)',
+        stroke: 'hsl(var(--primary) / 0.5)',
         strokeWidth,
         opacity,
       },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: 'hsl(215, 25%, 45%)',
+        color: 'hsl(var(--primary) / 0.5)',
         width: 15,
         height: 15,
       },
@@ -134,7 +145,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
   const { toast } = useToast();
   const flowRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   // Use provided data or fallback to mock data - handle new structure with description
   const conceptNodes: ConceptNode[] = useMemo(() => {
     if (data?.nodes && Array.isArray(data.nodes) && data.nodes.length > 0) {
@@ -150,7 +161,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
         } else if (['science', 'history', 'math', 'language', 'technology', 'philosophy', 'art', 'general'].includes(catStr)) {
           category = catStr as NodeCategory;
         }
-        
+
         return {
           id: node.id || String(Math.random()),
           label: node.label || '',
@@ -163,7 +174,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
     // Return initialNodes if no data provided
     return initialNodes;
   }, [data]);
-  
+
   const conceptEdges: ConceptEdge[] = useMemo(() => {
     if (data?.edges && Array.isArray(data.edges) && data.edges.length > 0) {
       return data.edges.map((edge, index) => ({
@@ -175,17 +186,17 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
       }));
     }
     // Return initial edges if we're using initial nodes
-    return initialEdges.filter(edge => 
-      conceptNodes.some(n => n.id === edge.source) && 
+    return initialEdges.filter(edge =>
+      conceptNodes.some(n => n.id === edge.source) &&
       conceptNodes.some(n => n.id === edge.target)
     );
   }, [data, conceptNodes]);
-  
+
   const flowNodes = useMemo(
-    () => createFlowNodes(conceptNodes, conceptEdges, activeNodeId, onNodeClick),
+    () => createFlowNodes(conceptNodes, conceptEdges, activeNodeId, onNodeClick, highlightedNodes),
     [conceptNodes, conceptEdges, activeNodeId, onNodeClick, highlightedNodes]
   );
-  
+
   const flowEdges = useMemo(
     () => createFlowEdges(conceptEdges),
     [conceptEdges]
@@ -255,11 +266,10 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
 
   return (
     <div
-      className={`relative transition-all duration-300 ${
-        isFullscreen
-          ? 'fixed inset-0 z-50'
-          : 'h-full w-full'
-      }`}
+      className={`relative transition-all duration-300 ${isFullscreen
+        ? 'fixed inset-0 z-50'
+        : 'h-full w-full'
+        }`}
     >
       {/* Dark glassmorphism background */}
       <div

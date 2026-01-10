@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Calendar, GraduationCap, Lightbulb, BookOpen } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Flashcards } from "./Flashcards";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -35,6 +35,13 @@ interface AnalysisData {
   quick_quiz_question?: QuizQuestion;
   quiz_questions?: QuizQuestion[];
   flashcards?: Flashcard[];
+  study_plan?: {
+    days: Array<{
+      day: number;
+      topics: string[];
+      tasks: string[];
+    }>;
+  };
 }
 
 interface AnalysisOutputProps {
@@ -53,7 +60,9 @@ const uiLabels = {
     retry: 'Try Again',
     correct: 'Correct!',
     incorrect: 'Incorrect',
-    explanation: 'Explanation'
+    explanation: 'Explanation',
+    studyPlan: '7-Day Study Plan',
+    day: 'Day'
   },
   ru: {
     summary: 'Ключевое Резюме',
@@ -65,7 +74,9 @@ const uiLabels = {
     retry: 'Попробовать снова',
     correct: 'Правильно!',
     incorrect: 'Неправильно',
-    explanation: 'Объяснение'
+    explanation: 'Объяснение',
+    studyPlan: '7-дневный план обучения',
+    day: 'День'
   },
   hy: {
     summary: 'Կարևոր Ամփոփում',
@@ -77,7 +88,9 @@ const uiLabels = {
     retry: 'Կրկին փորձել',
     correct: 'Ճիշտ է!',
     incorrect: 'Սխալ',
-    explanation: 'Բացատրություն'
+    explanation: 'Բացատրություն',
+    studyPlan: '7-օրյա ուսումնական պլան',
+    day: 'Օր'
   },
   ko: {
     summary: '주요 요약',
@@ -89,14 +102,16 @@ const uiLabels = {
     retry: '다시 시도',
     correct: '정답입니다!',
     incorrect: '오답입니다',
-    explanation: '설명'
+    explanation: '설명',
+    studyPlan: '7일 학습 계획',
+    day: '일차'
   }
 };
 
 export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
   const [questionStates, setQuestionStates] = useState<{ selectedAnswer: number | null; showResult: boolean; }[]>([]);
   const [numQuestions, setNumQuestions] = useState<number>(10);
-  const labels = uiLabels[language];
+  const labels = uiLabels[language] || uiLabels.en;
 
   const lessonSections = useMemo(() => (data.lesson_sections && data.lesson_sections.length > 0 ? data.lesson_sections : []), [data.lesson_sections]);
 
@@ -118,12 +133,10 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
     setQuestionStates(quizQuestions.map(() => ({ selectedAnswer: null, showResult: false })));
   }, [quizQuestions]);
 
-  // Initialize numQuestions based on available questions
   useEffect(() => {
     if (allQuizQuestions.length > 0) {
-      const maxQuestions = Math.min(12, allQuizQuestions.length);
-      const minQuestions = Math.max(5, Math.min(10, allQuizQuestions.length));
-      setNumQuestions(Math.max(5, Math.min(12, maxQuestions)));
+      const maxQuestions = Math.min(15, allQuizQuestions.length);
+      setNumQuestions(Math.max(5, Math.min(10, maxQuestions)));
     }
   }, [allQuizQuestions.length]);
 
@@ -147,16 +160,57 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
 
   return (
     <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4">
-      <Card className="border-primary/20 shadow-md">
+      {/* 7-Day Study Plan */}
+      {data.study_plan && data.study_plan.days && (
+        <Card className="border-primary/20 shadow-lg bg-gradient-to-br from-background to-primary/5">
+          <CardHeader>
+            <CardTitle className="text-xl text-primary flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              {labels.studyPlan}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {data.study_plan.days.map((day, idx) => (
+                <div key={idx} className="p-4 rounded-xl border bg-card/40 backdrop-blur-sm transition-all hover:shadow-md hover:border-primary/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-primary text-sm">{labels.day} {day.day}</span>
+                    <GraduationCap className="h-4 w-4 text-primary opacity-40" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Topics</p>
+                    <ul className="text-xs space-y-1.5">
+                      {day.topics.map((t, i) => (
+                        <li key={i} className="flex gap-2 items-start leading-tight">
+                          <span className="text-primary mt-1 opacity-50">•</span>
+                          <span>{t}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="border-primary/20 shadow-md overflow-hidden">
+        <div className="h-1.5 w-full bg-gradient-to-r from-primary via-accent to-primary"></div>
         <CardHeader>
-          <CardTitle className="text-primary">{labels.summary}</CardTitle>
+          <CardTitle className="text-primary flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            {labels.summary}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2">
+          <ul className="space-y-4">
             {data.three_bullet_summary.map((point, index) => (
-              <li key={index} className="flex gap-2">
-                <span className="text-primary font-bold">•</span>
-                <MarkdownRenderer content={point} />
+              <li key={index} className="flex gap-3 items-start group">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2.5 group-hover:scale-150 transition-transform"></div>
+                <div className="text-sm sm:text-base leading-relaxed">
+                  <MarkdownRenderer content={point} />
+                </div>
               </li>
             ))}
           </ul>
@@ -166,13 +220,16 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
       {lessonSections.length > 0 && (
         <Card className="border-secondary/20 shadow-md">
           <CardHeader>
-            <CardTitle className="text-secondary-foreground">{labels.sections}</CardTitle>
+            <CardTitle className="text-secondary-foreground flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-amber-500" />
+              {labels.sections}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             {lessonSections.map((section, index) => (
-              <div key={index} className="space-y-2">
-                <p className="font-semibold text-lg text-primary">{section.title}</p>
-                <div className="text-muted-foreground">
+              <div key={index} className="space-y-3 p-4 rounded-xl bg-muted/30 border border-transparent hover:border-border transition-colors">
+                <p className="font-bold text-lg text-primary">{section.title}</p>
+                <div className="text-muted-foreground text-sm leading-relaxed">
                   <MarkdownRenderer content={section.summary} />
                 </div>
               </div>
@@ -186,12 +243,17 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
           <CardTitle className="text-accent">{labels.terms}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             {data.key_terms.map((termItem, index) => {
-              // Handle both old format (string) and new format (object with term, definition, importance)
               const term = typeof termItem === 'string' ? termItem : termItem.term;
+              const def = typeof termItem === 'object' ? termItem.definition : undefined;
               return (
-                <Badge key={index} variant="secondary" className="px-4 py-2 text-base" title={typeof termItem === 'object' ? termItem.definition : undefined}>
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="px-4 py-2 text-sm bg-accent/5 hover:bg-accent/10 border-accent/20 transition-all cursor-help"
+                  title={def}
+                >
                   {term}
                 </Badge>
               );
@@ -210,12 +272,12 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
               {allQuizQuestions.length >= 5 && (
                 <div className="flex items-center gap-3 sm:gap-4 min-w-[200px] sm:min-w-[250px]">
                   <Label htmlFor="quiz-count" className="text-xs sm:text-sm whitespace-nowrap">
-                    Questions: {numQuestions}
+                    Count: {numQuestions}
                   </Label>
                   <Slider
                     id="quiz-count"
                     min={5}
-                    max={Math.min(12, allQuizQuestions.length)}
+                    max={Math.min(15, allQuizQuestions.length)}
                     step={1}
                     value={[numQuestions]}
                     onValueChange={(value) => setNumQuestions(value[0])}
@@ -233,68 +295,69 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
               const isCorrect = selectedAnswer !== null && selectedAnswer === question.correct_answer_index;
 
               return (
-                <div key={questionIndex} className="space-y-4 border rounded-lg p-4">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                <div key={questionIndex} className="space-y-4 border rounded-xl p-5 bg-card hover:shadow-sm transition-shadow">
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em]">
                       {labels.questionPrefix} {questionIndex + 1}
                     </span>
-                    <div className="font-medium text-lg leading-relaxed">
+                    <div className="font-semibold text-lg leading-tight">
                       <MarkdownRenderer content={question.question} />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {question.options.map((option, optionIndex) => (
                       <button
                         key={optionIndex}
                         onClick={() => !showResult && handleSelectOption(questionIndex, optionIndex)}
                         disabled={showResult}
-                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                          selectedAnswer === optionIndex
+                        className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 ${selectedAnswer === optionIndex
                             ? showResult
                               ? isCorrect
-                                ? 'border-green-500 bg-green-50 dark:bg-green-950'
-                                : 'border-red-500 bg-red-50 dark:bg-red-950'
-                              : 'border-primary bg-secondary'
-                            : 'border-border hover:border-primary/50'
-                        } ${showResult && optionIndex === question.correct_answer_index ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}`}
+                                ? 'border-green-500 bg-green-500/10'
+                                : 'border-red-500 bg-red-500/10'
+                              : 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                            : 'border-border hover:border-primary/30 hover:bg-muted/30'
+                          } ${showResult && optionIndex === question.correct_answer_index ? 'border-green-500 bg-green-500/5' : ''}`}
                       >
                         <div className="flex items-center justify-between">
-                          <MarkdownRenderer content={option} />
+                          <div className="text-sm">
+                            <MarkdownRenderer content={option} />
+                          </div>
                           {showResult && optionIndex === question.correct_answer_index && (
-                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 ml-2" />
                           )}
                           {showResult && selectedAnswer === optionIndex && !isCorrect && (
-                            <XCircle className="h-5 w-5 text-red-600" />
+                            <XCircle className="h-5 w-5 text-red-600 shrink-0 ml-2" />
                           )}
                         </div>
                       </button>
                     ))}
                   </div>
 
-                  <div className="flex flex-col gap-2 sm:flex-row">
+                  <div className="flex flex-col gap-3 sm:flex-row">
                     {!showResult ? (
                       <Button
                         onClick={() => handleCheckAnswer(questionIndex)}
                         disabled={selectedAnswer === null}
-                        className="w-full sm:flex-1"
+                        className="w-full sm:flex-1 shadow-md bg-primary hover:opacity-90"
                       >
                         {labels.checkAnswer}
                       </Button>
                     ) : (
                       <>
-                        <div className={`w-full sm:flex-1 p-4 rounded-lg ${isCorrect ? 'bg-green-50 dark:bg-green-950' : 'bg-red-50 dark:bg-red-950'}`}>
-                          <p className={`font-bold mb-2 ${isCorrect ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                        <div className={`w-full sm:flex-1 p-4 rounded-xl ${isCorrect ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+                          <p className={`font-black text-xs uppercase tracking-widest mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
                             {isCorrect ? labels.correct : labels.incorrect}
                           </p>
-                          <div className="text-sm leading-relaxed">
+                          <div className="text-sm leading-relaxed text-foreground/80">
                             <strong>{labels.explanation}:</strong> <MarkdownRenderer content={question.explanation} />
                           </div>
                         </div>
                         <Button
                           onClick={() => handleRetry(questionIndex)}
                           variant="outline"
-                          className="w-full sm:flex-[0.4]"
+                          className="w-full sm:flex-[0.4] border-dashed"
                         >
                           {labels.retry}
                         </Button>
@@ -308,7 +371,6 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
         </Card>
       )}
 
-      {/* Flashcards */}
       {data.flashcards && data.flashcards.length > 0 && (
         <Flashcards flashcards={data.flashcards} language={language} />
       )}

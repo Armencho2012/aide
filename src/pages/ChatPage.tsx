@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { KnowledgeMapPanel } from '@/components/KnowledgeMap';
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
@@ -75,6 +76,7 @@ const ChatPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showKnowledgeMap, setShowKnowledgeMap] = useState(false);
   const [activeNode, setActiveNode] = useState<string | undefined>();
+  const [activeNodeContext, setActiveNodeContext] = useState<{ description?: string; category?: string } | null>(null);
   const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set());
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -139,25 +141,62 @@ const ChatPage = () => {
     const userMessage = input.trim();
     const language = (content.language as Language) || 'en';
     const labels = uiLabels[language];
-    
+
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('content-chat', {
-        body: { 
-          question: userMessage, 
+      // Switch to native fetch for streaming support
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/content-chat`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: userMessage,
           contentText: content.original_text,
           analysisData: content.analysis_data,
           language,
-          chatHistory: messages
-        }
+          chatHistory: messages,
+          activeNodeContext
+        }),
       });
 
-      if (error) throw error;
+      if (!response.ok) throw new Error("Failed to get response");
+      if (!response.body) throw new Error("No response body");
 
-      setMessages(prev => [...prev, { role: 'assistant', content: data.answer || labels.error }]);
+      // Clear context
+      setActiveNodeContext(null);
+
+      // Create a temporary message for the assistant
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantAnswer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        assistantAnswer += chunk;
+
+        // Update the last message (the assistant one) with the accumulated text
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1] = {
+            role: 'assistant',
+            content: assistantAnswer
+          };
+          return newMessages;
+        });
+      }
     } catch (error) {
       console.error('Chat error:', error);
       const language = (content.language as Language) || 'en';
@@ -181,26 +220,26 @@ const ChatPage = () => {
       const latestMessage = messages[messages.length - 1];
       const nodes = content.analysis_data.knowledge_map.nodes;
       const mentionedNodes = new Set<string>();
-      
-      // Check if any node labels are mentioned in the latest message
+
+      // Visual Breadcrumbs: triggered as concept is mentioned
       nodes.forEach((node: any) => {
         const nodeLabel = node.label?.toLowerCase() || '';
         const messageContent = latestMessage.content.toLowerCase();
-        
-        // Simple mention detection (can be enhanced with better NLP)
-        if (nodeLabel && messageContent.includes(nodeLabel.toLowerCase())) {
+
+        // Improved mention detection: look for whole words or clear matches
+        const mentionRegex = new RegExp(`\\b${nodeLabel}\\b`, 'i');
+        if (nodeLabel && (messageContent.includes(nodeLabel) || mentionRegex.test(messageContent))) {
           mentionedNodes.add(node.id);
         }
       });
-      
+
       if (mentionedNodes.size > 0) {
         setHighlightedNodes(mentionedNodes);
-        setActiveNode(Array.from(mentionedNodes)[0]);
-        
-        // Clear highlight after animation
+
+        // Multi-node highlight support
         setTimeout(() => {
           setHighlightedNodes(new Set());
-        }, 2000);
+        }, 3000); // 3 seconds for a visible "pulse"
       }
     }
   }, [messages, content]);
@@ -208,13 +247,13 @@ const ChatPage = () => {
   const handleKnowledgeMapNodeClick = (question: string, description?: string, category?: string) => {
     // Contextual injection: pass description and category as metadata
     setInput(question);
-    
-    // Extract node name from the question for highlighting
+    setActiveNodeContext({ description, category });
+
+    // Extract node name for highlighting
     const match = question.match(/Tell me more about (.+?)(?:\s|\.|$)/);
     if (match) {
-      const nodeName = match[1].trim();
-      
-      // Find node ID from knowledge map
+      const nodeName = match[1].trim().replace(/[.,!?]$/, "");
+
       if (content?.analysis_data?.knowledge_map?.nodes) {
         const node = content.analysis_data.knowledge_map.nodes.find(
           (n: any) => n.label?.toLowerCase() === nodeName.toLowerCase()
@@ -309,13 +348,12 @@ const ChatPage = () => {
                           </div>
                         )}
                         <div
-                          className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-2.5 sm:p-3 ${
-                            message.role === 'user'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
-                          }`}
+                          className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-2.5 sm:p-3 ${message.role === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                            }`}
                         >
-                          <p className="text-xs sm:text-sm whitespace-pre-wrap">{message.content}</p>
+                          <MarkdownRenderer content={message.content} />
                         </div>
                         {message.role === 'user' && (
                           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
@@ -364,7 +402,7 @@ const ChatPage = () => {
           {/* Knowledge Map Panel - Desktop */}
           {showKnowledgeMap && (
             <div className="hidden lg:block w-[400px] xl:w-[500px] border-l border-border">
-              <KnowledgeMapPanel 
+              <KnowledgeMapPanel
                 onAskAboutNode={handleKnowledgeMapNodeClick}
                 activeNodeId={activeNode}
                 data={content?.analysis_data?.knowledge_map}
@@ -372,7 +410,7 @@ const ChatPage = () => {
               />
             </div>
           )}
-          
+
           {/* Knowledge Map Panel - Mobile (Sheet/Drawer) */}
           <div className="lg:hidden">
             <KnowledgeMapPanel

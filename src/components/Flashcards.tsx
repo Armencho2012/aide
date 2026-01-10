@@ -22,7 +22,11 @@ const uiLabels = {
     card: 'Card',
     of: 'of',
     restart: 'Restart',
-    noCards: 'No flashcards available'
+    noCards: 'No flashcards available',
+    easy: 'Easy',
+    medium: 'Medium',
+    hard: 'Hard',
+    confidence: 'Confidence Level'
   },
   ru: {
     title: 'Карточки',
@@ -30,7 +34,11 @@ const uiLabels = {
     card: 'Карточка',
     of: 'из',
     restart: 'Начать заново',
-    noCards: 'Карточки недоступны'
+    noCards: 'Карточки недоступны',
+    easy: 'Легко',
+    medium: 'Средне',
+    hard: 'Тяжело',
+    confidence: 'Уровень уверенности'
   },
   hy: {
     title: 'Քարտեր',
@@ -38,7 +46,11 @@ const uiLabels = {
     card: 'Քարտ',
     of: '-ից',
     restart: 'Վերագործարկել',
-    noCards: 'Քարտեր հասանելի չեն'
+    noCards: 'Քարտեր հասանելի չեն',
+    easy: 'Հեշտ',
+    medium: 'Միջին',
+    hard: 'Դժվար',
+    confidence: 'Վստահության մակարդակ'
   },
   ko: {
     title: '플래시카드',
@@ -46,14 +58,19 @@ const uiLabels = {
     card: '카드',
     of: '/',
     restart: '다시 시작',
-    noCards: '플래시카드가 없습니다'
+    noCards: '플래시카드가 없습니다',
+    easy: '쉬움',
+    medium: '보통',
+    hard: '어려움',
+    confidence: '자신감 수준'
   }
 };
 
 export const Flashcards = ({ flashcards, language }: FlashcardsProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const labels = uiLabels[language];
+  const [confidence, setConfidence] = useState<Record<number, number>>({});
+  const labels = uiLabels[language] || uiLabels.en;
 
   const validFlashcards = useMemo(() => {
     return flashcards.filter(card => card.front && card.back);
@@ -92,6 +109,10 @@ export const Flashcards = ({ flashcards, language }: FlashcardsProps) => {
     setIsFlipped(false);
   };
 
+  const handleConfidenceChange = (val: number) => {
+    setConfidence(prev => ({ ...prev, [currentIndex]: val }));
+  };
+
   return (
     <Card className="border-primary/20 shadow-md">
       <CardHeader>
@@ -106,68 +127,80 @@ export const Flashcards = ({ flashcards, language }: FlashcardsProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Flashcard */}
-        <div 
+        <div
           className="relative cursor-pointer perspective-1000"
           onClick={() => setIsFlipped(!isFlipped)}
         >
-          <div 
-            className={`relative w-full min-h-[300px] transition-transform duration-500 transform-style-preserve-3d ${
-              isFlipped ? 'rotate-y-180' : ''
-            }`}
+          <div
+            className={`relative w-full min-h-[350px] transition-all duration-500 transform-style-3d`}
             style={{
               transformStyle: 'preserve-3d',
               transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
             }}
           >
             {/* Front */}
-            <div 
-              className="absolute inset-0 backface-hidden bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20 rounded-xl p-6 flex flex-col items-center justify-center"
+            <div
+              className="absolute inset-0 backface-hidden bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20 rounded-xl p-6 flex flex-col items-center justify-center shadow-inner"
               style={{ backfaceVisibility: 'hidden' }}
             >
               <p className="text-lg font-medium text-center">{currentCard.front}</p>
-              <p className="text-xs text-muted-foreground mt-4">{labels.flip}</p>
+              <p className="text-xs text-muted-foreground mt-8 opacity-60">{labels.flip}</p>
             </div>
-            
+
             {/* Back */}
-            <div 
-              className="absolute inset-0 backface-hidden bg-gradient-to-br from-accent/5 to-primary/5 border-2 border-accent/20 rounded-xl p-6 flex flex-col items-center justify-center"
-              style={{ 
+            <div
+              className="absolute inset-0 backface-hidden bg-gradient-to-br from-accent/5 to-primary/5 border-2 border-accent/20 rounded-xl p-6 flex flex-col items-center justify-center shadow-inner"
+              style={{
                 backfaceVisibility: 'hidden',
                 transform: 'rotateY(180deg)'
               }}
             >
-              <p className="text-lg text-center">{currentCard.back}</p>
-              <p className="text-xs text-muted-foreground mt-4">{labels.flip}</p>
+              <p className="text-lg text-center mb-auto pt-8">{currentCard.back}</p>
+
+              <div className="w-full max-w-[240px] space-y-3 mt-auto pb-4" onClick={(e) => e.stopPropagation()}>
+                <p className="text-[10px] text-center text-muted-foreground font-bold uppercase tracking-widest">{labels.confidence}</p>
+                <div className="flex justify-between text-[10px] text-muted-foreground px-1 font-medium">
+                  <span className="text-red-500">{labels.hard}</span>
+                  <span className="text-amber-500">{labels.medium}</span>
+                  <span className="text-green-500">{labels.easy}</span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="3"
+                  step="1"
+                  value={confidence[currentIndex] || 2}
+                  onChange={(e) => handleConfidenceChange(parseInt(e.target.value))}
+                  className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mb-4 opacity-60">{labels.flip}</p>
             </div>
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <Button variant="outline" size="icon" onClick={handlePrev}>
+        <div className="flex items-center justify-between pt-2">
+          <Button variant="outline" size="icon" onClick={(e) => { e.stopPropagation(); handlePrev(); }}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          
-          <Button variant="ghost" size="sm" onClick={handleRestart}>
+
+          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleRestart(); }}>
             <RotateCcw className="h-4 w-4 mr-2" />
             {labels.restart}
           </Button>
-          
-          <Button variant="outline" size="icon" onClick={handleNext}>
+
+          <Button variant="outline" size="icon" onClick={(e) => { e.stopPropagation(); handleNext(); }}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Progress dots */}
-        <div className="flex justify-center gap-1 flex-wrap">
+        <div className="flex justify-center gap-1.5 flex-wrap">
           {validFlashcards.map((_, index) => (
             <button
               key={index}
-              onClick={() => { setCurrentIndex(index); setIsFlipped(false); }}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                index === currentIndex ? 'bg-primary' : 'bg-muted-foreground/30'
-              }`}
+              onClick={(e) => { e.stopPropagation(); setCurrentIndex(index); setIsFlipped(false); }}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentIndex ? 'bg-primary w-4' : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                }`}
             />
           ))}
         </div>
