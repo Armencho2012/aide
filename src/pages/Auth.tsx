@@ -191,7 +191,7 @@ const Auth = () => {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-2">
               Aide
             </h1>
-            <p className="text-muted-foreground">Sign in to start learning</p>
+            <p className="text-muted-foreground">Welcome back—let's keep learning</p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -338,7 +338,7 @@ const Auth = () => {
                   ) : "Create Account"}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
-                  Start with 5 free analyses per day!
+                  Get 5 free analyses every day—no credit card needed.
                 </p>
               </form>
             </TabsContent>

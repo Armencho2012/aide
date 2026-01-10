@@ -26,12 +26,12 @@ interface ContentItem {
 const uiLabels = {
   en: {
     title: 'Flashcards',
-    flip: 'Click to flip',
+    flip: 'Tap to reveal',
     card: 'Card',
     of: 'of',
-    restart: 'Restart',
-    noCards: 'No flashcards available',
-    backToContent: 'Back to Content'
+    restart: 'Start Over',
+    noCards: 'No flashcards for this content',
+    backToContent: 'Back'
   },
   ru: {
     title: 'Карточки',

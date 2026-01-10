@@ -12,41 +12,41 @@ type Language = 'en' | 'ru' | 'hy' | 'ko';
 
 const uiLabels = {
   en: {
-    backToDashboard: 'Back to Dashboard',
-    choosePlan: 'Choose Your Plan',
-    upgradeDescription: 'Upgrade to unlock unlimited AI-powered analysis',
+    backToDashboard: 'Back',
+    choosePlan: 'Pick Your Plan',
+    upgradeDescription: 'Unlock more analyses and premium features',
     free: 'Free',
     forever: 'Forever',
     pro: 'Pro',
-    perMonth: 'Per month',
-    recommended: 'Recommended',
-    currentPlan: 'Current Plan',
-    selectFree: 'Select Free',
-    upgradeToPro: 'Upgrade to Pro',
-    processing: 'Processing...',
-    featureComparison: 'Feature Comparison',
+    perMonth: '/month',
+    recommended: 'Most Popular',
+    currentPlan: 'Active',
+    selectFree: 'Stay Free',
+    upgradeToPro: 'Go Pro',
+    processing: 'Loading...',
+    featureComparison: 'Compare Plans',
     feature: 'Feature',
-    dailyAnalyses: 'Daily Analyses',
-    contentArchive: 'Content Archive',
+    dailyAnalyses: 'Analyses',
+    contentArchive: 'Archive',
     prioritySupport: 'Priority Support',
-    advancedFeatures: 'Advanced Features',
+    advancedFeatures: 'Advanced AI',
     unlimited: 'Unlimited',
-    success: 'Success!',
-    successDescription: 'Your subscription is now active. Please refresh to see your Pro status.',
+    success: 'You are Pro!',
+    successDescription: 'Your subscription is active. Refresh to see Pro features.',
     features: {
       free: [
         "5 analyses per day",
-        "Basic AI analysis",
+        "Core AI analysis",
         "Content archive",
-        "Basic support"
+        "Community support"
       ],
       pro: [
         "50 analyses per month",
-        "Advanced AI analysis",
-        "Priority processing",
-        "Unlimited content archive",
+        "Enhanced AI analysis",
+        "Faster processing",
+        "Unlimited archive",
         "Priority support",
-        "Early access to new features"
+        "Early feature access"
       ]
     }
   },

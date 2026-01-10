@@ -28,15 +28,15 @@ interface ContentItem {
 
 const uiLabels = {
   en: {
-    backToLibrary: 'Back to Library',
-    summary: 'Key Summary',
-    sections: 'Lesson Sections',
+    backToLibrary: 'Back',
+    summary: 'Quick Summary',
+    sections: 'Breakdown',
     terms: 'Key Terms',
     studyTools: 'Study Tools',
-    quiz: 'Practice Quiz',
+    quiz: 'Quiz',
     flashcards: 'Flashcards',
     chat: 'Ask AI',
-    exportPdf: 'Export as PDF',
+    exportPdf: 'Download PDF',
     exporting: 'Exporting...'
   },
   ru: {

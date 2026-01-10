@@ -14,11 +14,11 @@ import type { User } from "@supabase/supabase-js";
 const uiLabels = {
   en: {
     title: 'Aide',
-    subtitle: 'Structured AI Study Engine',
-    placeholder: 'Paste your text here to analyze...',
-    analyze: 'Analyze Text',
-    usage: 'Analyses Left Today:',
-    analyzing: 'Analyzing...',
+    subtitle: 'Your AI Study Companion',
+    placeholder: 'Paste any text here—articles, notes, lectures—and let AI do the rest...',
+    analyze: 'Analyze',
+    usage: 'Free Uses Left:',
+    analyzing: 'Generating...',
     signOut: 'Sign Out'
   },
   ru: {
@@ -313,11 +313,11 @@ const Dashboard = () => {
         <Card className="p-4 sm:p-6 mb-4 sm:mb-6 bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-primary/20">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div>
-              <h3 className="text-base sm:text-lg font-semibold mb-1">Free Tier Usage</h3>
+              <h3 className="text-base sm:text-lg font-semibold mb-1">Daily Credits</h3>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 {usageCount > 0 
-                  ? `${usageCount} of ${DAILY_LIMIT} free analyses remaining today`
-                  : 'You\'ve reached your daily limit'}
+                  ? `${usageCount} of ${DAILY_LIMIT} analyses available today`
+                  : 'Come back tomorrow or upgrade for more'}
               </p>
             </div>
             <div className="text-left sm:text-right">
@@ -333,9 +333,9 @@ const Dashboard = () => {
           <Card className="p-8 mb-8 bg-gradient-to-br from-destructive/10 to-destructive/5 border-2 border-destructive/20">
             <div className="text-center space-y-4">
               <Lock className="h-16 w-16 mx-auto text-destructive" />
-              <h2 className="text-2xl font-bold">Daily Limit Reached</h2>
+              <h2 className="text-2xl font-bold">Out of Credits</h2>
               <p className="text-muted-foreground">
-                You've used all {DAILY_LIMIT} free analyses for today. Upgrade to Pro for unlimited access!
+                You have used all {DAILY_LIMIT} free analyses today. Unlock more with Pro!
               </p>
               <Button asChild size="lg" className="bg-gradient-to-r from-primary to-accent">
                 <Link to="/billing">

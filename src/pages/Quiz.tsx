@@ -28,15 +28,15 @@ interface ContentItem {
 
 const uiLabels = {
   en: {
-    title: 'Practice Quiz',
-    questionPrefix: 'Question',
-    checkAnswer: 'Check Answer',
-    retry: 'Try Again',
+    title: 'Quiz',
+    questionPrefix: 'Q',
+    checkAnswer: 'Check',
+    retry: 'Retry',
     correct: 'Correct!',
-    incorrect: 'Incorrect',
-    explanation: 'Explanation',
-    noQuestions: 'No quiz questions available',
-    backToContent: 'Back to Content'
+    incorrect: 'Not quite',
+    explanation: 'Why',
+    noQuestions: 'No quiz questions for this content',
+    backToContent: 'Back'
   },
   ru: {
     title: 'Практический Тест',

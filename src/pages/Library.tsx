@@ -139,7 +139,7 @@ const Library = () => {
               </Link>
             </Button>
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              My Library
+              Your Study Archive
             </h1>
           </div>
         </div>
@@ -158,7 +158,7 @@ const Library = () => {
         {filteredContent.length === 0 ? (
           <Card className="p-6 sm:p-8 text-center">
             <p className="text-sm sm:text-base text-muted-foreground">
-              {searchQuery ? 'No content matches your search.' : 'No content saved yet. Analyze some text to get started!'}
+              {searchQuery ? 'Nothing matches your search.' : 'Your archive is empty. Analyze some text to add your first entry!'}
             </p>
           </Card>
         ) : (
