@@ -20,7 +20,7 @@ interface AnalysisResult {
   flashcards?: any[];
   quick_quiz_question?: any;
   knowledge_map?: any;
-  study_plan?: any; // New for Course Mode
+  study_plan?: any;
   error?: string;
 }
 
@@ -35,17 +35,44 @@ Deno.serve(async (req: Request) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    // Client for user auth
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
+    // Admin client for logging usage (bypasses RLS)
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Invalid token");
+
+    // Check daily usage limit BEFORE processing
+    const { data: usageCount, error: usageError } = await supabase.rpc('get_daily_usage_count', {
+      p_user_id: user.id
+    });
+
+    if (usageError) {
+      console.error('Error checking usage:', usageError);
+    }
+
+    const currentUsage = usageCount || 0;
+    if (currentUsage >= DAILY_LIMIT_FREE) {
+      return new Response(JSON.stringify({ 
+        error: `Daily limit of ${DAILY_LIMIT_FREE} analyses reached. Please upgrade for unlimited access.` 
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
 
     const body = await req.json().catch(() => ({}));
     const { text, media, isCourse, contextDocuments } = body;
 
-    // isCourse: boolean, contextDocuments: string[] (array of previous texts)
+    if (!text?.trim() && !media) {
+      throw new Error("No content provided for analysis");
+    }
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) throw new Error("API key not configured");
@@ -88,11 +115,13 @@ You are analyzing a set of related documents.
     if (media) {
       parts.unshift({
         inlineData: {
-          data: media.data, // base64
+          data: media.data,
           mimeType: media.mimeType
         }
       });
     }
+
+    console.log(`Processing analysis for user ${user.id}, current usage: ${currentUsage}`);
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
@@ -112,12 +141,32 @@ You are analyzing a set of related documents.
 
     const result = await response.json();
     const rawContent = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawContent) throw new Error("Failed to generate analysis");
+    if (!rawContent) {
+      console.error('Gemini API response:', JSON.stringify(result));
+      throw new Error("Failed to generate analysis");
+    }
 
     const analysis = JSON.parse(rawContent);
 
-    // Filter flashcards for free tier if needed (simplified)
-    if (analysis.flashcards) analysis.flashcards = analysis.flashcards.slice(0, MAX_FLASHCARDS_FREE);
+    // Filter flashcards for free tier
+    if (analysis.flashcards) {
+      analysis.flashcards = analysis.flashcards.slice(0, MAX_FLASHCARDS_FREE);
+    }
+
+    // Log usage with admin client (bypasses RLS)
+    const { error: logError } = await supabaseAdmin
+      .from('usage_logs')
+      .insert({
+        user_id: user.id,
+        action_type: 'text_analysis'
+      });
+
+    if (logError) {
+      console.error('Error logging usage:', logError);
+      // Don't fail the request, just log the error
+    } else {
+      console.log(`Usage logged for user ${user.id}, new count: ${currentUsage + 1}`);
+    }
 
     return new Response(JSON.stringify(analysis), {
       status: 200,
@@ -125,6 +174,7 @@ You are analyzing a set of related documents.
     });
 
   } catch (err) {
+    console.error('Analysis error:', err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }

@@ -1,10 +1,13 @@
 project_id = "obiiwmdcykfredsbhmoc"
 
 [functions.analyze-text]
-verify_jwt = true
+verify_jwt = false
 
 [functions.delete-account]
-verify_jwt = true
+verify_jwt = false
 
 [functions.content-chat]
-verify_jwt = true
+verify_jwt = false
+
+[functions.gumroad-webhook]
+verify_jwt = false
