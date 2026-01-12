@@ -6,7 +6,10 @@ export type NodeCategory =
   | 'technology' 
   | 'philosophy' 
   | 'art' 
-  | 'general';
+  | 'general'
+  | 'concept'
+  | 'main'
+  | 'section';
 
 export interface ConceptNode {
   id: string;
@@ -70,6 +73,21 @@ export const categoryColors: Record<NodeCategory, { bg: string; border: string; 
     border: 'hsl(215, 25%, 55%)', 
     glow: 'hsl(215, 25%, 45%)' 
   },
+  concept: { 
+    bg: 'hsl(260, 70%, 50%)', 
+    border: 'hsl(260, 70%, 60%)', 
+    glow: 'hsl(260, 70%, 50%)' 
+  },
+  main: { 
+    bg: 'hsl(45, 90%, 50%)', 
+    border: 'hsl(45, 90%, 60%)', 
+    glow: 'hsl(45, 90%, 50%)' 
+  },
+  section: { 
+    bg: 'hsl(180, 60%, 45%)', 
+    border: 'hsl(180, 60%, 55%)', 
+    glow: 'hsl(180, 60%, 45%)' 
+  },
 };
 
 export const categoryIcons: Record<NodeCategory, string> = {
@@ -81,4 +99,7 @@ export const categoryIcons: Record<NodeCategory, string> = {
   philosophy: 'Brain',
   art: 'Palette',
   general: 'Lightbulb',
+  concept: 'Circle',
+  main: 'Star',
+  section: 'FileText',
 };

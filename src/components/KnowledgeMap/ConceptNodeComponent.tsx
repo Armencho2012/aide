@@ -9,6 +9,9 @@ import {
   Brain,
   Palette,
   Lightbulb,
+  Circle,
+  Star,
+  FileText,
   type LucideIcon
 } from 'lucide-react';
 import { NodeCategory, categoryColors } from './types';
@@ -17,7 +20,7 @@ interface ConceptNodeData {
   label: string;
   category: NodeCategory;
   isActive?: boolean;
-  isHighlighted?: boolean; // New
+  isHighlighted?: boolean;
   description?: string;
   size?: number;
   centrality?: number;
@@ -38,6 +41,9 @@ const iconMap: Record<NodeCategory, LucideIcon> = {
   philosophy: Brain,
   art: Palette,
   general: Lightbulb,
+  concept: Circle,
+  main: Star,
+  section: FileText,
 };
 
 const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {

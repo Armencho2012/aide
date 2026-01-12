@@ -26,6 +26,8 @@ interface ContentItem {
   user_id: string;
 }
 
+const STORAGE_KEY = 'aide_user_content';
+
 const uiLabels = {
   en: {
     backToLibrary: 'Back to Library',
@@ -52,16 +54,16 @@ const uiLabels = {
     exporting: 'Экспортируем...'
   },
   hy: {
-    backToLibrary: 'Հետ դեպի գրադարան',
-    summary: 'Հիմնական ամփոփում',
-    sections: 'Դասի բաժիններ',
-    terms: 'Հիմնական տերմիններ',
-    studyTools: 'Ուսումնական գործիքներ',
-    quiz: 'Պրակտիկայի քվիզ',
-    flashcards: 'Քարտեր',
-    chat: 'Հարցրեք ԱԲ-ին',
-    exportPdf: 'Արտահանել PDF',
-    exporting: 'Արտահանվում է...'
+    backToLibrary: 'Հdelays դdelays delays',
+    summary: 'Հdelays delays',
+    sections: 'Delays delays',
+    terms: 'Հdelays delays',
+    studyTools: 'Delays delays',
+    quiz: 'Delays delays',
+    flashcards: 'Delays',
+    chat: 'Delays Delays-ին',
+    exportPdf: 'Delays PDF',
+    exporting: 'Delays...'
   },
   ko: {
     backToLibrary: '라이브러리로 돌아가기',
@@ -93,7 +95,7 @@ const ContentDetail = () => {
         return;
       }
       setUser(session.user);
-      if (id) fetchContent(id);
+      if (id) fetchContent(id, session.user.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -107,17 +109,19 @@ const ContentDetail = () => {
     return () => subscription.unsubscribe();
   }, [navigate, id]);
 
-  const fetchContent = async (contentId: string) => {
+  const fetchContent = (contentId: string, userId: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('user_content')
-        .select('*')
-        .eq('id', contentId)
-        .single();
-
-      if (error) throw error;
-      setContent(data as ContentItem);
+      const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+      const items: ContentItem[] = stored ? JSON.parse(stored) : [];
+      const item = items.find(i => i.id === contentId);
+      
+      if (!item) {
+        navigate('/library');
+        return;
+      }
+      
+      setContent(item);
     } catch (error) {
       console.error('Error fetching content:', error);
       navigate('/library');
@@ -137,14 +141,12 @@ const ContentDetail = () => {
       const maxWidth = pageWidth - 2 * margin;
       let y = 20;
 
-      // Title
       doc.setFontSize(20);
       doc.setFont('helvetica', 'bold');
       const title = content.title || 'Analysis';
       doc.text(title, margin, y);
       y += 15;
 
-      // Summary
       if (content.analysis_data.three_bullet_summary) {
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
@@ -165,7 +167,6 @@ const ContentDetail = () => {
         y += 10;
       }
 
-      // Key Terms
       if (content.analysis_data.key_terms && content.analysis_data.key_terms.length > 0) {
         if (y > 250) {
           doc.addPage();
@@ -184,7 +185,6 @@ const ContentDetail = () => {
         y += termsLines.length * 6 + 10;
       }
 
-      // Lesson Sections
       if (content.analysis_data.lesson_sections && content.analysis_data.lesson_sections.length > 0) {
         if (y > 250) {
           doc.addPage();
@@ -218,7 +218,6 @@ const ContentDetail = () => {
         });
       }
 
-      // Quiz Questions
       if (content.analysis_data.quiz_questions && content.analysis_data.quiz_questions.length > 0) {
         doc.addPage();
         y = 20;
@@ -249,7 +248,6 @@ const ContentDetail = () => {
         });
       }
 
-      // Flashcards
       if (content.analysis_data.flashcards && content.analysis_data.flashcards.length > 0) {
         doc.addPage();
         y = 20;
@@ -324,7 +322,6 @@ const ContentDetail = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       <div className="container max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             <Button variant="ghost" asChild size="sm" className="w-fit">
@@ -347,7 +344,6 @@ const ContentDetail = () => {
           </Button>
         </div>
 
-        {/* Study Tools Navigation */}
         <Card className="mb-6 sm:mb-8 border-primary/20 shadow-md">
           <CardHeader className="pb-3 sm:pb-4">
             <CardTitle className="text-base sm:text-lg">{labels.studyTools}</CardTitle>
@@ -376,7 +372,6 @@ const ContentDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Summary */}
         {analysisData?.three_bullet_summary && (
           <Card className="mb-4 sm:mb-6 border-primary/20 shadow-md">
             <CardHeader className="pb-3 sm:pb-4">
@@ -395,7 +390,6 @@ const ContentDetail = () => {
           </Card>
         )}
 
-        {/* Lesson Sections */}
         {analysisData?.lesson_sections && analysisData.lesson_sections.length > 0 && (
           <Card className="mb-4 sm:mb-6 border-secondary/20 shadow-md">
             <CardHeader className="pb-3 sm:pb-4">
@@ -412,7 +406,6 @@ const ContentDetail = () => {
           </Card>
         )}
 
-        {/* Key Terms */}
         {analysisData?.key_terms && analysisData.key_terms.length > 0 && (
           <Card className="border-accent/20 shadow-md">
             <CardHeader className="pb-3 sm:pb-4">

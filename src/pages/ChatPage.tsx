@@ -27,6 +27,8 @@ interface ContentItem {
   user_id: string;
 }
 
+const STORAGE_KEY = 'aide_user_content';
+
 const uiLabels = {
   en: {
     title: 'AI Chat',
@@ -47,13 +49,13 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'ԱԲ Զրույց',
-    placeholder: 'Հարց տվեք այս նյութի մասին...',
-    send: 'Ուղարկել',
-    thinking: 'Մտածում եմ...',
-    error: 'Չհաջողվեց պատասխան ստանալ: Խնդրում ենք կրկին փորձել:',
-    welcome: 'Բարև: Ես կարող եմ պատասխանել այս բովանդակության վերաբերյալ հարցերին: Ի՞նչ կցանկանայիք իմանալ:',
-    backToContent: 'Հետ դեպի բովանդակություն'
+    title: 'ԱԲ Զdelays',
+    placeholder: 'Հdelays տdelays այdelays delays...',
+    send: ' Delays',
+    thinking: 'Delays եdelays...',
+    error: 'Չdelays delays delays: Delays եdelays delays delays:',
+    welcome: 'Delays: Delays delays delays delays delays delays delays delays: Delays delays delays:',
+    backToContent: 'Delays delays delays'
   },
   ko: {
     title: 'AI 채팅',
@@ -88,7 +90,7 @@ const ChatPage = () => {
         return;
       }
       setUser(session.user);
-      if (id) fetchContent(id);
+      if (id) fetchContent(id, session.user.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -102,17 +104,19 @@ const ChatPage = () => {
     return () => subscription.unsubscribe();
   }, [navigate, id]);
 
-  const fetchContent = async (contentId: string) => {
+  const fetchContent = (contentId: string, userId: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('user_content')
-        .select('*')
-        .eq('id', contentId)
-        .single();
-
-      if (error) throw error;
-      setContent(data as ContentItem);
+      const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+      const items: ContentItem[] = stored ? JSON.parse(stored) : [];
+      const item = items.find(i => i.id === contentId);
+      
+      if (!item) {
+        navigate('/library');
+        return;
+      }
+      
+      setContent(item);
     } catch (error) {
       console.error('Error fetching content:', error);
       navigate('/library');
@@ -147,7 +151,6 @@ const ChatPage = () => {
     setIsLoading(true);
 
     try {
-      // Switch to native fetch for streaming support
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("No session");
 
@@ -170,10 +173,7 @@ const ChatPage = () => {
       if (!response.ok) throw new Error("Failed to get response");
       if (!response.body) throw new Error("No response body");
 
-      // Clear context
       setActiveNodeContext(null);
-
-      // Create a temporary message for the assistant
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
       const reader = response.body.getReader();
@@ -187,7 +187,6 @@ const ChatPage = () => {
         const chunk = decoder.decode(value, { stream: true });
         assistantAnswer += chunk;
 
-        // Update the last message (the assistant one) with the accumulated text
         setMessages(prev => {
           const newMessages = [...prev];
           newMessages[newMessages.length - 1] = {
@@ -214,19 +213,16 @@ const ChatPage = () => {
     }
   };
 
-  // Visual breadcrumbs: pulse/highlight map nodes when mentioned in chat
   useEffect(() => {
     if (messages.length > 0 && content?.analysis_data?.knowledge_map?.nodes) {
       const latestMessage = messages[messages.length - 1];
       const nodes = content.analysis_data.knowledge_map.nodes;
       const mentionedNodes = new Set<string>();
 
-      // Visual Breadcrumbs: triggered as concept is mentioned
       nodes.forEach((node: any) => {
         const nodeLabel = node.label?.toLowerCase() || '';
         const messageContent = latestMessage.content.toLowerCase();
 
-        // Improved mention detection: look for whole words or clear matches
         const mentionRegex = new RegExp(`\\b${nodeLabel}\\b`, 'i');
         if (nodeLabel && (messageContent.includes(nodeLabel) || mentionRegex.test(messageContent))) {
           mentionedNodes.add(node.id);
@@ -235,21 +231,17 @@ const ChatPage = () => {
 
       if (mentionedNodes.size > 0) {
         setHighlightedNodes(mentionedNodes);
-
-        // Multi-node highlight support
         setTimeout(() => {
           setHighlightedNodes(new Set());
-        }, 3000); // 3 seconds for a visible "pulse"
+        }, 3000);
       }
     }
   }, [messages, content]);
 
   const handleKnowledgeMapNodeClick = (question: string, description?: string, category?: string) => {
-    // Contextual injection: pass description and category as metadata
     setInput(question);
     setActiveNodeContext({ description, category });
 
-    // Extract node name for highlighting
     const match = question.match(/Tell me more about (.+?)(?:\s|\.|$)/);
     if (match) {
       const nodeName = match[1].trim().replace(/[.,!?]$/, "");
@@ -295,7 +287,6 @@ const ChatPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       <div className="h-screen flex flex-col">
-        {/* Header */}
         <div className="flex flex-col gap-3 px-3 sm:px-4 py-3 sm:py-4 border-b border-border">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
@@ -324,9 +315,7 @@ const ChatPage = () => {
           </div>
         </div>
 
-        {/* Main content area */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Chat section */}
           <div className="flex-1 flex flex-col p-2 sm:p-4 min-w-0">
             <Card className="flex-1 flex flex-col overflow-hidden">
               <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
@@ -399,7 +388,6 @@ const ChatPage = () => {
             </Card>
           </div>
 
-          {/* Knowledge Map Panel - Desktop */}
           {showKnowledgeMap && (
             <div className="hidden lg:block w-[400px] xl:w-[500px] border-l border-border">
               <KnowledgeMapPanel
@@ -411,7 +399,6 @@ const ChatPage = () => {
             </div>
           )}
 
-          {/* Knowledge Map Panel - Mobile (Sheet/Drawer) */}
           <div className="lg:hidden">
             <KnowledgeMapPanel
               onAskAboutNode={handleKnowledgeMapNodeClick}

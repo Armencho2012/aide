@@ -229,9 +229,10 @@ You are analyzing a set of related documents.
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('Analysis error:', err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });

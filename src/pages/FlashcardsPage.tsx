@@ -23,6 +23,8 @@ interface ContentItem {
   user_id: string;
 }
 
+const STORAGE_KEY = 'aide_user_content';
+
 const uiLabels = {
   en: {
     title: 'Flashcards',
@@ -43,13 +45,13 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'Քարտեր',
-    flip: 'Սեղմեք շրջելու համար',
-    card: 'Քարտ',
-    of: '-ից',
-    restart: 'Վերագործարկել',
-    noCards: 'Քարտեր հասանելի չեն',
-    backToContent: 'Հետ դեպի բովանդակություն'
+    title: 'Delays',
+    flip: 'Delays delays delays',
+    card: 'Delays',
+    of: '- delays',
+    restart: 'Delays',
+    noCards: 'Delays delays delays',
+    backToContent: 'Delays delays delays'
   },
   ko: {
     title: '플래시카드',
@@ -78,7 +80,7 @@ const FlashcardsPage = () => {
         return;
       }
       setUser(session.user);
-      if (id) fetchContent(id);
+      if (id) fetchContent(id, session.user.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -92,17 +94,19 @@ const FlashcardsPage = () => {
     return () => subscription.unsubscribe();
   }, [navigate, id]);
 
-  const fetchContent = async (contentId: string) => {
+  const fetchContent = (contentId: string, userId: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('user_content')
-        .select('*')
-        .eq('id', contentId)
-        .single();
-
-      if (error) throw error;
-      setContent(data as ContentItem);
+      const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+      const items: ContentItem[] = stored ? JSON.parse(stored) : [];
+      const item = items.find(i => i.id === contentId);
+      
+      if (!item) {
+        navigate('/library');
+        return;
+      }
+      
+      setContent(item);
     } catch (error) {
       console.error('Error fetching content:', error);
       navigate('/library');
@@ -193,7 +197,6 @@ const FlashcardsPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 sm:space-y-6">
-              {/* Flashcard - Larger */}
               <div 
                 className="relative cursor-pointer perspective-1000"
                 onClick={() => setIsFlipped(!isFlipped)}
@@ -207,7 +210,6 @@ const FlashcardsPage = () => {
                     transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
                   }}
                 >
-                  {/* Front */}
                   <div 
                     className="absolute inset-0 backface-hidden bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20 rounded-xl p-4 sm:p-8 flex flex-col items-center justify-center"
                     style={{ backfaceVisibility: 'hidden' }}
@@ -216,7 +218,6 @@ const FlashcardsPage = () => {
                     <p className="text-xs sm:text-sm text-muted-foreground mt-4 sm:mt-6">{labels.flip}</p>
                   </div>
                   
-                  {/* Back */}
                   <div 
                     className="absolute inset-0 backface-hidden bg-gradient-to-br from-accent/5 to-primary/5 border-2 border-accent/20 rounded-xl p-4 sm:p-8 flex flex-col items-center justify-center"
                     style={{ 
@@ -230,7 +231,6 @@ const FlashcardsPage = () => {
                 </div>
               </div>
 
-              {/* Navigation */}
               <div className="flex items-center justify-between">
                 <Button variant="outline" size="default" onClick={handlePrev} className="h-10 w-10 sm:h-12 sm:w-auto sm:px-4">
                   <ChevronLeft className="h-5 w-5" />
@@ -246,7 +246,6 @@ const FlashcardsPage = () => {
                 </Button>
               </div>
 
-              {/* Progress dots */}
               <div className="flex justify-center gap-1.5 sm:gap-2 flex-wrap">
                 {flashcards.map((_, index) => (
                   <button

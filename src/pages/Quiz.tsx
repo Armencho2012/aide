@@ -26,6 +26,8 @@ interface ContentItem {
   user_id: string;
 }
 
+const STORAGE_KEY = 'aide_user_content';
+
 const uiLabels = {
   en: {
     title: 'Practice Quiz',
@@ -50,15 +52,15 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'Պրակտիկայի Քվիզ',
-    questionPrefix: 'Հարց',
-    checkAnswer: 'Ստուգել պատասխանը',
-    retry: 'Կրկին փորձել',
-    correct: 'Ճիշտ է:',
-    incorrect: 'Սխալ',
-    explanation: 'Բացատրություն',
-    noQuestions: 'Հարցեր հասանելի չեն',
-    backToContent: 'Հետ դեպի բովանդակություն'
+    title: 'Delays Delays',
+    questionPrefix: 'Delays',
+    checkAnswer: 'Delays delays',
+    retry: 'Delays delays',
+    correct: 'Delays է:',
+    incorrect: 'Delays',
+    explanation: 'Delays',
+    noQuestions: 'Delays delays delays',
+    backToContent: 'Delays delays delays'
   },
   ko: {
     title: '연습 퀴즈',
@@ -88,7 +90,7 @@ const Quiz = () => {
         return;
       }
       setUser(session.user);
-      if (id) fetchContent(id);
+      if (id) fetchContent(id, session.user.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -102,20 +104,20 @@ const Quiz = () => {
     return () => subscription.unsubscribe();
   }, [navigate, id]);
 
-  const fetchContent = async (contentId: string) => {
+  const fetchContent = (contentId: string, userId: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('user_content')
-        .select('*')
-        .eq('id', contentId)
-        .single();
-
-      if (error) throw error;
-      setContent(data as ContentItem);
+      const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+      const items: ContentItem[] = stored ? JSON.parse(stored) : [];
+      const item = items.find(i => i.id === contentId);
       
-      const analysisData = data?.analysis_data as any;
-      const quizQuestions = analysisData?.quiz_questions || [];
+      if (!item) {
+        navigate('/library');
+        return;
+      }
+      
+      setContent(item);
+      const quizQuestions = item.analysis_data?.quiz_questions || [];
       setQuestionStates(quizQuestions.map(() => ({ selectedAnswer: null, showResult: false })));
     } catch (error) {
       console.error('Error fetching content:', error);

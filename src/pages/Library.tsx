@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Search, Trash2, Eye, Calendar } from 'lucide-react';
+import { ArrowLeft, Search, Trash2, Calendar } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
@@ -29,6 +29,8 @@ interface ContentItem {
   user_id: string;
 }
 
+const STORAGE_KEY = 'aide_user_content';
+
 const Library = () => {
   const [user, setUser] = useState<User | null>(null);
   const [content, setContent] = useState<ContentItem[]>([]);
@@ -38,17 +40,14 @@ const Library = () => {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const fetchContent = useCallback(async (userId: string) => {
+  const fetchContent = useCallback((userId: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('user_content')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setContent((data as ContentItem[]) || []);
+      const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+      const items: ContentItem[] = stored ? JSON.parse(stored) : [];
+      setContent(items.sort((a, b) => 
+        new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      ));
     } catch (error) {
       console.error('Error fetching content:', error);
       toast({
@@ -82,15 +81,15 @@ const Library = () => {
     return () => subscription.unsubscribe();
   }, [navigate, fetchContent]);
 
-  const handleDelete = useCallback(async (id: string) => {
+  const handleDelete = useCallback((id: string) => {
+    if (!user) return;
+    
     try {
-      const { error } = await supabase
-        .from('user_content')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
+      const stored = localStorage.getItem(`${STORAGE_KEY}_${user.id}`);
+      const items: ContentItem[] = stored ? JSON.parse(stored) : [];
+      const updatedItems = items.filter(item => item.id !== id);
+      localStorage.setItem(`${STORAGE_KEY}_${user.id}`, JSON.stringify(updatedItems));
+      
       setContent(prev => prev.filter(item => item.id !== id));
       toast({ title: 'Deleted', description: 'Content removed from library' });
     } catch (error) {
@@ -104,7 +103,7 @@ const Library = () => {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
     }
-  }, []);
+  }, [user]);
 
   const filteredContent = useMemo(() => {
     if (!searchQuery.trim()) return content;

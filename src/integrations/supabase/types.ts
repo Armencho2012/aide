@@ -62,36 +62,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_content: {
-        Row: {
-          analysis_data: Json | null
-          created_at: string | null
-          id: string
-          language: string | null
-          original_text: string
-          title: string | null
-          user_id: string
-        }
-        Insert: {
-          analysis_data?: Json | null
-          created_at?: string | null
-          id?: string
-          language?: string | null
-          original_text: string
-          title?: string | null
-          user_id: string
-        }
-        Update: {
-          analysis_data?: Json | null
-          created_at?: string | null
-          id?: string
-          language?: string | null
-          original_text?: string
-          title?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
