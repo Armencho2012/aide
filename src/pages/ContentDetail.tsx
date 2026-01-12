@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Loader2, FileText, Layers, Bot, Download } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useContent } from '@/hooks/useContent';
+import { ContentDetailSkeleton } from '@/components/ui/skeleton-loader';
 import jsPDF from 'jspdf';
-import type { User } from '@supabase/supabase-js';
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
 
@@ -15,18 +15,6 @@ interface LessonSection {
   title: string;
   summary: string;
 }
-
-interface ContentItem {
-  id: string;
-  title: string | null;
-  original_text: string;
-  analysis_data: any;
-  language: string | null;
-  created_at: string | null;
-  user_id: string;
-}
-
-const STORAGE_KEY = 'aide_user_content';
 
 const uiLabels = {
   en: {
@@ -39,7 +27,8 @@ const uiLabels = {
     flashcards: 'Flashcards',
     chat: 'Ask AI',
     exportPdf: 'Export as PDF',
-    exporting: 'Exporting...'
+    exporting: 'Exporting...',
+    notFound: 'Content not found'
   },
   ru: {
     backToLibrary: 'Назад в библиотеку',
@@ -51,19 +40,21 @@ const uiLabels = {
     flashcards: 'Карточки',
     chat: 'Спросить ИИ',
     exportPdf: 'Экспорт в PDF',
-    exporting: 'Экспортируем...'
+    exporting: 'Экспортируем...',
+    notFound: 'Контент не найден'
   },
   hy: {
-    backToLibrary: 'Հdelays դdelays delays',
-    summary: 'Հdelays delays',
-    sections: 'Delays delays',
+    backToLibrary: 'Վdelays գdelays',
+    summary: 'Կdelays delays',
+    sections: 'Դdelays delays',
     terms: 'Հdelays delays',
-    studyTools: 'Delays delays',
+    studyTools: ' Delays delays',
     quiz: 'Delays delays',
     flashcards: 'Delays',
-    chat: 'Delays Delays-ին',
+    chat: 'Delays AI-ին',
     exportPdf: 'Delays PDF',
-    exporting: 'Delays...'
+    exporting: 'Delays...',
+    notFound: 'Delays delays delays'
   },
   ko: {
     backToLibrary: '라이브러리로 돌아가기',
@@ -75,60 +66,16 @@ const uiLabels = {
     flashcards: '플래시카드',
     chat: 'AI에게 질문',
     exportPdf: 'PDF로 내보내기',
-    exporting: '내보내는 중...'
+    exporting: '내보내는 중...',
+    notFound: '콘텐츠를 찾을 수 없습니다'
   }
 };
 
 const ContentDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [user, setUser] = useState<User | null>(null);
-  const [content, setContent] = useState<ContentItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { content, isLoading, isAuthChecked } = useContent({ id });
   const [exporting, setExporting] = useState(false);
-  const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      setUser(session.user);
-      if (id) fetchContent(id, session.user.id);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      setUser(session.user);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, id]);
-
-  const fetchContent = (contentId: string, userId: string) => {
-    try {
-      setLoading(true);
-      const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
-      const items: ContentItem[] = stored ? JSON.parse(stored) : [];
-      const item = items.find(i => i.id === contentId);
-      
-      if (!item) {
-        navigate('/library');
-        return;
-      }
-      
-      setContent(item);
-    } catch (error) {
-      console.error('Error fetching content:', error);
-      navigate('/library');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleExportPdf = async () => {
     if (!content || !content.analysis_data) return;
@@ -179,7 +126,9 @@ const ContentDetail = () => {
 
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
-        const termsText = content.analysis_data.key_terms.join(', ');
+        const termsText = content.analysis_data.key_terms.map((t: any) => 
+          typeof t === 'string' ? t : t.term
+        ).join(', ');
         const termsLines = doc.splitTextToSize(termsText, maxWidth);
         doc.text(termsLines, margin, y);
         y += termsLines.length * 6 + 10;
@@ -291,15 +240,9 @@ const ContentDetail = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center">
-          <Loader2 className="h-10 w-10 md:h-12 md:w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground text-sm md:text-base">Loading content...</p>
-        </div>
-      </div>
-    );
+  // Show skeleton while loading OR while auth is not yet checked
+  if (!isAuthChecked || isLoading) {
+    return <ContentDetailSkeleton />;
   }
 
   if (!content) {
@@ -413,11 +356,14 @@ const ContentDetail = () => {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {analysisData.key_terms.map((term: string, index: number) => (
-                  <Badge key={index} variant="secondary" className="px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-base">
-                    {term}
-                  </Badge>
-                ))}
+                {analysisData.key_terms.map((termItem: string | { term: string }, index: number) => {
+                  const term = typeof termItem === 'string' ? termItem : termItem.term;
+                  return (
+                    <Badge key={index} variant="secondary" className="px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-base">
+                      {term}
+                    </Badge>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

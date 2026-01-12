@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Search, Trash2, Calendar } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { useContent } from '@/hooks/useContent';
+import { LibrarySkeleton } from '@/components/ui/skeleton-loader';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -19,111 +19,33 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-interface ContentItem {
-  id: string;
-  title: string | null;
-  original_text: string;
-  analysis_data: unknown;
-  language: string | null;
-  created_at: string | null;
-  user_id: string;
-}
-
-const STORAGE_KEY = 'aide_user_content';
-
 const Library = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [content, setContent] = useState<ContentItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { contentList, isLoading, isAuthChecked, deleteContent } = useContent();
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const fetchContent = useCallback((userId: string) => {
-    try {
-      setLoading(true);
-      const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
-      const items: ContentItem[] = stored ? JSON.parse(stored) : [];
-      setContent(items.sort((a, b) => 
-        new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-      ));
-    } catch (error) {
-      console.error('Error fetching content:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load your content',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      setUser(session.user);
-      fetchContent(session.user.id);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      setUser(session.user);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, fetchContent]);
-
-  const handleDelete = useCallback((id: string) => {
-    if (!user) return;
-    
-    try {
-      const stored = localStorage.getItem(`${STORAGE_KEY}_${user.id}`);
-      const items: ContentItem[] = stored ? JSON.parse(stored) : [];
-      const updatedItems = items.filter(item => item.id !== id);
-      localStorage.setItem(`${STORAGE_KEY}_${user.id}`, JSON.stringify(updatedItems));
-      
-      setContent(prev => prev.filter(item => item.id !== id));
-      toast({ title: 'Deleted', description: 'Content removed from library' });
-    } catch (error) {
-      console.error('Error deleting content:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete content',
-        variant: 'destructive',
-      });
-    } finally {
-      setDeleteDialogOpen(false);
-      setItemToDelete(null);
-    }
-  }, [user]);
+  const handleDelete = (id: string) => {
+    deleteContent(id);
+    toast({ title: 'Deleted', description: 'Content removed from library' });
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
+  };
 
   const filteredContent = useMemo(() => {
-    if (!searchQuery.trim()) return content;
+    if (!searchQuery.trim()) return contentList;
     const query = searchQuery.toLowerCase();
-    return content.filter(
+    return contentList.filter(
       item =>
         item.title?.toLowerCase().includes(query) ||
         item.original_text?.toLowerCase().includes(query)
     );
-  }, [content, searchQuery]);
+  }, [contentList, searchQuery]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading your library...</p>
-        </div>
-      </div>
-    );
+  // Show skeleton while loading OR while auth is not yet checked
+  if (!isAuthChecked || isLoading) {
+    return <LibrarySkeleton />;
   }
 
   return (

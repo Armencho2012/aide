@@ -1,9 +1,9 @@
 import { corsHeaders } from "./_shared-index.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const MIN_QUIZ_QUESTIONS = 5;
-const MAX_QUIZ_QUESTIONS_FREE = 10;
-const MAX_FLASHCARDS_FREE = 15;
+const MIN_QUIZ_QUESTIONS = 10;
+const MAX_QUIZ_QUESTIONS_FREE = 15;
+const MAX_FLASHCARDS_FREE = 20;
 const DAILY_LIMIT_FREE = 5;
 
 interface AnalysisResult {
@@ -79,6 +79,7 @@ Deno.serve(async (req: Request) => {
 
     const systemInstruction = `### ROLE: SENIOR PEDAGOGICAL ARCHITECT & MULTIMODAL KNOWLEDGE ENGINEER
 You are an expert system designed to deconstruct complex info (text, images, PDFs) into structured educational modules.
+CRITICAL: You MUST respond in the SAME LANGUAGE as the input text. If the input is in Russian, respond in Russian. If in Armenian, respond in Armenian. If in Korean, respond in Korean.
 
 ${isCourse ? `### COURSE MODE ENABLED
 You are analyzing a set of related documents. 
@@ -94,20 +95,28 @@ You are analyzing a set of related documents.
 - Edges: descriptive 'label' (e.g., "inhibits", "derives from").
 - Visuals: Assign a 'strength' 1-10 to edges.
 
+### CRITICAL REQUIREMENTS:
+1. Generate EXACTLY 10-15 quiz questions. This is MANDATORY. Do NOT generate fewer than 10 questions.
+2. Generate EXACTLY 15-20 flashcards. This is MANDATORY.
+3. Each flashcard should have substantial content (50-150 words on the back).
+4. All content must be in the SAME LANGUAGE as the input text.
+
 ### OUTPUT JSON SCHEMA
 {
   "metadata": { "language": "string", "subject_domain": "string", "complexity_level": "string" },
   "three_bullet_summary": ["string"],
   "key_terms": [{ "term": "string", "definition": "string", "importance": "string" }],
   "lesson_sections": [{ "title": "string", "summary": "string", "key_takeaway": "string" }],
-  "quiz_questions": [{ "question": "string", "options": ["string"], "correct_answer_index": 0, "explanation": "string", "difficulty": "string" }],
-  "flashcards": [{ "front": "string", "back": "string" }],
+  "quiz_questions": [{ "question": "string", "options": ["string","string","string","string"], "correct_answer_index": 0, "explanation": "string", "difficulty": "easy|medium|hard" }],
+  "flashcards": [{ "front": "string", "back": "string (50-150 words detailed explanation)" }],
   "knowledge_map": { 
     "nodes": [{ "id": "string", "label": "string", "category": "string", "description": "string" }],
     "edges": [{ "source": "string", "target": "string", "label": "string", "strength": 5 }]
   }
   ${isCourse ? ', "study_plan": { "days": [{ "day": 1, "topics": ["string"], "tasks": ["string"] }] }' : ''}
-}`;
+}
+
+REMINDER: You MUST generate at least 10 quiz_questions and 15 flashcards. This is a hard requirement.`;
 
     const promptText = `[INPUT]:\n${text || 'Multimodal content provided.'}\n${contextDocuments ? `\n[CONTEXT DOCUMENTS]:\n${contextDocuments.join('\n---\n')}` : ''}`;
 
@@ -141,8 +150,9 @@ You are analyzing a set of related documents.
         systemInstruction: { parts: [{ text: systemInstruction }] },
         contents: [{ role: "user", parts }],
         generationConfig: {
-          temperature: 0.2,
+          temperature: 0.3,
           responseMimeType: "application/json",
+          maxOutputTokens: 8192, // Increased to accommodate 10+ questions and 15+ flashcards
         },
       };
 
