@@ -129,62 +129,62 @@ const uiLabels = {
     }
   },
   hy: {
-    title: 'Օdelays և Delays',
-    subtitle: 'Տdelays delays delays delays delays delays Aide-delays',
-    backToDashboard: 'Վdelays delays delays',
-    backToHome: 'Գdelays Delays',
+    title: 'Օգնություն և ուղեցույց',
+    subtitle: 'Տիրապետեք Aide-ի հետ արդյունավետ հուշումների արվեստին',
+    backToDashboard: 'Վերադառնալ կառավարման վահանակ',
+    backToHome: 'Վերադառնալ գլխավոր էջ',
     effectivePrompting: {
-      title: 'MyAide-delays Delays Delays Delays',
-      description: 'Իdelays delays delays delays delays delays delays delays delays delays delays delays delays delays'
+      title: 'Արդյունավետ հուշումներ MyAide-ի համար',
+      description: 'Իմացեք, թե ինչպես ստանալ լավագույն արդյունքները մեր AI վերլուծության շարժիչից'
     },
     tips: [
       {
-        title: 'Delays delays delays delays delays delays',
-        content: 'Delays delays delays delays delays delays delays delays delays, delays delays delays delays delays delays delays delays. Delays delays delays: "delays delays delays delays delays delays delays delays delays delays delays delays delays" delays "delays delays delays delays delays delays delays delays delays delays delays".'
+        title: 'Եղեք հստակ ձեր նպատակների հարցում',
+        content: 'Հում տեքստ տեղադրելու փոխարեն, ասեք մեզ, թե ինչ եք ուզում սովորել: Օրինակ՝ «Ես ուզում եմ հասկանալ այս կենսաբանության գլխի հիմնական հասկացությունները» կամ «Օգնիր ինձ պատրաստվել քննությանը այս նյութով»:'
       },
       {
-        title: 'Delays delays delays delays',
-        content: 'Delays delays delays delays delays delays delays delays delays delays delays delays. Delays delays delays, delays delays delays delays delays delays delays? Delays delays ԱІ-delays delays delays delays delays delays delays delays delays delays delays.'
+        title: 'Տրամադրեք համատեքստ',
+        content: 'Ներառեք տեղեկություններ ձեր գիտելիքների մակարդակի մասին: Դուք սկսնա՞կ եք, միջի՞ն, թե՞ առաջադեմ սովորող: Սա օգնում է AI-ին հարմարեցնել բացատրությունները ձեր մակարդակին:'
       },
       {
-        title: 'Delays delays delays delays delays',
-        content: 'Delays delays delays delays delays delays delays, delays delays, delays delays delays delays delays delays delays delays delays delays delays delays. Delays delays delays delays delays delays delays delays delays delays delays.'
+        title: 'Օգտագործեք մաքուր տեքստ',
+        content: 'Տեղադրելուց առաջ հեռացրեք ավելորդ ֆորմատավորումը, վերնագրերը, ստորագիրները և էջի համարները: Մաքուր տեքստը ավելի լավ վերլուծության արդյունքներ է տալիս:'
       },
       {
-        title: 'Delays delays delays delays delays delays delays',
-        content: 'Delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays. Delays delays delays delays delays delays delays delays delays delays delays.'
+        title: 'Բաժանեք մեծ բովանդակությունը',
+        content: 'Շատ երկար փաստաթղթերի համար մտածեք դրանք տրամաբանական բաժինների բաժանելու և առանձին վերլուծելու մասին: Սա տալիս է ավելի կենտրոնացված և մանրամասն արդյունքներ:'
       },
       {
-        title: 'Delays delays delays delays delays',
-        content: 'Delays delays delays delays delays delays delays delays delays delays delays delays, delays delays delays delays delays delays delays delays delays. ԱІ-delays delays delays delays delays delays delays delays delays.'
+        title: 'Նշեք ձեր լեզուն',
+        content: 'Եթե ցանկանում եք վերլուծությունը կոնկրետ լեզվով, համոզվեք, որ կարգավորումներում սահմանել եք ձեր նախընտրած լեզուն: AI-ն կպատասխանի այդ լեզվով:'
       },
       {
-        title: 'Delays delays delays delays delays delays',
-        content: 'Delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays. ԱІ-delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays.'
+        title: 'Վերանայեք և կրկնեք',
+        content: 'Արդյունքները ստանալուց հետո օգտագործեք Զրուցարան գործառույթը՝ լրացուցիչ հարցեր տալու համար: AI-ն հիշում է համատեքստը և կարող է ավելի խորը բացատրություններ տալ:'
       }
     ],
     modes: {
-      title: 'Delays delays delays delays delays delays delays',
+      title: 'Հասկանալով տարբեր ռեժիմները',
       analyze: {
-        title: 'Delays delays delays',
-        description: 'Delays delays delays delays delays delays delays delays, delays delays delays, delays delays, delays delays delays delays delays delays delays delays delays. Delays delays delays delays delays delays delays delays delays delays delays delays.'
+        title: 'Վերլուծության ռեժիմ',
+        description: 'Լիարժեք մանկավարժական վերլուծություն՝ ամփոփագրերով, հիմնական կետերով, բառապաշարով, ֆլեշ քարտերով և հարցաշարի հարցերով: Լավագույնն է համապարփակ ուսումնական պարապմունքների համար:'
       },
       plan: {
-        title: 'Delays delays delays',
-        description: 'Delays delays delays delays delays delays delays 7-delays delays delays delays delays delays delays. Delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays.'
+        title: 'Պլանի ռեժիմ',
+        description: 'Ստեղծում է կառուցվածքային 7-օրյա ուսումնական ժամանակացույց՝ հիմնված ձեր բովանդակության վրա: Կատարյալ է քննությունների նախապատրաստման կամ համակարգված ուսուցման համար:'
       },
       chat: {
-        title: 'Delays delays delays',
-        description: 'Delays delays delays delays delays delays delays delays delays delays. Delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays.'
+        title: 'Զրուցարանի ռեժիմ',
+        description: 'Ինտերակտիվ Հ&Պ ցանկացած թեմայի վերաբերյալ: Հիանալի է արագ հարցերի և հասկացությունների խորը ուսումնասիրության համար:'
       },
       ask: {
-        title: '"delays delays" Delays',
-        description: 'Delays delays delays delays - ԱІ-delays delays delays delays delays delays delays delays delays delays delays delays. Delays delays delays delays delays delays delays delays delays delays delays delays delays.'
+        title: '«Հարցրու ինձ» ռեժիմ',
+        description: 'Սոկրատեսյան մեթոդ - AI-ն հարցեր է տալիս ՁԵԶ՝ ստուգելու ձեր հասկացողությունը: Գերազանց է ակտիվ վերհիշման պրակտիկայի համար:'
       }
     },
     contact: {
-      title: 'Delays delays delays delays delays delays?',
-      description: 'Delays delays delays delays delays:',
+      title: 'Լրացուցիչ օգնության կարիք ունե՞ք:',
+      description: 'Կապվեք մեզ հետ՝',
       email: 'myaide.study@gmail.com'
     }
   },
@@ -347,7 +347,7 @@ const Help = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-2">{labels.contact.description}</p>
-            <a 
+            <a
               href={`mailto:${labels.contact.email}`}
               className="text-primary hover:underline font-medium"
             >
