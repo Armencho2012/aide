@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, XCircle } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
+import { useContent } from '@/hooks/useContent';
+import { ContentDetailSkeleton } from '@/components/ui/skeleton-loader';
+import { useState, useEffect, useMemo } from 'react';
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
 
@@ -15,18 +15,6 @@ interface QuizQuestion {
   correct_answer_index: number;
   explanation: string;
 }
-
-interface ContentItem {
-  id: string;
-  title: string | null;
-  original_text: string;
-  analysis_data: any;
-  language: string | null;
-  created_at: string | null;
-  user_id: string;
-}
-
-const STORAGE_KEY = 'aide_user_content';
 
 const uiLabels = {
   en: {
@@ -52,15 +40,15 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'Թեստային աշխատանք(quiz)',
-    questionPrefix: 'Հարց',
-    checkAnswer: 'Ստուգել պատասխանը',
-    retry: 'Փորձել կրկին',
-    correct: 'Ճիշտ է:',
-    incorrect: 'Սխալ է',
-    explanation: 'Բացատրություն',
-    noQuestions: 'Թեստի հարցերը հասանելի չեն',
-    backToContent: 'Վերադառնալ բովանդակությանը'
+    title: 'Practice Quiz',
+    questionPrefix: 'Question',
+    checkAnswer: 'Check Answer',
+    retry: 'Try Again',
+    correct: 'Correct!',
+    incorrect: 'Incorrect',
+    explanation: 'Explanation',
+    noQuestions: 'No quiz questions available',
+    backToContent: 'Back to Content'
   },
   ko: {
     title: '연습 퀴즈',
@@ -77,55 +65,16 @@ const uiLabels = {
 
 const Quiz = () => {
   const { id } = useParams<{ id: string }>();
-  const [user, setUser] = useState<User | null>(null);
-  const [content, setContent] = useState<ContentItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { content, isLoading, isAuthChecked } = useContent({ id });
   const [questionStates, setQuestionStates] = useState<{ selectedAnswer: number | null; showResult: boolean }[]>([]);
-  const navigate = useNavigate();
+
+  const quizQuestions: QuizQuestion[] = useMemo(() => {
+    return content?.analysis_data?.quiz_questions || [];
+  }, [content]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      setUser(session.user);
-      if (id) fetchContent(id, session.user.id);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      setUser(session.user);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, id]);
-
-  const fetchContent = (contentId: string, userId: string) => {
-    try {
-      setLoading(true);
-      const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
-      const items: ContentItem[] = stored ? JSON.parse(stored) : [];
-      const item = items.find(i => i.id === contentId);
-
-      if (!item) {
-        navigate('/library');
-        return;
-      }
-
-      setContent(item);
-      const quizQuestions = item.analysis_data?.quiz_questions || [];
-      setQuestionStates(quizQuestions.map(() => ({ selectedAnswer: null, showResult: false })));
-    } catch (error) {
-      console.error('Error fetching content:', error);
-      navigate('/library');
-    } finally {
-      setLoading(false);
-    }
-  };
+    setQuestionStates(quizQuestions.map(() => ({ selectedAnswer: null, showResult: false })));
+  }, [quizQuestions]);
 
   const handleSelectOption = (questionIndex: number, optionIndex: number) => {
     setQuestionStates((prev) =>
@@ -145,15 +94,9 @@ const Quiz = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center">
-          <Loader2 className="h-10 w-10 md:h-12 md:w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground text-sm md:text-base">Loading quiz...</p>
-        </div>
-      </div>
-    );
+
+  if (!isAuthChecked || isLoading) {
+    return <ContentDetailSkeleton />;
   }
 
   if (!content) {
@@ -171,7 +114,6 @@ const Quiz = () => {
 
   const language = (content.language as Language) || 'en';
   const labels = uiLabels[language];
-  const quizQuestions: QuizQuestion[] = content.analysis_data?.quiz_questions || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Loader2, Send, Bot, User, Map } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { KnowledgeMapPanel } from '@/components/KnowledgeMap';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { useContent } from '@/hooks/useContent';
+import { ContentDetailSkeleton } from '@/components/ui/skeleton-loader';
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
 
@@ -16,18 +17,6 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
-
-interface ContentItem {
-  id: string;
-  title: string | null;
-  original_text: string;
-  analysis_data: any;
-  language: string | null;
-  created_at: string | null;
-  user_id: string;
-}
-
-const STORAGE_KEY = 'aide_user_content';
 
 const uiLabels = {
   en: {
@@ -49,13 +38,13 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'AI Զրուցարան',
-    placeholder: 'Տվեք հարց այս նյութի վերաբերյալ...',
-    send: 'Ուղարկել',
-    thinking: 'Մտածում է...',
-    error: 'Չհաջողվեց ստանալ պատասխան: Խնդրում ենք փորձել կրկին:',
-    welcome: 'Ողջույն: Ես կարող եմ պատասխանել այս բովանդակության վերաբերյալ հարցերին: Ի՞նչ կցանկանայիք իմանալ:',
-    backToContent: 'Վերադառնալ բովանդակությանը'
+    title: 'AI Chat',
+    placeholder: 'Ask a question about this material...',
+    send: 'Send',
+    thinking: 'Thinking...',
+    error: 'Failed to get response. Please try again.',
+    welcome: 'Hi! I can answer questions about this content. What would you like to know?',
+    backToContent: 'Back to Content'
   },
   ko: {
     title: 'AI 채팅',
@@ -70,60 +59,15 @@ const uiLabels = {
 
 const ChatPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [content, setContent] = useState<ContentItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { content, isLoading, isAuthChecked } = useContent({ id });
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [showKnowledgeMap, setShowKnowledgeMap] = useState(false);
   const [activeNode, setActiveNode] = useState<string | undefined>();
   const [activeNodeContext, setActiveNodeContext] = useState<{ description?: string; category?: string } | null>(null);
   const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set());
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      setUser(session.user);
-      if (id) fetchContent(id, session.user.id);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      setUser(session.user);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, id]);
-
-  const fetchContent = (contentId: string, userId: string) => {
-    try {
-      setLoading(true);
-      const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
-      const items: ContentItem[] = stored ? JSON.parse(stored) : [];
-      const item = items.find(i => i.id === contentId);
-
-      if (!item) {
-        navigate('/library');
-        return;
-      }
-
-      setContent(item);
-    } catch (error) {
-      console.error('Error fetching content:', error);
-      navigate('/library');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (content) {
@@ -140,7 +84,7 @@ const ChatPage = () => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || !content) return;
+    if (!input.trim() || isSending || !content) return;
 
     const userMessage = input.trim();
     const language = (content.language as Language) || 'en';
@@ -148,7 +92,7 @@ const ChatPage = () => {
 
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setIsLoading(true);
+    setIsSending(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -202,7 +146,7 @@ const ChatPage = () => {
       const labels = uiLabels[language];
       setMessages(prev => [...prev, { role: 'assistant', content: labels.error }]);
     } finally {
-      setIsLoading(false);
+      setIsSending(false);
     }
   };
 
@@ -257,15 +201,8 @@ const ChatPage = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center">
-          <Loader2 className="h-10 w-10 md:h-12 md:w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground text-sm md:text-base">Loading chat...</p>
-        </div>
-      </div>
-    );
+  if (!isAuthChecked || isLoading) {
+    return <ContentDetailSkeleton />;
   }
 
   if (!content) {
@@ -351,7 +288,7 @@ const ChatPage = () => {
                         )}
                       </div>
                     ))}
-                    {isLoading && (
+                    {isSending && messages[messages.length - 1]?.content === '' && (
                       <div className="flex gap-2 sm:gap-3">
                         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                           <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
@@ -373,15 +310,15 @@ const ChatPage = () => {
                     onKeyDown={handleKeyDown}
                     placeholder={labels.placeholder}
                     className="min-h-[50px] sm:min-h-[60px] resize-none text-sm"
-                    disabled={isLoading}
+                    disabled={isSending}
                   />
                   <Button
                     onClick={handleSend}
-                    disabled={!input.trim() || isLoading}
+                    disabled={!input.trim() || isSending}
                     className="px-3 sm:px-4"
                     size="default"
                   >
-                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </div>
               </CardContent>

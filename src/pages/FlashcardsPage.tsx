@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, ChevronLeft, ChevronRight, RotateCcw, Layers } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useMemo } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, ChevronLeft, ChevronRight, RotateCcw, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { User } from '@supabase/supabase-js';
+import { useContent } from '@/hooks/useContent';
+import { ContentDetailSkeleton } from '@/components/ui/skeleton-loader';
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
 
@@ -12,18 +12,6 @@ interface Flashcard {
   front: string;
   back: string;
 }
-
-interface ContentItem {
-  id: string;
-  title: string | null;
-  original_text: string;
-  analysis_data: any;
-  language: string | null;
-  created_at: string | null;
-  user_id: string;
-}
-
-const STORAGE_KEY = 'aide_user_content';
 
 const uiLabels = {
   en: {
@@ -45,13 +33,13 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'Ֆլեշ քարտեր',
-    flip: 'Սեղմեք շրջելու համար',
-    card: 'Քարտ',
-    of: '-ը',
-    restart: 'Վերսկսել',
-    noCards: 'Ֆլեշ քարտերը հասանելի չեն',
-    backToContent: 'Վերադառնալ բովանդակությանը'
+    title: 'Flashcards',
+    flip: 'Click to flip',
+    card: 'Card',
+    of: 'of',
+    restart: 'Restart',
+    noCards: 'No flashcards available',
+    backToContent: 'Back to Content'
   },
   ko: {
     title: '플래시카드',
@@ -66,54 +54,9 @@ const uiLabels = {
 
 const FlashcardsPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [user, setUser] = useState<User | null>(null);
-  const [content, setContent] = useState<ContentItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { content, isLoading, isAuthChecked } = useContent({ id });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      setUser(session.user);
-      if (id) fetchContent(id, session.user.id);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      setUser(session.user);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, id]);
-
-  const fetchContent = (contentId: string, userId: string) => {
-    try {
-      setLoading(true);
-      const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
-      const items: ContentItem[] = stored ? JSON.parse(stored) : [];
-      const item = items.find(i => i.id === contentId);
-
-      if (!item) {
-        navigate('/library');
-        return;
-      }
-
-      setContent(item);
-    } catch (error) {
-      console.error('Error fetching content:', error);
-      navigate('/library');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const flashcards: Flashcard[] = useMemo(() => {
     return (content?.analysis_data?.flashcards || []).filter((card: Flashcard) => card.front && card.back);
@@ -136,15 +79,8 @@ const FlashcardsPage = () => {
     setIsFlipped(false);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center">
-          <Loader2 className="h-10 w-10 md:h-12 md:w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground text-sm md:text-base">Loading flashcards...</p>
-        </div>
-      </div>
-    );
+  if (!isAuthChecked || isLoading) {
+    return <ContentDetailSkeleton />;
   }
 
   if (!content) {
