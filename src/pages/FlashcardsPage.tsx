@@ -45,13 +45,13 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'Delays',
-    flip: 'Delays delays delays',
-    card: 'Delays',
-    of: '- delays',
-    restart: 'Delays',
-    noCards: 'Delays delays delays',
-    backToContent: 'Delays delays delays'
+    title: 'Ֆլեշ քարտեր',
+    flip: 'Սեղմեք շրջելու համար',
+    card: 'Քարտ',
+    of: '-ը',
+    restart: 'Վերսկսել',
+    noCards: 'Ֆլեշ քարտերը հասանելի չեն',
+    backToContent: 'Վերադառնալ բովանդակությանը'
   },
   ko: {
     title: '플래시카드',
@@ -100,12 +100,12 @@ const FlashcardsPage = () => {
       const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
       const items: ContentItem[] = stored ? JSON.parse(stored) : [];
       const item = items.find(i => i.id === contentId);
-      
+
       if (!item) {
         navigate('/library');
         return;
       }
-      
+
       setContent(item);
     } catch (error) {
       console.error('Error fetching content:', error);
@@ -197,30 +197,29 @@ const FlashcardsPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 sm:space-y-6">
-              <div 
+              <div
                 className="relative cursor-pointer perspective-1000"
                 onClick={() => setIsFlipped(!isFlipped)}
               >
-                <div 
-                  className={`relative w-full min-h-[280px] sm:min-h-[350px] transition-transform duration-500 transform-style-preserve-3d ${
-                    isFlipped ? 'rotate-y-180' : ''
-                  }`}
+                <div
+                  className={`relative w-full min-h-[280px] sm:min-h-[350px] transition-transform duration-500 transform-style-preserve-3d ${isFlipped ? 'rotate-y-180' : ''
+                    }`}
                   style={{
                     transformStyle: 'preserve-3d',
                     transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
                   }}
                 >
-                  <div 
+                  <div
                     className="absolute inset-0 backface-hidden bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20 rounded-xl p-4 sm:p-8 flex flex-col items-center justify-center"
                     style={{ backfaceVisibility: 'hidden' }}
                   >
                     <p className="text-lg sm:text-xl font-medium text-center">{currentCard?.front}</p>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-4 sm:mt-6">{labels.flip}</p>
                   </div>
-                  
-                  <div 
+
+                  <div
                     className="absolute inset-0 backface-hidden bg-gradient-to-br from-accent/5 to-primary/5 border-2 border-accent/20 rounded-xl p-4 sm:p-8 flex flex-col items-center justify-center"
-                    style={{ 
+                    style={{
                       backfaceVisibility: 'hidden',
                       transform: 'rotateY(180deg)'
                     }}
@@ -235,12 +234,12 @@ const FlashcardsPage = () => {
                 <Button variant="outline" size="default" onClick={handlePrev} className="h-10 w-10 sm:h-12 sm:w-auto sm:px-4">
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
-                
+
                 <Button variant="ghost" size="default" onClick={handleRestart} className="text-sm sm:text-base">
                   <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">{labels.restart}</span>
                 </Button>
-                
+
                 <Button variant="outline" size="default" onClick={handleNext} className="h-10 w-10 sm:h-12 sm:w-auto sm:px-4">
                   <ChevronRight className="h-5 w-5" />
                 </Button>
@@ -251,9 +250,8 @@ const FlashcardsPage = () => {
                   <button
                     key={index}
                     onClick={() => { setCurrentIndex(index); setIsFlipped(false); }}
-                    className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-colors ${
-                      index === currentIndex ? 'bg-primary' : 'bg-muted-foreground/30'
-                    }`}
+                    className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-colors ${index === currentIndex ? 'bg-primary' : 'bg-muted-foreground/30'
+                      }`}
                   />
                 ))}
               </div>

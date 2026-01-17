@@ -44,17 +44,17 @@ const uiLabels = {
     notFound: 'Контент не найден'
   },
   hy: {
-    backToLibrary: 'Վdelays գdelays',
-    summary: 'Կdelays delays',
-    sections: 'Դdelays delays',
-    terms: 'Հdelays delays',
-    studyTools: ' Delays delays',
-    quiz: 'Delays delays',
-    flashcards: 'Delays',
-    chat: 'Delays AI-ին',
-    exportPdf: 'Delays PDF',
-    exporting: 'Delays...',
-    notFound: 'Delays delays delays'
+    backToLibrary: 'Վերադառնալ գրադարան',
+    summary: 'Հիմնական ամփոփում',
+    sections: 'Դասի բաժիններ',
+    terms: 'Հիմնական տերմիններ',
+    studyTools: 'Ուսումնական գործիքներ',
+    quiz: 'Թեստային աշխատանք(quiz)',
+    flashcards: 'Ֆլեշ քարտեր',
+    chat: 'Հարցնել AI-ին',
+    exportPdf: 'Արտահանել որպես PDF',
+    exporting: 'Արտահանում...',
+    notFound: 'Բովանդակությունը չի գտնվել'
   },
   ko: {
     backToLibrary: '라이브러리로 돌아가기',
@@ -126,7 +126,7 @@ const ContentDetail = () => {
 
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
-        const termsText = content.analysis_data.key_terms.map((t: any) => 
+        const termsText = content.analysis_data.key_terms.map((t: any) =>
           typeof t === 'string' ? t : t.term
         ).join(', ');
         const termsLines = doc.splitTextToSize(termsText, maxWidth);

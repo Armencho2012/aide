@@ -49,13 +49,13 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'ԱԲ Զdelays',
-    placeholder: 'Հdelays տdelays այdelays delays...',
-    send: ' Delays',
-    thinking: 'Delays եdelays...',
-    error: 'Չdelays delays delays: Delays եdelays delays delays:',
-    welcome: 'Delays: Delays delays delays delays delays delays delays delays: Delays delays delays:',
-    backToContent: 'Delays delays delays'
+    title: 'AI Զրուցարան',
+    placeholder: 'Տվեք հարց այս նյութի վերաբերյալ...',
+    send: 'Ուղարկել',
+    thinking: 'Մտածում է...',
+    error: 'Չհաջողվեց ստանալ պատասխան: Խնդրում ենք փորձել կրկին:',
+    welcome: 'Ողջույն: Ես կարող եմ պատասխանել այս բովանդակության վերաբերյալ հարցերին: Ի՞նչ կցանկանայիք իմանալ:',
+    backToContent: 'Վերադառնալ բովանդակությանը'
   },
   ko: {
     title: 'AI 채팅',
@@ -110,12 +110,12 @@ const ChatPage = () => {
       const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
       const items: ContentItem[] = stored ? JSON.parse(stored) : [];
       const item = items.find(i => i.id === contentId);
-      
+
       if (!item) {
         navigate('/library');
         return;
       }
-      
+
       setContent(item);
     } catch (error) {
       console.error('Error fetching content:', error);

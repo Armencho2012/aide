@@ -52,15 +52,15 @@ const uiLabels = {
     backToContent: 'Назад к контенту'
   },
   hy: {
-    title: 'Delays Delays',
-    questionPrefix: 'Delays',
-    checkAnswer: 'Delays delays',
-    retry: 'Delays delays',
-    correct: 'Delays է:',
-    incorrect: 'Delays',
-    explanation: 'Delays',
-    noQuestions: 'Delays delays delays',
-    backToContent: 'Delays delays delays'
+    title: 'Թեստային աշխատանք(quiz)',
+    questionPrefix: 'Հարց',
+    checkAnswer: 'Ստուգել պատասխանը',
+    retry: 'Փորձել կրկին',
+    correct: 'Ճիշտ է:',
+    incorrect: 'Սխալ է',
+    explanation: 'Բացատրություն',
+    noQuestions: 'Թեստի հարցերը հասանելի չեն',
+    backToContent: 'Վերադառնալ բովանդակությանը'
   },
   ko: {
     title: '연습 퀴즈',
@@ -110,12 +110,12 @@ const Quiz = () => {
       const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
       const items: ContentItem[] = stored ? JSON.parse(stored) : [];
       const item = items.find(i => i.id === contentId);
-      
+
       if (!item) {
         navigate('/library');
         return;
       }
-      
+
       setContent(item);
       const quizQuestions = item.analysis_data?.quiz_questions || [];
       setQuestionStates(quizQuestions.map(() => ({ selectedAnswer: null, showResult: false })));
@@ -216,15 +216,14 @@ const Quiz = () => {
                           key={optionIndex}
                           onClick={() => !showResult && handleSelectOption(questionIndex, optionIndex)}
                           disabled={showResult}
-                          className={`w-full text-left p-3 sm:p-4 rounded-lg border-2 transition-all text-sm sm:text-base ${
-                            selectedAnswer === optionIndex
-                              ? showResult
-                                ? isCorrect
-                                  ? 'border-green-500 bg-green-50 dark:bg-green-950'
-                                  : 'border-red-500 bg-red-50 dark:bg-red-950'
-                                : 'border-primary bg-secondary'
-                              : 'border-border hover:border-primary/50'
-                          } ${showResult && optionIndex === question.correct_answer_index ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}`}
+                          className={`w-full text-left p-3 sm:p-4 rounded-lg border-2 transition-all text-sm sm:text-base ${selectedAnswer === optionIndex
+                            ? showResult
+                              ? isCorrect
+                                ? 'border-green-500 bg-green-50 dark:bg-green-950'
+                                : 'border-red-500 bg-red-50 dark:bg-red-950'
+                              : 'border-primary bg-secondary'
+                            : 'border-border hover:border-primary/50'
+                            } ${showResult && optionIndex === question.correct_answer_index ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}`}
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="flex-1">{option}</span>
