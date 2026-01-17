@@ -267,25 +267,23 @@ const Billing = () => {
     }
   };
 
-  const handleUpgrade = () => {
+  const handleUpgrade = (productUrl: string) => {
     if (!user) return;
 
     setLoading(true);
     
-    // Open Gumroad overlay
-    if (window.GumroadOverlay) {
-      window.GumroadOverlay({
-        url: 'https://websmith82.gumroad.com/l/sceqs',
-        product: 'sceqs',
-        success_url: `${window.location.origin}/dashboard?status=success`,
-      });
-    } else {
-      // Fallback: redirect to Gumroad
-      window.open('https://websmith82.gumroad.com/l/sceqs?wanted=true', '_blank');
-    }
+    // Always use direct link - Gumroad overlay is unreliable
+    const successUrl = encodeURIComponent(`${window.location.origin}/billing?status=success`);
+    const email = encodeURIComponent(user.email || '');
+    const gumroadUrl = `${productUrl}?wanted=true&email=${email}&success_url=${successUrl}`;
+    
+    window.open(gumroadUrl, '_blank');
     
     setLoading(false);
   };
+
+  const handleProUpgrade = () => handleUpgrade('https://websmith82.gumroad.com/l/sceqs');
+  const handleClassUpgrade = () => handleUpgrade('https://websmith82.gumroad.com/l/class'); // Update with actual Class product URL
 
   // Show loading skeleton to prevent FOUC - ensure styles are applied
   if (!isMounted) {
@@ -378,7 +376,7 @@ const Billing = () => {
             <Button 
               className={`w-full ${subscriptionStatus === 'pro' ? '' : 'bg-gradient-to-r from-primary to-accent'}`}
               disabled={subscriptionStatus === 'pro' || loading}
-              onClick={handleUpgrade}
+              onClick={handleProUpgrade}
             >
               {loading ? (
                 <>
@@ -430,6 +428,7 @@ const Billing = () => {
               variant={subscriptionStatus === 'class' ? 'default' : 'outline'}
               className="w-full"
               disabled={subscriptionStatus === 'class' || loading}
+              onClick={handleClassUpgrade}
             >
               {subscriptionStatus === 'class' ? labels.currentPlan : 'Upgrade to Class'}
             </Button>
