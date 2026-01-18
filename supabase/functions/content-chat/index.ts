@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "API key not configured" }), {
         status: 500,
@@ -65,7 +65,7 @@ Deno.serve(async (req: Request) => {
     const languageInstruction = {
       'en': 'Respond in English.',
       'ru': 'Отвечайте на русском языке.',
-      'hy': 'Պատասխանեք հայերեն:',
+      'hy': 'Պdelays delays delays:',
       'ko': '한국어로 답변하세요.'
     }[language as string] || 'Respond in English.';
 
@@ -75,7 +75,7 @@ Deno.serve(async (req: Request) => {
       ?.map((msg: { role: string; content: string }) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
       ?.join('\n') || '';
 
-    const prompt = `You are a powerful education engine. Help the student understand the material.
+    const systemPrompt = `You are a powerful education engine. Help the student understand the material.
 
 OUTPUT CONSTRAINTS:
 1. ${languageInstruction}
@@ -88,30 +88,41 @@ ${contentText.substring(0, 10000)}
 ${nodeContext}
 
 --- PREVIOUS CONVERSATION ---
-${historyContext}
+${historyContext}`;
 
---- USER'S QUESTION ---
-${question}`;
-
-    // GEMINI 1.5 FLASH STREAMING
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048,
-          }
-        })
-      }
-    );
+    // Use Lovable AI Gateway with streaming
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: question }
+        ],
+        stream: true
+      })
+    });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || "Gemini streaming error");
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+      const errorText = await response.text();
+      console.error("AI gateway error:", response.status, errorText);
+      throw new Error("AI gateway error");
     }
 
     // Proxy the stream back to the client
@@ -128,24 +139,46 @@ ${question}`;
       }
 
       try {
+        let buffer = "";
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || "";
 
           for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.substring(6));
-                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (text) {
-                  await writer.write(encoder.encode(text));
-                }
-              } catch (e) {
-                // Ignore parse errors for incomplete chunks
+            if (line.startsWith(':') || line.trim() === '') continue;
+            if (!line.startsWith('data: ')) continue;
+            
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === '[DONE]') continue;
+
+            try {
+              const data = JSON.parse(jsonStr);
+              const content = data.choices?.[0]?.delta?.content;
+              if (content) {
+                await writer.write(encoder.encode(content));
               }
+            } catch (e) {
+              // Ignore parse errors for incomplete chunks
+            }
+          }
+        }
+        
+        // Process remaining buffer
+        if (buffer.trim() && buffer.startsWith('data: ')) {
+          const jsonStr = buffer.slice(6).trim();
+          if (jsonStr !== '[DONE]') {
+            try {
+              const data = JSON.parse(jsonStr);
+              const content = data.choices?.[0]?.delta?.content;
+              if (content) {
+                await writer.write(encoder.encode(content));
+              }
+            } catch (e) {
+              // Ignore
             }
           }
         }
