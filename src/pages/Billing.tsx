@@ -35,7 +35,7 @@ const uiLabels = {
     successDescription: 'Your subscription is now active. Please refresh to see your Pro status.',
     features: {
       free: [
-        "5 analyses per day",
+        "1 analysis per day",
         "Basic AI analysis",
         "Content archive",
         "Basic support"
@@ -74,7 +74,7 @@ const uiLabels = {
     successDescription: 'Ваша подписка теперь активна. Пожалуйста, обновите страницу, чтобы увидеть статус Pro.',
     features: {
       free: [
-        "5 анализов в день",
+        "1 анализ в день",
         "Базовый анализ ИИ",
         "Архив контента",
         "Базовая поддержка"
@@ -152,7 +152,7 @@ const uiLabels = {
     successDescription: '구독이 활성화되었습니다. Pro 상태를 보려면 새로고침하세요.',
     features: {
       free: [
-        "일 5회 분석",
+        "일 1회 분석",
         "기본 AI 분석",
         "콘텐츠 아카이브",
         "기본 지원"
@@ -451,7 +451,7 @@ const Billing = () => {
               <tbody>
                 <tr className="border-b">
                   <td className="p-2">{labels.dailyAnalyses}</td>
-                  <td className="text-center p-2">5</td>
+                  <td className="text-center p-2">1</td>
                   <td className="text-center p-2">50/month</td>
                   <td className="text-center p-2">
                     <Infinity className="h-4 w-4 inline text-accent" />

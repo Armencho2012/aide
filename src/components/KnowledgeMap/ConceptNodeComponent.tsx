@@ -82,19 +82,20 @@ const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
         filter: isActive ? `drop-shadow(0 0 20px ${colors.glow})` : 'none',
       }}
     >
-      {/* Glassmorphism card with dynamic sizing based on centrality */}
+      {/* Glassmorphism card with improved sizing and padding */}
       <div
-        className={`relative px-4 py-3 rounded-xl backdrop-blur-xl border transition-all duration-300 hover:scale-105 ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${isMastered ? 'ring-2 ring-yellow-400 ring-offset-2' : ''}`}
+        className={`relative px-5 py-4 rounded-2xl backdrop-blur-xl border-2 transition-all duration-300 hover:scale-105 ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${isMastered ? 'ring-2 ring-yellow-400 ring-offset-2' : ''}`}
         style={{
           background: nodeBg,
           borderColor: nodeBorder,
-          minWidth: `${Math.max(120, size)}px`,
+          minWidth: `${Math.max(160, size)}px`,
+          maxWidth: '200px',
           width: 'auto',
           boxShadow: isActive
-            ? `0 8px 32px -4px ${nodeGlow}40, inset 0 1px 0 ${nodeBorder}30`
+            ? `0 12px 40px -4px ${nodeGlow}50, inset 0 1px 0 ${nodeBorder}30`
             : isMastered
-              ? `0 4px 16px -2px hsl(45 90% 55% / 0.4), inset 0 1px 0 hsl(45 90% 60% / 0.3)`
-              : `0 4px 16px -2px hsl(0 0% 0% / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.1)`,
+              ? `0 8px 24px -2px hsl(45 90% 55% / 0.5), inset 0 1px 0 hsl(45 90% 60% / 0.3)`
+              : `0 8px 24px -4px hsl(0 0% 0% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.1)`,
           transform: isLocked ? 'scale(0.9)' : undefined,
         }}
         title={isLocked ? 'Complete related quiz to unlock' : isMastered ? 'Mastered!' : description || label}
@@ -128,20 +129,28 @@ const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
           </div>
         )}
 
-        {/* Content */}
-        <div className="relative flex items-center gap-2">
-          <div
-            className="p-1.5 rounded-lg"
-            style={{
-              background: `${colors.bg}60`,
-            }}
-          >
-            <Icon className="h-4 w-4 text-white" />
-          </div>
-          <span className="text-sm font-medium text-white drop-shadow-sm">
-            {label}
-          </span>
+      {/* Content - Improved typography */}
+      <div className="relative flex items-center gap-3">
+        <div
+          className="p-2 rounded-lg flex-shrink-0"
+          style={{
+            background: `${colors.bg}60`,
+          }}
+        >
+          <Icon className="h-5 w-5 text-white" />
         </div>
+        <span 
+          className="text-base font-semibold text-white drop-shadow-md leading-tight"
+          style={{
+            fontFamily: "'Inter', 'Geist', system-ui, sans-serif",
+            maxWidth: '140px',
+            wordWrap: 'break-word',
+            whiteSpace: 'normal',
+          }}
+        >
+          {label}
+        </span>
+      </div>
 
         {/* Category indicator dot */}
         <div

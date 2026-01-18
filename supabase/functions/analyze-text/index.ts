@@ -1,7 +1,7 @@
 import { corsHeaders } from "./_shared-index.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const DAILY_LIMIT_FREE = 5;
+const DAILY_LIMIT_FREE = 1;
 
 const QUIZ_QUESTIONS_COUNT = 10;
 const FLASHCARDS_COUNT = 15;

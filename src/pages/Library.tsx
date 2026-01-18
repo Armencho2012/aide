@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Search, Trash2, Calendar } from 'lucide-react';
+import { ArrowLeft, Search, Trash2, Calendar, PlayCircle, Menu, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useContent } from '@/hooks/useContent';
 import { LibrarySkeleton } from '@/components/ui/skeleton-loader';
@@ -8,6 +8,7 @@ import { LibrarySkeleton } from '@/components/ui/skeleton-loader';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,7 @@ const Library = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleDelete = (id: string) => {
@@ -50,10 +52,52 @@ const Library = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+      {/* Mobile Hamburger Menu */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent side="left" className="w-[280px] sm:w-[350px]">
+          <SheetHeader>
+            <SheetTitle className="text-left">My Library</SheetTitle>
+          </SheetHeader>
+          <nav className="mt-6 space-y-2">
+            <Button variant="ghost" asChild className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+              <Link to="/dashboard">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Dashboard
+              </Link>
+            </Button>
+            <div className="pt-4 border-t">
+              <p className="text-xs text-muted-foreground mb-2 px-2">Recent Content</p>
+              {filteredContent.slice(0, 5).map((item) => (
+                <Button
+                  key={item.id}
+                  variant="ghost"
+                  className="w-full justify-start text-left h-auto py-2"
+                  onClick={() => {
+                    navigate(`/library/${item.id}`);
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <span className="truncate">{item.title || 'Untitled'}</span>
+                </Button>
+              ))}
+            </div>
+          </nav>
+        </SheetContent>
+      </Sheet>
+
       <div className="container max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-6 sm:mb-8">
           <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" asChild size="sm">
+            {/* Hamburger menu for mobile */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="sm:hidden"
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
               <Link to="/dashboard">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 <span className="text-sm sm:text-base">Back</span>
@@ -87,7 +131,7 @@ const Library = () => {
             {filteredContent.map((item) => (
               <Card 
                 key={item.id} 
-                className="overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col cursor-pointer"
+                className="overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col cursor-pointer group"
                 onClick={() => navigate(`/library/${item.id}`)}
               >
                 <div className="p-3 sm:p-4 flex-1 flex flex-col">
@@ -107,7 +151,21 @@ const Library = () => {
                       <Calendar className="h-3.5 w-3.5 mr-1" />
                       {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown date'}
                     </div>
-                    <div className="flex space-x-1">
+                    <div className="flex items-center space-x-1">
+                      {/* Start Course Button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/library/${item.id}`);
+                        }}
+                        title="Start Course"
+                      >
+                        <PlayCircle className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline text-xs">Start</span>
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"

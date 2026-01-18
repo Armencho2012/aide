@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Settings, Sparkles, Loader2, LogOut, BookOpen, CreditCard, User as UserIcon, Lock } from "lucide-react";
 import { SettingsModal } from "@/components/SettingsModal";
 import { AnalysisOutput } from "@/components/AnalysisOutput";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/useSettings";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +57,7 @@ const uiLabels = {
   }
 };
 
-const DAILY_LIMIT = 5; // Freemium limit: 5 free uses per day
+const DAILY_LIMIT = 1; // Freemium limit: 1 free use per day
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -67,8 +68,9 @@ const Dashboard = () => {
   const [media, setMedia] = useState<{ data: string; mimeType: string } | null>(null);
   const [isCourseMode, setIsCourseMode] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [usageCount, setUsageCount] = useState(5);
+  const [usageCount, setUsageCount] = useState(1);
   const [isLocked, setIsLocked] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -179,7 +181,12 @@ const Dashboard = () => {
 
       const remaining = Math.max(0, DAILY_LIMIT - (data || 0));
       setUsageCount(remaining);
-      setIsLocked(remaining <= 0);
+      const locked = remaining <= 0;
+      setIsLocked(locked);
+      // Show upgrade modal when limit is reached
+      if (locked) {
+        setShowUpgradeModal(true);
+      }
     } catch (error) {
       console.error('Error fetching usage count:', error);
     }
@@ -454,6 +461,13 @@ const Dashboard = () => {
           onLanguageChange={setLanguage}
           theme={theme}
           onThemeChange={setTheme}
+        />
+
+        {/* Premium Upgrade Modal */}
+        <UpgradeModal
+          open={showUpgradeModal}
+          onOpenChange={setShowUpgradeModal}
+          language={language}
         />
       </div>
     </div>

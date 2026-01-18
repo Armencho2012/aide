@@ -54,9 +54,9 @@ const createFlowNodes = (
   onNodeClick?: (label: string, description?: string, category?: string) => void,
   highlightedNodes?: Set<string>
 ): Node[] => {
-  const centerX = 400;
-  const centerY = 300;
-  const radius = 250; // Increased radius for better spread
+  const centerX = 500;
+  const centerY = 400;
+  const baseRadius = 350; // INCREASED from 250 for better separation
 
   // Calculate degree centrality for node sizing
   const centrality = calculateDegreeCentrality(conceptNodes, edges);
@@ -66,17 +66,23 @@ const createFlowNodes = (
   const sortedNodes = [...conceptNodes].sort((a, b) => (centrality[b.id] || 0) - (centrality[a.id] || 0));
 
   return sortedNodes.map((node, index) => {
-    // Arrange nodes in a circular pattern with center node as most connected
+    // Arrange nodes in a force-directed spiral pattern for better separation
     const angle = (index / sortedNodes.length) * 2 * Math.PI - Math.PI / 2;
     const isCenter = index === 0;
     const nodeCentrality = centrality[node.id] || 0;
 
-    // SCALE NODE RADIUS: Nodes with more connections appear larger
-    // Base size 60, scaling up based on centrality relative to max
-    const nodeSize = 65 + (nodeCentrality / maxCentrality) * 45;
+    // IMPROVED NODE SIZING: Larger base, more contrast
+    // Base size 80, scaling up based on centrality relative to max
+    const nodeSize = 90 + (nodeCentrality / maxCentrality) * 60;
 
     const isHighlighted = highlightedNodes?.has(node.id);
     const isActive = node.id === activeNodeId || node.isActive || isHighlighted;
+
+    // Use layered rings for better node distribution
+    const ringIndex = Math.floor(index / 6);
+    const ringRadius = baseRadius + ringIndex * 120; // 120px between rings
+    const nodesInRing = Math.min(6, sortedNodes.length - ringIndex * 6);
+    const angleInRing = ((index % 6) / nodesInRing) * 2 * Math.PI - Math.PI / 2;
 
     return {
       id: node.id,
@@ -84,14 +90,14 @@ const createFlowNodes = (
       position: isCenter
         ? { x: centerX, y: centerY }
         : {
-          x: centerX + Math.cos(angle) * radius * (1 + (index % 2) * 0.2),
-          y: centerY + Math.sin(angle) * radius * (1 + (index % 2) * 0.2),
+          x: centerX + Math.cos(angleInRing) * ringRadius,
+          y: centerY + Math.sin(angleInRing) * ringRadius,
         },
       data: {
         label: node.label,
         category: node.category,
         isActive,
-        isHighlighted, // New prop for pulse effect
+        isHighlighted,
         onClick: onNodeClick,
         description: (node as any).description || '',
         size: nodeSize,
@@ -290,9 +296,13 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
             connectionLineType={ConnectionLineType.SmoothStep}
             fitView
             fitViewOptions={{ padding: 0.3 }}
-            minZoom={0.3}
-            maxZoom={2}
+            minZoom={0.2}
+            maxZoom={3}
             proOptions={{ hideAttribution: true }}
+            panOnDrag={true}
+            zoomOnPinch={true}
+            zoomOnScroll={true}
+            preventScrolling={false}
           >
             <Background
               color="hsl(215, 20%, 30%)"

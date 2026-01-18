@@ -54,7 +54,7 @@ const uiLabels = {
       description: 'Review summaries, study vocabulary, and test yourself with auto-generated quizzes.'
     },
     ctaTitle: 'Ready to Transform Your Learning?',
-    ctaDescription: 'Start with 5 free analyses per day. No credit card required.',
+    ctaDescription: 'Start with 1 free analysis per day. No credit card required.',
     startLearning: 'Start Learning Now',
     footer: '© 2025 Aide. Empowering learners with AI-driven study tools.',
     help: 'Help',
@@ -104,7 +104,7 @@ const uiLabels = {
       description: 'Просматривайте резюме, изучайте словарь и проверяйте себя с помощью автоматически созданных викторин.'
     },
     ctaTitle: 'Готовы преобразить ваше обучение?',
-    ctaDescription: 'Начните с 5 бесплатных анализов в день. Кредитная карта не требуется.',
+    ctaDescription: 'Начните с 1 бесплатного анализа в день. Кредитная карта не требуется.',
     startLearning: 'Начать обучение сейчас',
     footer: '© 2025 Aide. Расширяем возможности учащихся с помощью инструментов для обучения на основе ИИ.',
     help: 'Помощь',
@@ -204,7 +204,7 @@ const uiLabels = {
       description: '요약을 검토하고, 어휘를 공부하고, 자동 생성된 퀴즈로 자신을 테스트하세요.'
     },
     ctaTitle: '학습을 변화시킬 준비가 되셨나요?',
-    ctaDescription: '일 5회 무료 분석으로 시작하세요. 신용 카드 불필요.',
+    ctaDescription: '일 1회 무료 분석으로 시작하세요. 신용 카드 불필요.',
     startLearning: '지금 학습 시작하기',
     footer: '© 2025 Aide. AI 기반 학습 도구로 학습자를 강화합니다.',
     help: '도움말',
@@ -384,9 +384,9 @@ const Landing = () => {
             >
               <Card className="p-6 backdrop-blur-xl bg-card/80 border border-accent/20 text-center">
                 <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  5
+                  1
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">Free Analyses Per Day</p>
+                <p className="text-sm text-muted-foreground mt-1">Free Analysis Per Day</p>
               </Card>
               <Card className="p-6 backdrop-blur-xl bg-card/80 border border-primary/20 text-center">
                 <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
