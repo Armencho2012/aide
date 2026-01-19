@@ -41,6 +41,45 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          gumroad_email: string | null
+          gumroad_sale_id: string | null
+          id: string
+          plan_type: string | null
+          purchased_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          gumroad_email?: string | null
+          gumroad_sale_id?: string | null
+          id?: string
+          plan_type?: string | null
+          purchased_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          gumroad_email?: string | null
+          gumroad_sale_id?: string | null
+          id?: string
+          plan_type?: string | null
+          purchased_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       usage_logs: {
         Row: {
           action_type: string
@@ -98,6 +137,7 @@ export type Database = {
     }
     Functions: {
       get_daily_usage_count: { Args: { p_user_id: string }; Returns: number }
+      is_pro_user: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
