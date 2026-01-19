@@ -232,6 +232,13 @@ Deno.serve(async (req: Request) => {
     const userPlan = await getUserPlan(supabaseAdmin, user.id);
     console.log(`User ${user.id} has plan: ${userPlan}`);
 
+    // Determine configuration based on plan
+    const isProOrClass = userPlan === 'pro' || userPlan === 'class';
+    const quizQuestionsCount = isProOrClass ? 30 : QUIZ_QUESTIONS_COUNT;
+    const detailInstruction = isProOrClass
+      ? "### DEPTH REQUIREMENT: DEEP & EXTENSIVE\nProvide detailed, comprehensive output. summaries should be long (several paragraphs if needed), detailed, and proportional to the input text length. Avoid surface-level brevity."
+      : "Provide clear and concise summaries.";
+
     // Check daily usage limit BEFORE processing (skip for class tier - unlimited)
     if (userPlan !== 'class') {
       const { data: usageCount, error: usageError } = await supabase.rpc(
@@ -247,12 +254,12 @@ Deno.serve(async (req: Request) => {
 
       const currentUsage = usageCount || 0;
       const dailyLimit = userPlan === 'pro' ? DAILY_LIMIT_PRO : DAILY_LIMIT_FREE;
-      
+
       if (currentUsage >= dailyLimit) {
-        const message = userPlan === 'free' 
+        const message = userPlan === 'free'
           ? `Daily limit of ${DAILY_LIMIT_FREE} analyses reached. Please upgrade for more access.`
           : `Monthly limit of ${DAILY_LIMIT_PRO} analyses reached. Upgrade to Class for unlimited access.`;
-        
+
         return new Response(
           JSON.stringify({ error: message }),
           {
@@ -276,18 +283,19 @@ Deno.serve(async (req: Request) => {
     const systemInstruction = `### ROLE: SENIOR PEDAGOGICAL ARCHITECT & MULTIMODAL KNOWLEDGE ENGINEER
 You are an expert system designed to deconstruct complex info (text, images, PDFs) into structured educational modules.
 CRITICAL: You MUST respond in the SAME LANGUAGE as the input text.
+${detailInstruction}
 
 ${isCourse ? `### COURSE MODE ENABLED
 You are analyzing a set of related documents.
-1. Create a \"Cross-Document Knowledge Map\" that links concepts across all documents.
-2. Generate a \"7-Day Study Plan\" based on complexity and prerequisites.` : ""}
+1. Create a "Cross-Document Knowledge Map" that links concepts across all documents.
+2. Generate a "7-Day Study Plan" based on complexity and prerequisites.` : ""}
 
 ### MULTIMODAL INSTRUCTIONS
 - If an image or PDF is provided, perform high-accuracy OCR first.
 - Extract all diagrams, formulas, and key concepts.
 
 ### CRITICAL REQUIREMENTS
-1. Generate EXACTLY ${QUIZ_QUESTIONS_COUNT} quiz questions.
+1. Generate EXACTLY ${quizQuestionsCount} quiz questions.
 2. Generate EXACTLY ${FLASHCARDS_COUNT} flashcards.
 3. Each flashcard back must be detailed but not overly long (50-90 words).
 4. All content must be in the SAME LANGUAGE as the input text.

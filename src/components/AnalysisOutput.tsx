@@ -143,8 +143,8 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
 
   useEffect(() => {
     if (allQuizQuestions.length > 0) {
-      const maxQuestions = Math.min(15, allQuizQuestions.length);
-      setNumQuestions(Math.max(5, Math.min(10, maxQuestions)));
+      const maxQuestions = Math.min(50, allQuizQuestions.length);
+      setNumQuestions(maxQuestions);
     }
   }, [allQuizQuestions.length]);
 
@@ -285,7 +285,7 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
                   <Slider
                     id="quiz-count"
                     min={5}
-                    max={Math.min(15, allQuizQuestions.length)}
+                    max={Math.min(50, allQuizQuestions.length)}
                     step={1}
                     value={[numQuestions]}
                     onValueChange={(value) => setNumQuestions(value[0])}
