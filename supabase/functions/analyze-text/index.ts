@@ -2,6 +2,8 @@ import { corsHeaders } from "./_shared-index.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const DAILY_LIMIT_FREE = 1;
+const DAILY_LIMIT_PRO = 50;
+// Class tier has unlimited (no limit check)
 
 const QUIZ_QUESTIONS_COUNT = 10;
 const FLASHCARDS_COUNT = 15;
@@ -180,6 +182,25 @@ async function callGeminiGenerateContent(opts: {
   return { ok: res.ok, status: res.status, json };
 }
 
+// Helper function to get user's subscription plan
+async function getUserPlan(supabaseAdmin: any, userId: string): Promise<string> {
+  const { data, error } = await supabaseAdmin
+    .from('subscriptions')
+    .select('status, plan_type, expires_at')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !data) {
+    return 'free';
+  }
+
+  const isActive = data.status === 'active' &&
+    ['pro', 'class'].includes(data.plan_type) &&
+    (!data.expires_at || new Date(data.expires_at) > new Date());
+
+  return isActive ? data.plan_type : 'free';
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -207,30 +228,39 @@ Deno.serve(async (req: Request) => {
     } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Invalid token");
 
-    // Check daily usage limit BEFORE processing
-    const { data: usageCount, error: usageError } = await supabase.rpc(
-      "get_daily_usage_count",
-      {
-        p_user_id: user.id,
-      },
-    );
+    // Get user's subscription plan
+    const userPlan = await getUserPlan(supabaseAdmin, user.id);
+    console.log(`User ${user.id} has plan: ${userPlan}`);
 
-    if (usageError) {
-      console.error("Error checking usage:", usageError);
-    }
-
-    const currentUsage = usageCount || 0;
-    if (currentUsage >= DAILY_LIMIT_FREE) {
-      return new Response(
-        JSON.stringify({
-          error:
-            `Daily limit of ${DAILY_LIMIT_FREE} analyses reached. Please upgrade for unlimited access.`,
-        }),
+    // Check daily usage limit BEFORE processing (skip for class tier - unlimited)
+    if (userPlan !== 'class') {
+      const { data: usageCount, error: usageError } = await supabase.rpc(
+        "get_daily_usage_count",
         {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          p_user_id: user.id,
         },
       );
+
+      if (usageError) {
+        console.error("Error checking usage:", usageError);
+      }
+
+      const currentUsage = usageCount || 0;
+      const dailyLimit = userPlan === 'pro' ? DAILY_LIMIT_PRO : DAILY_LIMIT_FREE;
+      
+      if (currentUsage >= dailyLimit) {
+        const message = userPlan === 'free' 
+          ? `Daily limit of ${DAILY_LIMIT_FREE} analyses reached. Please upgrade for more access.`
+          : `Monthly limit of ${DAILY_LIMIT_PRO} analyses reached. Upgrade to Class for unlimited access.`;
+        
+        return new Response(
+          JSON.stringify({ error: message }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
     }
 
     const body = await req.json().catch(() => ({}));
@@ -297,7 +327,7 @@ Return ONLY valid JSON. No markdown, no commentary.`;
     }
 
     console.log(
-      `Processing analysis for user ${user.id}, current usage: ${currentUsage}`,
+      `Processing analysis for user ${user.id}, plan: ${userPlan}`,
     );
 
     // Newest Gemini family (per docs): gemini-3-flash-preview
@@ -436,7 +466,7 @@ Return ONLY valid JSON. No markdown, no commentary.`;
       console.error("Error logging usage:", logError);
       // Don't fail the request, just log the error
     } else {
-      console.log(`Usage logged for user ${user.id}, new count: ${currentUsage + 1}`);
+      console.log(`Usage logged for user ${user.id}`);
     }
 
     return new Response(JSON.stringify(analysis), {

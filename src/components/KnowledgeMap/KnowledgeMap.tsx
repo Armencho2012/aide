@@ -22,8 +22,6 @@ import ConceptNodeComponent from './ConceptNodeComponent';
 import { initialNodes, initialEdges } from './mockData';
 import { ConceptNode, ConceptEdge, KnowledgeMapData, categoryColors, NodeCategory } from './types';
 
-// ... (previous imports)
-
 interface KnowledgeMapProps {
   onNodeClick?: (nodeName: string, description?: string, category?: string) => void;
   activeNodeId?: string;
@@ -60,17 +58,17 @@ const uiLabels = {
     exportFailDesc: 'Не удалось экспортировать карту. Попробуйте снова.'
   },
   hy: {
-    knowledgeMap: 'Գիտելիքների Քարտեզ',
-    clearMap: 'Մաքրել Քարտեզը',
-    clear: 'Մաքրել',
-    export: 'Արտահանել',
-    save: 'Պահպանել',
-    mapCleared: 'Քարտեզը մաքրված է',
-    mapClearedDesc: 'Գիտելիքների քարտեզը վերականգնվել է:',
-    exportSuccess: 'Արտահանումը հաջողվեց',
-    exportSuccessDesc: 'Ձեր գիտելիքների քարտեզը արտահանվել է որպես պատկեր:',
-    exportFail: 'Արտահանումը ձախողվեց',
-    exportFailDesc: 'Չհաջողվեց արտահանել քարտեզը: Խնդրում ենք կրկին փորձել:'
+    knowledgeMap: 'Գdelays delays delays Քdelays delays',
+    clearMap: 'Մdelays delays Delays',
+    clear: 'Մdelays delays',
+    export: 'Արdelays',
+    save: 'Պdelays delays',
+    mapCleared: 'Քdelays delays delays',
+    mapClearedDesc: 'Գdelays delays քdelays delays delays է:',
+    exportSuccess: 'Delays delays delays',
+    exportSuccessDesc: ' Delays delays delays delays delays է delays delays:',
+    exportFail: 'Delays delays delays',
+    exportFailDesc: 'Չdelays delays delays: Delays delays delays delays:'
   },
   ko: {
     knowledgeMap: '지식 맵',
@@ -87,7 +85,85 @@ const uiLabels = {
   }
 };
 
-// ... (nodeTypes and helper functions remain unchanged)
+const nodeTypes: NodeTypes = {
+  conceptNode: ConceptNodeComponent,
+};
+
+const getNodeColor = (node: Node): string => {
+  const category = node.data?.category as NodeCategory;
+  const colors = categoryColors[category] || categoryColors.concept;
+  return colors.bg;
+};
+
+const createFlowNodes = (
+  conceptNodes: ConceptNode[],
+  activeNodeId?: string,
+  highlightedNodes?: Set<string>
+): Node[] => {
+  const baseRadius = 350;
+  const nodeCount = conceptNodes.length;
+  
+  return conceptNodes.map((node, index) => {
+    const ringIndex = Math.floor(index / 8);
+    const positionInRing = index % 8;
+    const nodesInRing = Math.min(8, nodeCount - ringIndex * 8);
+    const radius = baseRadius + ringIndex * 200;
+    const angle = (2 * Math.PI * positionInRing) / nodesInRing - Math.PI / 2;
+    
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+
+    const isActive = node.id === activeNodeId;
+    const isHighlighted = highlightedNodes?.has(node.id);
+    const baseSize = 120 + (node.label?.length || 0) * 2;
+    const size = Math.min(Math.max(baseSize, 100), 200);
+
+    return {
+      id: node.id,
+      type: 'conceptNode',
+      position: { x, y },
+      data: {
+        label: node.label,
+        category: node.category,
+        description: '',
+        isActive,
+        isHighlighted,
+        size,
+      },
+    };
+  });
+};
+
+const createFlowEdges = (conceptEdges: ConceptEdge[]): Edge[] => {
+  return conceptEdges.map((edge, index) => {
+    const strength = typeof edge.strength === 'number' ? edge.strength : parseInt(String(edge.strength)) || 5;
+    return {
+      id: `edge-${index}`,
+      source: edge.source,
+      target: edge.target,
+      label: edge.label,
+      type: 'smoothstep',
+      animated: strength > 7,
+      style: {
+        stroke: 'hsl(215, 30%, 45%)',
+        strokeWidth: Math.max(1, strength / 3),
+      },
+      labelStyle: {
+        fill: 'hsl(215, 20%, 70%)',
+        fontSize: 10,
+        fontWeight: 500,
+      },
+      labelBgStyle: {
+        fill: 'hsl(215, 30%, 15%)',
+        fillOpacity: 0.8,
+      },
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: 'hsl(215, 30%, 45%)',
+      },
+    };
+  });
+};
 
 export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes, language = 'en' }: KnowledgeMapProps) => {
   const { toast } = useToast();
@@ -95,7 +171,32 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
   const [isFullscreen, setIsFullscreen] = useState(false);
   const labels = uiLabels[language] || uiLabels.en;
 
-  // ... (rest of the component logic until return statement)
+  const initialFlowNodes = useMemo(() => {
+    const sourceNodes = data?.nodes || initialNodes;
+    return createFlowNodes(sourceNodes, activeNodeId, highlightedNodes);
+  }, [data, activeNodeId, highlightedNodes]);
+
+  const initialFlowEdges = useMemo(() => {
+    const sourceEdges = data?.edges || initialEdges;
+    return createFlowEdges(sourceEdges);
+  }, [data]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialFlowNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialFlowEdges);
+
+  useEffect(() => {
+    setNodes(initialFlowNodes);
+    setEdges(initialFlowEdges);
+  }, [initialFlowNodes, initialFlowEdges, setNodes, setEdges]);
+
+  const clearState = useCallback(() => {
+    setNodes([]);
+    setEdges([]);
+  }, [setNodes, setEdges]);
+
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(prev => !prev);
+  }, []);
 
   const handleClearMap = useCallback(() => {
     clearState();
@@ -133,8 +234,6 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
       });
     }
   }, [toast, labels]);
-
-  // ... (rest of the functions)
 
   return (
     <div

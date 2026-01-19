@@ -256,9 +256,14 @@ const Billing = () => {
 
       if (data) {
         const isActive = data.status === 'active' &&
-          data.plan_type === 'pro' &&
+          ['pro', 'class'].includes(data.plan_type) &&
           (!data.expires_at || new Date(data.expires_at) > new Date());
-        setSubscriptionStatus(isActive ? 'pro' : 'free');
+        
+        if (isActive) {
+          setSubscriptionStatus(data.plan_type as 'pro' | 'class');
+        } else {
+          setSubscriptionStatus('free');
+        }
       } else {
         setSubscriptionStatus('free');
       }

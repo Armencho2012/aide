@@ -137,6 +137,7 @@ export type Database = {
     }
     Functions: {
       get_daily_usage_count: { Args: { p_user_id: string }; Returns: number }
+      get_user_plan: { Args: { p_user_id: string }; Returns: string }
       is_pro_user: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {

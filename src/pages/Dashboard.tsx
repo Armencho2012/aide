@@ -114,7 +114,8 @@ const uiLabels = {
 };
 
 
-const DAILY_LIMIT = 1; // Freemium limit: 1 free use per day
+const DAILY_LIMIT_FREE = 1;
+const DAILY_LIMIT_PRO = 50;
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -126,6 +127,8 @@ const Dashboard = () => {
   const [isCourseMode, setIsCourseMode] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [usageCount, setUsageCount] = useState(1);
+  const [dailyLimit, setDailyLimit] = useState(DAILY_LIMIT_FREE);
+  const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'class'>('free');
   const [isLocked, setIsLocked] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -227,6 +230,37 @@ const Dashboard = () => {
 
   const fetchUsageCount = async (userId: string) => {
     try {
+      // First, get user's subscription plan
+      const { data: subData } = await (supabase as any)
+        .from('subscriptions')
+        .select('status, plan_type, expires_at')
+        .eq('user_id', userId)
+        .single();
+
+      let plan: 'free' | 'pro' | 'class' = 'free';
+      if (subData) {
+        const isActive = subData.status === 'active' &&
+          ['pro', 'class'].includes(subData.plan_type) &&
+          (!subData.expires_at || new Date(subData.expires_at) > new Date());
+        if (isActive) {
+          plan = subData.plan_type as 'pro' | 'class';
+        }
+      }
+      setUserPlan(plan);
+
+      // Class tier has unlimited - no limits
+      if (plan === 'class') {
+        setDailyLimit(Infinity);
+        setUsageCount(Infinity);
+        setIsLocked(false);
+        return;
+      }
+
+      // Set daily limit based on plan
+      const limit = plan === 'pro' ? DAILY_LIMIT_PRO : DAILY_LIMIT_FREE;
+      setDailyLimit(limit);
+
+      // Get usage count
       const { data, error } = await supabase.rpc('get_daily_usage_count', {
         p_user_id: userId
       });
@@ -236,12 +270,12 @@ const Dashboard = () => {
         return;
       }
 
-      const remaining = Math.max(0, DAILY_LIMIT - (data || 0));
+      const remaining = Math.max(0, limit - (data || 0));
       setUsageCount(remaining);
       const locked = remaining <= 0;
       setIsLocked(locked);
-      // Show upgrade modal when limit is reached
-      if (locked) {
+      // Show upgrade modal when limit is reached (only for free users)
+      if (locked && plan === 'free') {
         setShowUpgradeModal(true);
       }
     } catch (error) {
@@ -370,8 +404,8 @@ const Dashboard = () => {
             </Button>
             <Card className="px-2 sm:px-4 py-1.5 sm:py-2 shadow-sm">
               <p className="text-xs sm:text-sm text-muted-foreground">{labels.usage}</p>
-              <p className={`text-lg sm:text-2xl font-bold ${usageCount === 0 ? 'text-destructive' : 'text-primary'}`}>
-                {usageCount}/{DAILY_LIMIT}
+              <p className={`text-lg sm:text-2xl font-bold ${usageCount === 0 && userPlan === 'free' ? 'text-destructive' : 'text-primary'}`}>
+                {userPlan === 'class' ? '∞' : `${usageCount}/${dailyLimit}`}
               </p>
             </Card>
             <Button
@@ -401,16 +435,20 @@ const Dashboard = () => {
         <Card className="p-4 sm:p-6 mb-4 sm:mb-6 bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-primary/20">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div>
-              <h3 className="text-base sm:text-lg font-semibold mb-1">{labels.freeTierUsage}</h3>
+              <h3 className="text-base sm:text-lg font-semibold mb-1">
+                {userPlan === 'free' ? labels.freeTierUsage : userPlan === 'pro' ? 'Pro Plan' : 'Class Plan'}
+              </h3>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                {usageCount > 0
-                  ? `${usageCount} ${labels.of} ${DAILY_LIMIT} ${labels.remainingAnalyses}`
-                  : labels.limitReached}
+                {userPlan === 'class' 
+                  ? 'Unlimited analyses'
+                  : usageCount > 0
+                    ? `${usageCount} ${labels.of} ${dailyLimit} ${labels.remainingAnalyses}`
+                    : labels.limitReached}
               </p>
             </div>
             <div className="text-left sm:text-right">
-              <div className={`text-2xl sm:text-4xl font-bold ${usageCount === 0 ? 'text-destructive' : 'text-primary'}`}>
-                {usageCount}/{DAILY_LIMIT}
+              <div className={`text-2xl sm:text-4xl font-bold ${usageCount === 0 && userPlan === 'free' ? 'text-destructive' : 'text-primary'}`}>
+                {userPlan === 'class' ? '∞' : `${usageCount}/${dailyLimit}`}
               </div>
             </div>
           </div>
