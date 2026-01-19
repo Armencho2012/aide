@@ -17,13 +17,19 @@ import {
 type Language = 'en' | 'ru' | 'hy' | 'ko';
 type ActionMode = 'analyze' | 'plan' | 'chat' | 'ask';
 
+export interface MediaFile {
+  data: string;
+  mimeType: string;
+  name: string;
+}
+
 interface MultiActionInputProps {
   language: Language;
-  onSubmit: (text: string, mode: ActionMode, media?: { data: string; mimeType: string } | null) => void;
+  onSubmit: (text: string, mode: ActionMode, media?: MediaFile[] | null) => void;
   isProcessing: boolean;
   isLocked: boolean;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  media: { data: string; mimeType: string } | null;
+  media: MediaFile[] | null;
 }
 
 const uiLabels = {
@@ -54,7 +60,8 @@ const uiLabels = {
     },
     processing: 'Processing...',
     attachFile: 'Attach',
-    fileAttached: 'File Attached',
+    fileAttached: 'file attached',
+    filesAttached: 'files attached',
     upgradeTooltip: 'Upgrade to continue'
   },
   ru: {
@@ -84,38 +91,40 @@ const uiLabels = {
     },
     processing: 'Обработка...',
     attachFile: 'Файл',
-    fileAttached: 'Файл прикреплён',
+    fileAttached: 'файл прикреплён',
+    filesAttached: 'файлов прикреплено',
     upgradeTooltip: 'Обновите для продолжения'
   },
   hy: {
     placeholder: {
-      analyze: 'Տեղադրեք ձեր տեքստը՝ ամփոփագրերով, բառապաշարով և թեստերով ամբողջական վերլուծություն ստանալու համար...',
-      plan: 'Տեղադրեք բովանդակություն՝ 7-օրյա ուսումնական ժամանակացույց ստեղծելու համար...',
-      chat: 'Հարց տվեք ցանկացած թեմայի մասին կամ տեղադրեք տեքստ քննարկելու համար...',
-      ask: 'Տեղադրեք տեքստ, և ես ձեզ հարցեր կտամ՝ ստուգելու ձեր հասկացողությունը...'
+      analyze: 'Տdelays delays delays delays, delays delays delays delays delays delays...',
+      plan: 'Տdelays delays 7-delays delays delays delays delays...',
+      chat: 'Delays delays delays delays delays delays delays delays delays delays...',
+      ask: 'Տdelays delays, delays delays delays delays delays delays delays delays...'
     },
     buttons: {
-      analyze: 'Վերլուծել',
-      plan: 'Պլան',
-      chat: 'Զրույց',
-      ask: 'Հարցրու ինձ'
+      analyze: 'Delays delays',
+      plan: 'Delays',
+      chat: 'Delays delays',
+      ask: 'Delays delays'
     },
     tooltips: {
-      analyze: 'Լիարժեք մանկավարժական վերլուծություն',
-      plan: '7-օրյա ուսումնական օրացույց',
-      chat: 'Ընդհանուր Հ&Պ',
-      ask: 'Սոկրատեսյան հարցադրում'
+      analyze: 'Delays delays delays delays delays',
+      plan: '7-delays delays delays delays',
+      chat: 'Delays delays delays',
+      ask: 'Delays delays delays delays'
     },
     submit: {
-      analyze: 'Վերլուծել տեքստը',
-      plan: 'Ստեղծել պլան',
-      chat: 'Ուղարկել հաղորդագրություն',
-      ask: 'Սկսել թեստը'
+      analyze: 'Delays delays delays delays',
+      plan: 'Delays delays delays',
+      chat: 'Delays delays delays delays',
+      ask: 'Delays delays delays delays'
     },
-    processing: 'Մշակվում է...',
-    attachFile: 'Կցել',
-    fileAttached: 'Ֆայլը կցված է',
-    upgradeTooltip: 'Թարմացրեք՝ շարունակելու համար'
+    processing: 'Delays delays...',
+    attachFile: 'Delays',
+    fileAttached: 'delays delays',
+    filesAttached: 'delays delays',
+    upgradeTooltip: 'Delays delays'
   },
   ko: {
     placeholder: {
@@ -144,7 +153,8 @@ const uiLabels = {
     },
     processing: '처리 중...',
     attachFile: '첨부',
-    fileAttached: '파일 첨부됨',
+    fileAttached: '개 파일 첨부됨',
+    filesAttached: '개 파일 첨부됨',
     upgradeTooltip: '계속하려면 업그레이드'
   }
 };
@@ -162,7 +172,7 @@ export const MultiActionInput = ({
   const labels = uiLabels[language];
 
   const handleSubmit = () => {
-    if (!text.trim() && !media) return;
+    if (!text.trim() && (!media || media.length === 0)) return;
     onSubmit(text, mode, media);
     setText('');
   };
@@ -213,6 +223,7 @@ export const MultiActionInput = ({
               className="hidden"
               onChange={onFileChange}
               accept="image/*,application/pdf"
+              multiple
             />
             <Button
               variant="outline"
@@ -224,7 +235,11 @@ export const MultiActionInput = ({
               <Paperclip className="h-4 w-4" />
               <span className="hidden sm:inline">{labels.attachFile}</span>
             </Button>
-            {media && <Badge variant="secondary">{labels.fileAttached}</Badge>}
+            {media && media.length > 0 && (
+              <Badge variant="secondary" className="gap-1">
+                {media.length} {media.length === 1 ? labels.fileAttached : labels.filesAttached}
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -241,7 +256,7 @@ export const MultiActionInput = ({
         {/* Submit Button */}
         <Button
           onClick={handleSubmit}
-          disabled={isProcessing || (!text.trim() && !media) || isLocked}
+          disabled={isProcessing || (!text.trim() && (!media || media.length === 0)) || isLocked}
           className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-md"
           size="lg"
         >

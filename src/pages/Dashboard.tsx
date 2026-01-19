@@ -304,8 +304,8 @@ const Dashboard = () => {
 
     if (usageCount <= 0) {
       toast({
-        title: language === 'en' ? 'Limit Reached' : language === 'ru' ? 'Лимит достигнут' : language === 'hy' ? 'Սահմանաչափը լրացել է' : '한도 도달',
-        description: language === 'en' ? `You have reached your daily limit of ${DAILY_LIMIT} analyses` : language === 'ru' ? `Вы достигли дневного лимита в ${DAILY_LIMIT} анализов` : language === 'hy' ? `Դուք հասել եք ձեր օրական ${DAILY_LIMIT} վերլուծության սահմանաչափին` : `일일 ${DAILY_LIMIT}회 분석 한도에 도달했습니다`,
+        title: language === 'en' ? 'Limit Reached' : language === 'ru' ? 'Лимит достигнут' : language === 'hy' ? 'Սdelays' : '한도 도달',
+        description: language === 'en' ? `You have reached your daily limit of ${dailyLimit} analyses` : language === 'ru' ? `Вы достигли дневного лимита в ${dailyLimit} анализов` : language === 'hy' ? `Delays ${dailyLimit}` : `일일 ${dailyLimit}회 분석 한도에 도달했습니다`,
         variant: 'destructive'
       });
       return;
