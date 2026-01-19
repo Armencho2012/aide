@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, DragEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -11,7 +11,8 @@ import {
   MessageSquare,
   HelpCircle,
   Lock,
-  Paperclip
+  Paperclip,
+  Upload
 } from 'lucide-react';
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
@@ -28,7 +29,7 @@ interface MultiActionInputProps {
   onSubmit: (text: string, mode: ActionMode, media?: MediaFile[] | null) => void;
   isProcessing: boolean;
   isLocked: boolean;
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onFilesAdd: (files: FileList) => void;
   media: MediaFile[] | null;
 }
 
@@ -62,7 +63,8 @@ const uiLabels = {
     attachFile: 'Attach',
     fileAttached: 'file attached',
     filesAttached: 'files attached',
-    upgradeTooltip: 'Upgrade to continue'
+    upgradeTooltip: 'Upgrade to continue',
+    dropFiles: 'Drop files here'
   },
   ru: {
     placeholder: {
@@ -93,7 +95,8 @@ const uiLabels = {
     attachFile: 'Файл',
     fileAttached: 'файл прикреплён',
     filesAttached: 'файлов прикреплено',
-    upgradeTooltip: 'Обновите для продолжения'
+    upgradeTooltip: 'Обновите для продолжения',
+    dropFiles: 'Перетащите файлы сюда'
   },
   hy: {
     placeholder: {
@@ -122,9 +125,10 @@ const uiLabels = {
     },
     processing: 'Delays delays...',
     attachFile: 'Delays',
-    fileAttached: 'delays delays',
+    fileAttached: ' delays delays',
     filesAttached: 'delays delays',
-    upgradeTooltip: 'Delays delays'
+    upgradeTooltip: 'Delays delays',
+    dropFiles: 'Delays delays delays'
   },
   ko: {
     placeholder: {
@@ -155,7 +159,8 @@ const uiLabels = {
     attachFile: '첨부',
     fileAttached: '개 파일 첨부됨',
     filesAttached: '개 파일 첨부됨',
-    upgradeTooltip: '계속하려면 업그레이드'
+    upgradeTooltip: '계속하려면 업그레이드',
+    dropFiles: '파일을 여기에 놓으세요'
   }
 };
 
@@ -164,11 +169,13 @@ export const MultiActionInput = ({
   onSubmit,
   isProcessing,
   isLocked,
-  onFileChange,
+  onFilesAdd,
   media
 }: MultiActionInputProps) => {
   const [mode, setMode] = useState<ActionMode>('analyze');
   const [text, setText] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const labels = uiLabels[language];
 
   const handleSubmit = () => {
@@ -184,6 +191,38 @@ export const MultiActionInput = ({
     }
   };
 
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isLocked) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (!isLocked && e.dataTransfer.files.length > 0) {
+      onFilesAdd(e.dataTransfer.files);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      onFilesAdd(e.target.files);
+    }
+  };
+
   const modeIcons = {
     analyze: <Sparkles className="h-4 w-4" />,
     plan: <Calendar className="h-4 w-4" />,
@@ -192,7 +231,23 @@ export const MultiActionInput = ({
   };
 
   return (
-    <Card className={`p-4 sm:p-6 shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 ${isLocked ? 'opacity-50' : ''}`}>
+    <Card 
+      className={`p-4 sm:p-6 shadow-lg animate-in fade-in-50 slide-in-from-bottom-4 relative transition-all ${isLocked ? 'opacity-50' : ''} ${isDragging ? 'ring-2 ring-primary ring-offset-2 bg-primary/5' : ''}`}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-primary/10 rounded-lg border-2 border-dashed border-primary">
+          <div className="flex flex-col items-center gap-2 text-primary">
+            <Upload className="h-10 w-10" />
+            <span className="font-medium">{labels.dropFiles}</span>
+          </div>
+        </div>
+      )}
+      
       <div className="space-y-4">
         {/* Mode Toggle */}
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
@@ -220,15 +275,16 @@ export const MultiActionInput = ({
             <input
               type="file"
               id="multi-action-upload"
+              ref={fileInputRef}
               className="hidden"
-              onChange={onFileChange}
+              onChange={handleFileInputChange}
               accept="image/*,application/pdf"
               multiple
             />
             <Button
               variant="outline"
               size="sm"
-              onClick={() => document.getElementById('multi-action-upload')?.click()}
+              onClick={() => fileInputRef.current?.click()}
               className="gap-1.5"
               disabled={isLocked}
             >
