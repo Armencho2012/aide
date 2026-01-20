@@ -95,15 +95,20 @@ const getNodeColor = (node: Node): string => {
   return colors.bg;
 };
 
-const createFlowNodes = (
+interface LayoutResult {
+  nodes: Node[];
+  edges: Edge[];
+}
+
+const createTreeLayout = (
   conceptNodes: ConceptNode[],
   conceptEdges: ConceptEdge[],
   activeNodeId?: string,
   highlightedNodes?: Set<string>
-): Node[] => {
-  if (conceptNodes.length === 0) return [];
+): LayoutResult => {
+  if (conceptNodes.length === 0) return { nodes: [], edges: [] };
 
-  // 1. Build Adjacency List
+  // 1. Build Adjacency List from original edges
   const adjacency = new globalThis.Map<string, string[]>();
   conceptNodes.forEach(node => {
     adjacency.set(node.id, []);
@@ -130,7 +135,7 @@ const createFlowNodes = (
     });
   }
 
-  // 3. Build Spanning Tree (BFS) - ensures no cycles, clean hierarchy
+  // 3. Build Spanning Tree (BFS) - THIS IS THE KEY: tree edges NEVER cross
   const childrenMap = new globalThis.Map<string, string[]>();
   const parentMap = new globalThis.Map<string, string | null>();
   const visited = new globalThis.Set<string>();
@@ -138,6 +143,9 @@ const createFlowNodes = (
   visited.add(rootId);
   childrenMap.set(rootId, []);
   parentMap.set(rootId, null);
+
+  // Store tree edges as we build the tree
+  const treeEdges: Array<{ source: string; target: string }> = [];
 
   while (queue.length > 0) {
     const u = queue.shift()!;
@@ -149,6 +157,8 @@ const createFlowNodes = (
         childrenMap.set(v, []);
         parentMap.set(v, u);
         queue.push(v);
+        // Add tree edge (parent -> child)
+        treeEdges.push({ source: u, target: v });
       }
     }
   }
@@ -160,6 +170,7 @@ const createFlowNodes = (
       childrenMap.get(rootId)?.push(node.id);
       childrenMap.set(node.id, []);
       parentMap.set(node.id, rootId);
+      treeEdges.push({ source: rootId, target: node.id });
     }
   });
 
@@ -176,7 +187,7 @@ const createFlowNodes = (
   };
   calcSize(rootId);
 
-  // 5. Calculate node depths for layered radial layout
+  // 5. Calculate node depths
   const depths = new globalThis.Map<string, number>();
   const calcDepth = (u: string, depth: number) => {
     depths.set(u, depth);
@@ -187,10 +198,10 @@ const createFlowNodes = (
   };
   calcDepth(rootId, 0);
 
-  // 6. Radial Tree Layout - no crossing guaranteed
+  // 6. Radial Tree Layout - MUCH more spacing, guaranteed no crossing
   const positions = new globalThis.Map<string, { x: number; y: number }>();
-  const LAYER_SPACING = 280; // Distance between depth layers
-  const MIN_ANGLE_GAP = 0.15; // Minimum angle between siblings
+  const LAYER_SPACING = 400; // Much bigger spacing between layers
+  const MIN_NODE_SPACING = 0.3; // Minimum angle gap between siblings (radians)
 
   const layoutNode = (u: string, startAngle: number, endAngle: number) => {
     const depth = depths.get(u) || 0;
@@ -205,13 +216,13 @@ const createFlowNodes = (
     const children = childrenMap.get(u) || [];
     if (children.length === 0) return;
 
-    // Calculate total weight for proportional distribution
     const totalWeight = children.reduce((sum, v) => sum + (subtreeSizes.get(v) || 1), 0);
     const totalSweep = endAngle - startAngle;
     
-    // Add padding between children to prevent crowding
-    const paddingAngle = Math.min(MIN_ANGLE_GAP, totalSweep / (children.length * 4));
-    const availableSweep = totalSweep - paddingAngle * (children.length - 1);
+    // Ensure minimum spacing between children
+    const requiredPadding = MIN_NODE_SPACING * (children.length - 1);
+    const availableSweep = Math.max(totalSweep - requiredPadding, totalSweep * 0.7);
+    const actualPadding = (totalSweep - availableSweep) / Math.max(1, children.length - 1);
     
     let currentAngle = startAngle;
     
@@ -222,24 +233,23 @@ const createFlowNodes = (
       const angleWidth = availableSweep * share;
       
       layoutNode(v, currentAngle, currentAngle + angleWidth);
-      currentAngle += angleWidth + paddingAngle;
+      currentAngle += angleWidth + actualPadding;
     }
   };
 
   // Start layout from root with full circle
   layoutNode(rootId, 0, 2 * Math.PI);
 
-  // 7. Create Flow Nodes with proper sizing
-  return conceptNodes.map((node) => {
+  // 7. Create Flow Nodes
+  const flowNodes: Node[] = conceptNodes.map((node) => {
     const pos = positions.get(node.id) || { x: 0, y: 0 };
     const isActive = node.id === activeNodeId;
     const isHighlighted = highlightedNodes?.has(node.id);
     const isRoot = node.id === rootId;
     
-    // Root node is larger and more prominent
     let size: number;
     if (isRoot) {
-      size = 200; // Big central node
+      size = 240; // Big central node
     } else {
       const baseSize = 100 + (node.label?.length || 0) * 1.5;
       size = Math.min(Math.max(baseSize, 80), 160);
@@ -260,37 +270,26 @@ const createFlowNodes = (
       },
     };
   });
-};
 
-const createFlowEdges = (conceptEdges: ConceptEdge[]): Edge[] => {
-  return conceptEdges.map((edge, index) => {
-    const strength = typeof edge.strength === 'number' ? edge.strength : parseInt(String(edge.strength)) || 5;
-    return {
-      id: `edge-${index}`,
-      source: edge.source,
-      target: edge.target,
-      label: edge.label,
-      type: 'smoothstep',
-      animated: strength > 7,
-      style: {
-        stroke: 'hsl(215, 30%, 45%)',
-        strokeWidth: Math.max(1, strength / 3),
-      },
-      labelStyle: {
-        fill: 'hsl(215, 20%, 70%)',
-        fontSize: 10,
-        fontWeight: 500,
-      },
-      labelBgStyle: {
-        fill: 'hsl(215, 30%, 15%)',
-        fillOpacity: 0.8,
-      },
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: 'hsl(215, 30%, 45%)',
-      },
-    };
-  });
+  // 8. Create STRAIGHT tree edges ONLY - these NEVER cross in radial layout
+  const flowEdges: Edge[] = treeEdges.map((edge, index) => ({
+    id: `tree-edge-${index}`,
+    source: edge.source,
+    target: edge.target,
+    type: 'straight', // Straight lines - cleaner, no crossing
+    style: {
+      stroke: 'hsl(265, 60%, 55%)',
+      strokeWidth: 2,
+    },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: 'hsl(265, 60%, 55%)',
+      width: 15,
+      height: 15,
+    },
+  }));
+
+  return { nodes: flowNodes, edges: flowEdges };
 };
 
 export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes, language = 'en' }: KnowledgeMapProps) => {
@@ -299,24 +298,19 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
   const [isFullscreen, setIsFullscreen] = useState(false);
   const labels = uiLabels[language] || uiLabels.en;
 
-  const initialFlowNodes = useMemo(() => {
+  const layoutResult = useMemo(() => {
     const sourceNodes = data?.nodes || initialNodes;
     const sourceEdges = data?.edges || initialEdges;
-    return createFlowNodes(sourceNodes, sourceEdges, activeNodeId, highlightedNodes);
+    return createTreeLayout(sourceNodes, sourceEdges, activeNodeId, highlightedNodes);
   }, [data, activeNodeId, highlightedNodes]);
 
-  const initialFlowEdges = useMemo(() => {
-    const sourceEdges = data?.edges || initialEdges;
-    return createFlowEdges(sourceEdges);
-  }, [data]);
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialFlowNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialFlowEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(layoutResult.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(layoutResult.edges);
 
   useEffect(() => {
-    setNodes(initialFlowNodes);
-    setEdges(initialFlowEdges);
-  }, [initialFlowNodes, initialFlowEdges, setNodes, setEdges]);
+    setNodes(layoutResult.nodes);
+    setEdges(layoutResult.edges);
+  }, [layoutResult, setNodes, setEdges]);
 
   const clearState = useCallback(() => {
     setNodes([]);
