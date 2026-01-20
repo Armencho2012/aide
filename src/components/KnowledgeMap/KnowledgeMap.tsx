@@ -15,7 +15,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { toPng } from 'html-to-image';
-import { Trash2, Download, Maximize2, Minimize2, Map, X } from 'lucide-react';
+import { Trash2, Download, Maximize2, Minimize2, Map as MapIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import ConceptNodeComponent from './ConceptNodeComponent';
@@ -101,18 +101,20 @@ const createFlowNodes = (
   activeNodeId?: string,
   highlightedNodes?: Set<string>
 ): Node[] => {
+  if (conceptNodes.length === 0) return [];
+
   // 1. Build Adjacency List
-  const adj = new Map<string, string[]>();
+  const adjacency = new globalThis.Map<string, string[]>();
   conceptNodes.forEach(node => {
-    adj.set(node.id, []);
+    adjacency.set(node.id, []);
   });
 
   conceptEdges.forEach(edge => {
-    if (adj.has(edge.source)) adj.get(edge.source)?.push(edge.target);
-    if (adj.has(edge.target)) adj.get(edge.target)?.push(edge.source);
+    if (adjacency.has(edge.source)) adjacency.get(edge.source)?.push(edge.target);
+    if (adjacency.has(edge.target)) adjacency.get(edge.target)?.push(edge.source);
   });
 
-  // 2. Identify Root
+  // 2. Identify Root (main node or highest degree)
   let rootId = conceptNodes[0]?.id;
   const mainNode = conceptNodes.find(n => n.category === 'main');
   if (mainNode) {
@@ -120,7 +122,7 @@ const createFlowNodes = (
   } else {
     let maxDegree = -1;
     conceptNodes.forEach(node => {
-      const degree = adj.get(node.id)?.length || 0;
+      const degree = adjacency.get(node.id)?.length || 0;
       if (degree > maxDegree) {
         maxDegree = degree;
         rootId = node.id;
@@ -128,37 +130,41 @@ const createFlowNodes = (
     });
   }
 
-  // 3. Build Spanning Tree (BFS)
-  const childrenMap = new Map<string, string[]>();
-  const visited = new Set<string>();
+  // 3. Build Spanning Tree (BFS) - ensures no cycles, clean hierarchy
+  const childrenMap = new globalThis.Map<string, string[]>();
+  const parentMap = new globalThis.Map<string, string | null>();
+  const visited = new globalThis.Set<string>();
   const queue = [rootId];
   visited.add(rootId);
   childrenMap.set(rootId, []);
+  parentMap.set(rootId, null);
 
   while (queue.length > 0) {
     const u = queue.shift()!;
-    const neighbors = adj.get(u) || [];
+    const neighbors = adjacency.get(u) || [];
     for (const v of neighbors) {
       if (!visited.has(v)) {
         visited.add(v);
         childrenMap.get(u)?.push(v);
         childrenMap.set(v, []);
+        parentMap.set(v, u);
         queue.push(v);
       }
     }
   }
 
-  // Handle disconnected nodes
+  // Handle disconnected nodes - attach to root
   conceptNodes.forEach(node => {
     if (!visited.has(node.id)) {
       visited.add(node.id);
       childrenMap.get(rootId)?.push(node.id);
       childrenMap.set(node.id, []);
+      parentMap.set(node.id, rootId);
     }
   });
 
-  // 4. Calculate Subtree Sizes (DFS Post-Order)
-  const subtreeSizes = new Map<string, number>();
+  // 4. Calculate Subtree Sizes for proportional angle allocation
+  const subtreeSizes = new globalThis.Map<string, number>();
   const calcSize = (u: string): number => {
     let size = 1;
     const children = childrenMap.get(u) || [];
@@ -168,13 +174,29 @@ const createFlowNodes = (
     subtreeSizes.set(u, size);
     return size;
   };
-  if (rootId) calcSize(rootId);
+  calcSize(rootId);
 
-  // 5. Assign Positions (Radial Layout)
-  const positions = new Map<string, { x: number, y: number }>();
+  // 5. Calculate node depths for layered radial layout
+  const depths = new globalThis.Map<string, number>();
+  const calcDepth = (u: string, depth: number) => {
+    depths.set(u, depth);
+    const children = childrenMap.get(u) || [];
+    for (const v of children) {
+      calcDepth(v, depth + 1);
+    }
+  };
+  calcDepth(rootId, 0);
 
-  const layoutNode = (u: string, startAngle: number, endAngle: number, radius: number) => {
+  // 6. Radial Tree Layout - no crossing guaranteed
+  const positions = new globalThis.Map<string, { x: number; y: number }>();
+  const LAYER_SPACING = 280; // Distance between depth layers
+  const MIN_ANGLE_GAP = 0.15; // Minimum angle between siblings
+
+  const layoutNode = (u: string, startAngle: number, endAngle: number) => {
+    const depth = depths.get(u) || 0;
+    const radius = depth * LAYER_SPACING;
     const midAngle = (startAngle + endAngle) / 2;
+    
     positions.set(u, {
       x: Math.cos(midAngle) * radius,
       y: Math.sin(midAngle) * radius
@@ -183,30 +205,45 @@ const createFlowNodes = (
     const children = childrenMap.get(u) || [];
     if (children.length === 0) return;
 
+    // Calculate total weight for proportional distribution
     const totalWeight = children.reduce((sum, v) => sum + (subtreeSizes.get(v) || 1), 0);
-    let currentStart = startAngle;
     const totalSweep = endAngle - startAngle;
-
-    for (const v of children) {
+    
+    // Add padding between children to prevent crowding
+    const paddingAngle = Math.min(MIN_ANGLE_GAP, totalSweep / (children.length * 4));
+    const availableSweep = totalSweep - paddingAngle * (children.length - 1);
+    
+    let currentAngle = startAngle;
+    
+    for (let i = 0; i < children.length; i++) {
+      const v = children[i];
       const weight = subtreeSizes.get(v) || 1;
       const share = weight / totalWeight;
-      const angleWidth = totalSweep * share;
-      layoutNode(v, currentStart, currentStart + angleWidth, radius + 300);
-      currentStart += angleWidth;
+      const angleWidth = availableSweep * share;
+      
+      layoutNode(v, currentAngle, currentAngle + angleWidth);
+      currentAngle += angleWidth + paddingAngle;
     }
   };
 
-  if (rootId) {
-    layoutNode(rootId, 0, 2 * Math.PI, 0);
-  }
+  // Start layout from root with full circle
+  layoutNode(rootId, 0, 2 * Math.PI);
 
-  // 6. Return Nodes
+  // 7. Create Flow Nodes with proper sizing
   return conceptNodes.map((node) => {
     const pos = positions.get(node.id) || { x: 0, y: 0 };
     const isActive = node.id === activeNodeId;
     const isHighlighted = highlightedNodes?.has(node.id);
-    const baseSize = 120 + (node.label?.length || 0) * 2;
-    const size = Math.min(Math.max(baseSize, 100), 220);
+    const isRoot = node.id === rootId;
+    
+    // Root node is larger and more prominent
+    let size: number;
+    if (isRoot) {
+      size = 200; // Big central node
+    } else {
+      const baseSize = 100 + (node.label?.length || 0) * 1.5;
+      size = Math.min(Math.max(baseSize, 80), 160);
+    }
 
     return {
       id: node.id,
@@ -214,11 +251,12 @@ const createFlowNodes = (
       position: pos,
       data: {
         label: node.label,
-        category: node.category,
+        category: isRoot ? 'main' : node.category,
         description: '',
         isActive,
         isHighlighted,
         size,
+        isRoot,
       },
     };
   });
@@ -414,7 +452,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
             {/* Title */}
             <Panel position="top-left">
               <div className="flex items-center gap-2 bg-card/90 backdrop-blur-sm border border-border rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 shadow-md">
-                <Map className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                <MapIcon className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                 <span className="text-xs sm:text-sm font-medium text-foreground">{labels.knowledgeMap}</span>
               </div>
             </Panel>
