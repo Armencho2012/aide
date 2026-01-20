@@ -280,11 +280,16 @@ const Landing = () => {
 
       {/* Hero Section with Animated Gradient */}
       <section className="relative pt-24 pb-12 md:pt-32 md:pb-20 overflow-hidden">
-        {/* Animated gradient background */}
+        {/* Animated multi-color gradient background */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5" />
+          <div 
+            className="absolute inset-0" 
+            style={{ background: 'linear-gradient(135deg, hsl(280 60% 15% / 0.3), hsl(215 30% 12%), hsl(195 50% 15% / 0.3))' }}
+          />
+          {/* Purple/Pink blob */}
           <motion.div
-            className="absolute top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-r from-primary/20 to-accent/10 blur-3xl"
+            className="absolute top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full blur-3xl"
+            style={{ background: 'linear-gradient(135deg, hsl(280, 80%, 60%, 0.25), hsl(320, 75%, 55%, 0.2))' }}
             animate={{
               x: [0, 100, 0],
               y: [0, -50, 0],
@@ -296,8 +301,25 @@ const Landing = () => {
               ease: "easeInOut"
             }}
           />
+          {/* Cyan/Blue blob */}
           <motion.div
-            className="absolute bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-gradient-to-l from-accent/20 to-primary/10 blur-3xl"
+            className="absolute top-1/2 left-1/3 w-[400px] h-[400px] rounded-full blur-3xl"
+            style={{ background: 'linear-gradient(135deg, hsl(195, 90%, 55%, 0.2), hsl(210, 85%, 55%, 0.15))' }}
+            animate={{
+              x: [0, -60, 0],
+              y: [0, 80, 0],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 18,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+          {/* Orange/Yellow blob */}
+          <motion.div
+            className="absolute bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full blur-3xl"
+            style={{ background: 'linear-gradient(135deg, hsl(35, 95%, 55%, 0.25), hsl(15, 90%, 55%, 0.2))' }}
             animate={{
               x: [0, -80, 0],
               y: [0, 60, 0],
@@ -305,6 +327,21 @@ const Landing = () => {
             }}
             transition={{
               duration: 25,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+          {/* Green/Teal accent blob */}
+          <motion.div
+            className="absolute bottom-1/3 left-1/4 w-[300px] h-[300px] rounded-full blur-3xl"
+            style={{ background: 'linear-gradient(135deg, hsl(160, 80%, 50%, 0.15), hsl(180, 75%, 50%, 0.1))' }}
+            animate={{
+              x: [0, 50, 0],
+              y: [0, -40, 0],
+              scale: [1, 1.1, 1],
+            }}
+            transition={{
+              duration: 22,
               repeat: Infinity,
               ease: "easeInOut"
             }}
@@ -320,14 +357,17 @@ const Landing = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <Card className="p-8 md:p-12 backdrop-blur-xl bg-card/80 border-2 border-primary/20 shadow-2xl">
+              <Card className="p-8 md:p-12 backdrop-blur-xl bg-card/80 border-2 border-purple-500/30 shadow-2xl">
                 <motion.h1
                   className="text-5xl md:text-6xl lg:text-7xl font-bold mb-4"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <span className="bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] bg-clip-text text-transparent animate-gradient">
+                  <span 
+                    className="bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]"
+                    style={{ backgroundImage: 'linear-gradient(90deg, hsl(280, 85%, 60%), hsl(320, 80%, 55%), hsl(35, 95%, 55%), hsl(195, 85%, 55%), hsl(280, 85%, 60%))' }}
+                  >
                     Aide
                   </span>
                 </motion.h1>
@@ -356,7 +396,8 @@ const Landing = () => {
                   <Button
                     asChild
                     size="lg"
-                    className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all shadow-lg hover:shadow-xl text-base group"
+                    className="hover:opacity-90 transition-all shadow-lg hover:shadow-xl text-base group text-white"
+                    style={{ background: 'linear-gradient(135deg, hsl(280, 80%, 55%), hsl(320, 75%, 55%), hsl(35, 95%, 55%))' }}
                   >
                     <Link to="/auth">
                       {labels.getStarted}
@@ -382,20 +423,29 @@ const Landing = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
             >
-              <Card className="p-6 backdrop-blur-xl bg-card/80 border border-accent/20 text-center">
-                <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <Card className="p-6 backdrop-blur-xl bg-card/80 border border-purple-500/30 text-center">
+                <div 
+                  className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent"
+                  style={{ backgroundImage: 'linear-gradient(135deg, hsl(280, 85%, 60%), hsl(320, 80%, 55%))' }}
+                >
                   1
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">Free Analysis Per Day</p>
               </Card>
-              <Card className="p-6 backdrop-blur-xl bg-card/80 border border-primary/20 text-center">
-                <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+              <Card className="p-6 backdrop-blur-xl bg-card/80 border border-cyan-500/30 text-center">
+                <div 
+                  className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent"
+                  style={{ backgroundImage: 'linear-gradient(135deg, hsl(195, 90%, 55%), hsl(210, 85%, 60%))' }}
+                >
                   4
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">Languages Supported</p>
               </Card>
-              <Card className="p-6 backdrop-blur-xl bg-card/80 border border-accent/20 text-center">
-                <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <Card className="p-6 backdrop-blur-xl bg-card/80 border border-orange-500/30 text-center">
+                <div 
+                  className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent"
+                  style={{ backgroundImage: 'linear-gradient(135deg, hsl(35, 95%, 55%), hsl(15, 90%, 55%))' }}
+                >
                   ∞
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">Learning Possibilities</p>
@@ -416,7 +466,7 @@ const Landing = () => {
           {labels.featuresTitle}
         </motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {/* Large Feature Card */}
+          {/* Large Feature Card - Purple */}
           <motion.div
             className="lg:col-span-2"
             initial={{ opacity: 0, y: 20 }}
@@ -424,67 +474,70 @@ const Landing = () => {
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
           >
-            <Card className="h-full p-6 md:p-8 backdrop-blur-xl bg-card/80 border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-xl group">
-              <Sparkles className="h-10 w-10 md:h-12 md:w-12 text-primary mb-4 group-hover:scale-110 transition-transform" />
+            <Card className="h-full p-6 md:p-8 backdrop-blur-xl bg-card/80 border-2 border-purple-500/30 hover:border-purple-500/60 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10 group">
+              <Sparkles className="h-10 w-10 md:h-12 md:w-12 mb-4 group-hover:scale-110 transition-transform" style={{ color: 'hsl(280, 85%, 60%)' }} />
               <h3 className="text-xl md:text-2xl font-bold mb-3">{labels.aiAnalysis.title}</h3>
               <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{labels.aiAnalysis.description}</p>
             </Card>
           </motion.div>
 
-          {/* Medium Feature Cards */}
+          {/* Medium Feature Cards - Cyan */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="h-full p-6 md:p-8 backdrop-blur-xl bg-card/80 border-2 border-accent/20 hover:border-accent/40 transition-all duration-300 hover:shadow-xl group">
-              <Globe className="h-10 w-10 md:h-12 md:w-12 text-accent mb-4 group-hover:scale-110 transition-transform" />
+            <Card className="h-full p-6 md:p-8 backdrop-blur-xl bg-card/80 border-2 border-cyan-500/30 hover:border-cyan-500/60 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/10 group">
+              <Globe className="h-10 w-10 md:h-12 md:w-12 mb-4 group-hover:scale-110 transition-transform" style={{ color: 'hsl(195, 90%, 55%)' }} />
               <h3 className="text-lg md:text-xl font-bold mb-2">{labels.multilingual.title}</h3>
               <p className="text-sm text-muted-foreground">{labels.multilingual.description}</p>
             </Card>
           </motion.div>
 
+          {/* Orange */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.3 }}
           >
-            <Card className="h-full p-6 md:p-8 backdrop-blur-xl bg-card/80 border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-xl group">
-              <Zap className="h-10 w-10 md:h-12 md:w-12 text-primary mb-4 group-hover:scale-110 transition-transform" />
+            <Card className="h-full p-6 md:p-8 backdrop-blur-xl bg-card/80 border-2 border-orange-500/30 hover:border-orange-500/60 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10 group">
+              <Zap className="h-10 w-10 md:h-12 md:w-12 mb-4 group-hover:scale-110 transition-transform" style={{ color: 'hsl(35, 95%, 55%)' }} />
               <h3 className="text-lg md:text-xl font-bold mb-2">{labels.instantResults.title}</h3>
               <p className="text-sm text-muted-foreground">{labels.instantResults.description}</p>
             </Card>
           </motion.div>
 
-          {/* Small Feature Cards */}
+          {/* Small Feature Cards - Pink */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="h-full p-6 backdrop-blur-xl bg-card/80 border-2 border-accent/20 hover:border-accent/40 transition-all duration-300 hover:shadow-xl group">
-              <Shield className="h-8 w-8 md:h-10 md:w-10 text-accent mb-3 group-hover:scale-110 transition-transform" />
+            <Card className="h-full p-6 backdrop-blur-xl bg-card/80 border-2 border-pink-500/30 hover:border-pink-500/60 transition-all duration-300 hover:shadow-xl hover:shadow-pink-500/10 group">
+              <Shield className="h-8 w-8 md:h-10 md:w-10 mb-3 group-hover:scale-110 transition-transform" style={{ color: 'hsl(320, 80%, 55%)' }} />
               <h3 className="text-base md:text-lg font-bold mb-2">{labels.smartVocabulary.title}</h3>
               <p className="text-xs md:text-sm text-muted-foreground">{labels.smartVocabulary.description}</p>
             </Card>
           </motion.div>
 
+          {/* Green */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.5 }}
           >
-            <Card className="h-full p-6 backdrop-blur-xl bg-card/80 border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-xl group">
-              <Clock className="h-8 w-8 md:h-10 md:w-10 text-primary mb-3 group-hover:scale-110 transition-transform" />
+            <Card className="h-full p-6 backdrop-blur-xl bg-card/80 border-2 border-emerald-500/30 hover:border-emerald-500/60 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/10 group">
+              <Clock className="h-8 w-8 md:h-10 md:w-10 mb-3 group-hover:scale-110 transition-transform" style={{ color: 'hsl(160, 80%, 45%)' }} />
               <h3 className="text-base md:text-lg font-bold mb-2">{labels.practiceQuizzes.title}</h3>
               <p className="text-xs md:text-sm text-muted-foreground">{labels.practiceQuizzes.description}</p>
             </Card>
           </motion.div>
 
+          {/* Large - Blue gradient */}
           <motion.div
             className="lg:col-span-2"
             initial={{ opacity: 0, y: 20 }}
@@ -492,9 +545,9 @@ const Landing = () => {
             viewport={{ once: true }}
             transition={{ delay: 0.6 }}
           >
-            <Card className="h-full p-6 md:p-8 backdrop-blur-xl bg-card/80 border-2 border-accent/20 hover:border-accent/40 transition-all duration-300 hover:shadow-xl group">
+            <Card className="h-full p-6 md:p-8 backdrop-blur-xl bg-card/80 border-2 border-blue-500/30 hover:border-blue-500/60 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 group">
               <div className="flex items-start gap-4">
-                <Sparkles className="h-10 w-10 md:h-12 md:w-12 text-accent flex-shrink-0 group-hover:scale-110 transition-transform" />
+                <Sparkles className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0 group-hover:scale-110 transition-transform" style={{ color: 'hsl(210, 85%, 55%)' }} />
                 <div>
                   <h3 className="text-lg md:text-xl font-bold mb-2">{labels.structuredLearning.title}</h3>
                   <p className="text-sm md:text-base text-muted-foreground">{labels.structuredLearning.description}</p>

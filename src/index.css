@@ -38,11 +38,15 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    /* Modern gradients with subtle transitions */
+    /* Modern gradients with vibrant mixed colors */
     --gradient-primary: linear-gradient(135deg, hsl(210, 90%, 48%), hsl(35, 95%, 55%));
     --gradient-accent: linear-gradient(135deg, hsl(195, 85%, 55%), hsl(210, 90%, 48%));
     --gradient-subtle: linear-gradient(180deg, hsl(210, 20%, 98%), hsl(210, 30%, 96%));
     --gradient-hero: linear-gradient(135deg, hsl(210, 90%, 48%) 0%, hsl(195, 85%, 55%) 50%, hsl(35, 95%, 55%) 100%);
+    --gradient-rainbow: linear-gradient(135deg, hsl(280, 85%, 60%) 0%, hsl(320, 80%, 55%) 25%, hsl(35, 95%, 55%) 50%, hsl(195, 85%, 55%) 75%, hsl(265, 80%, 60%) 100%);
+    --gradient-sunset: linear-gradient(135deg, hsl(320, 80%, 55%), hsl(35, 95%, 55%), hsl(15, 90%, 55%));
+    --gradient-ocean: linear-gradient(135deg, hsl(195, 85%, 55%), hsl(265, 75%, 60%), hsl(320, 70%, 55%));
+    --gradient-aurora: linear-gradient(135deg, hsl(160, 80%, 50%), hsl(195, 85%, 55%), hsl(265, 75%, 60%), hsl(320, 70%, 55%));
     
     /* Standardized spacing system (4px/8px grid) */
     --spacing-xs: 0.25rem; /* 4px */
@@ -94,11 +98,15 @@ All colors MUST be HSL.
     --input: 215 20% 25%;
     --ring: 195 85% 55%;
 
-    /* Dark mode gradients */
+    /* Dark mode gradients - more vibrant */
     --gradient-primary: linear-gradient(135deg, hsl(195, 85%, 55%), hsl(35, 95%, 60%));
     --gradient-accent: linear-gradient(135deg, hsl(210, 80%, 60%), hsl(195, 85%, 55%));
     --gradient-subtle: linear-gradient(180deg, hsl(215, 30%, 12%), hsl(215, 28%, 15%));
     --gradient-hero: linear-gradient(135deg, hsl(195, 85%, 55%) 0%, hsl(210, 80%, 60%) 50%, hsl(35, 95%, 60%) 100%);
+    --gradient-rainbow: linear-gradient(135deg, hsl(280, 85%, 65%) 0%, hsl(320, 80%, 60%) 25%, hsl(35, 95%, 60%) 50%, hsl(195, 90%, 60%) 75%, hsl(265, 85%, 65%) 100%);
+    --gradient-sunset: linear-gradient(135deg, hsl(320, 80%, 60%), hsl(35, 95%, 60%), hsl(15, 90%, 60%));
+    --gradient-ocean: linear-gradient(135deg, hsl(195, 90%, 60%), hsl(265, 80%, 65%), hsl(320, 75%, 60%));
+    --gradient-aurora: linear-gradient(135deg, hsl(160, 85%, 55%), hsl(195, 90%, 60%), hsl(265, 80%, 65%), hsl(320, 75%, 60%));
     
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.15);
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.25);
