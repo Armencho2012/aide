@@ -12,15 +12,21 @@ import {
   MarkerType,
   Panel,
   NodeTypes,
+  NodeChange,
+  NodePositionChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toPng } from 'html-to-image';
-import { Trash2, Download, Maximize2, Minimize2, Map as MapIcon, X, Info, Sparkles, ArrowRight, BookOpen } from 'lucide-react';
+import { Trash2, Download, Maximize2, Minimize2, Map as MapIcon, X, Info, Sparkles, ArrowRight, BookOpen, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import ConceptNodeComponent from './ConceptNodeComponent';
 import { initialNodes, initialEdges, nodeDescriptions, edgeRelationships } from './mockData';
 import { ConceptNode, ConceptEdge, KnowledgeMapData, categoryColors, NodeCategory } from './types';
+import { ZenModeSidePanel } from './components/ZenModeSidePanel';
+import { EditableNodeLabel } from './components/EditableNodeLabel';
+import { FullscreenExitButton } from './components/FullscreenExitButton';
 
 interface KnowledgeMapProps {
   onNodeClick?: (nodeName: string, description?: string, category?: string) => void;
@@ -37,12 +43,14 @@ const uiLabels = {
     clear: 'Clear',
     export: 'Export',
     save: 'Save',
+    reset: 'Reset',
     mapCleared: 'Map Cleared',
     mapClearedDesc: 'The knowledge map has been reset.',
     exportSuccess: 'Export Successful',
     exportSuccessDesc: 'Your knowledge map has been exported as an image.',
     exportFail: 'Export Failed',
-    exportFailDesc: 'Could not export the map. Please try again.'
+    exportFailDesc: 'Could not export the map. Please try again.',
+    zenMode: 'Zen Mode'
   },
   ru: {
     knowledgeMap: 'Карта Знаний',
@@ -50,12 +58,14 @@ const uiLabels = {
     clear: 'Очистить',
     export: 'Экспорт',
     save: 'Сохранить',
+    reset: 'Сброс',
     mapCleared: 'Карта очищена',
     mapClearedDesc: 'Карта знаний была сброшена.',
     exportSuccess: 'Экспорт выполнен успешно',
     exportSuccessDesc: 'Ваша карта знаний была экспортирована как изображение.',
     exportFail: 'Ошибка экспорта',
-    exportFailDesc: 'Не удалось экспортировать карту. Попробуйте снова.'
+    exportFailDesc: 'Не удалось экспортировать карту. Попробуйте снова.',
+    zenMode: 'Режим Дзен'
   },
   hy: {
     knowledgeMap: 'Գdelays delays delays Քdelays delays',
@@ -63,12 +73,14 @@ const uiLabels = {
     clear: 'Մdelays delays',
     export: 'Արdelays',
     save: 'Պdelays delays',
+    reset: 'Վերdelays',
     mapCleared: 'Քdelays delays delays',
     mapClearedDesc: 'Գdelays delays քdelays delays delays է:',
     exportSuccess: 'Delays delays delays',
     exportSuccessDesc: ' Delays delays delays delays delays է delays delays:',
     exportFail: 'Delays delays delays',
-    exportFailDesc: 'Չdelays delays delays: Delays delays delays delays:'
+    exportFailDesc: 'Չdelays delays delays: Delays delays delays delays:',
+    zenMode: 'Zen Mode'
   },
   ko: {
     knowledgeMap: '지식 맵',
@@ -76,12 +88,14 @@ const uiLabels = {
     clear: '지우기',
     export: '내보내기',
     save: '저장',
+    reset: '초기화',
     mapCleared: '맵이 지워졌습니다',
     mapClearedDesc: '지식 맵이 초기화되었습니다.',
     exportSuccess: '내보내기 성공',
     exportSuccessDesc: '지식 맵이 이미지로 내보내졌습니다.',
     exportFail: '내보내기 실패',
-    exportFailDesc: '맵을 내보낼 수 없습니다. 다시 시도해 주세요.'
+    exportFailDesc: '맵을 내보낼 수 없습니다. 다시 시도해 주세요.',
+    zenMode: '젠 모드'
   }
 };
 
@@ -104,9 +118,13 @@ const createTreeLayout = (
   conceptNodes: ConceptNode[],
   conceptEdges: ConceptEdge[],
   activeNodeId?: string,
-  highlightedNodes?: Set<string>
+  highlightedNodes?: Set<string>,
+  isZenMode?: boolean
 ): LayoutResult => {
   if (conceptNodes.length === 0) return { nodes: [], edges: [] };
+
+  // Scale factor for Zen Mode (25% larger text/padding handled in node component)
+  const scaleFactor = isZenMode ? 1.25 : 1;
 
   // 1. Build Adjacency List from original edges
   const adjacency = new globalThis.Map<string, string[]>();
@@ -200,7 +218,7 @@ const createTreeLayout = (
 
   // 6. Radial Tree Layout - MUCH more spacing, guaranteed no crossing
   const positions = new globalThis.Map<string, { x: number; y: number }>();
-  const LAYER_SPACING = 400; // Much bigger spacing between layers
+  const LAYER_SPACING = 400 * scaleFactor; // Much bigger spacing between layers
   const MIN_NODE_SPACING = 0.3; // Minimum angle gap between siblings (radians)
 
   const layoutNode = (u: string, startAngle: number, endAngle: number) => {
@@ -249,10 +267,10 @@ const createTreeLayout = (
     
     let size: number;
     if (isRoot) {
-      size = 240; // Big central node
+      size = 240 * scaleFactor; // Big central node
     } else {
       const baseSize = 100 + (node.label?.length || 0) * 1.5;
-      size = Math.min(Math.max(baseSize, 80), 160);
+      size = Math.min(Math.max(baseSize, 80), 160) * scaleFactor;
     }
 
     return {
@@ -267,6 +285,7 @@ const createTreeLayout = (
         isHighlighted,
         size,
         isRoot,
+        isZenMode,
       },
     };
   });
@@ -287,7 +306,7 @@ const createTreeLayout = (
       labelStyle: { 
         fill: 'hsl(265, 80%, 80%)', 
         fontWeight: 600, 
-        fontSize: 11,
+        fontSize: isZenMode ? 14 : 11,
         textShadow: '0 1px 3px hsl(0 0% 0% / 0.8)',
       },
       labelBgStyle: { 
@@ -299,13 +318,13 @@ const createTreeLayout = (
       labelBgPadding: [6, 4] as [number, number],
       style: {
         stroke: 'hsl(265, 60%, 55%)',
-        strokeWidth: 2,
+        strokeWidth: isZenMode ? 3 : 2,
       },
       markerEnd: {
         type: MarkerType.ArrowClosed,
         color: 'hsl(265, 60%, 55%)',
-        width: 15,
-        height: 15,
+        width: isZenMode ? 18 : 15,
+        height: isZenMode ? 18 : 15,
       },
     };
   });
@@ -316,7 +335,8 @@ const createTreeLayout = (
 export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes, language = 'en' }: KnowledgeMapProps) => {
   const { toast } = useToast();
   const flowRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isZenMode, setIsZenMode] = useState(false);
   const [selectedNode, setSelectedNode] = useState<{ 
     id: string;
     label: string; 
@@ -325,21 +345,98 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
     details?: string[];
     connections?: string[];
   } | null>(null);
+  
+  // Edit modal state
+  const [editingNode, setEditingNode] = useState<{ id: string; label: string } | null>(null);
+  
+  // Persistence: track if user has made changes
+  const [hasUserChanges, setHasUserChanges] = useState(false);
+  const [userNodePositions, setUserNodePositions] = useState<Map<string, { x: number; y: number }>>(new Map());
+  const [userNodeLabels, setUserNodeLabels] = useState<Map<string, string>>(new Map());
+  
   const labels = uiLabels[language] || uiLabels.en;
 
+  // Calculate layout with user modifications applied
   const layoutResult = useMemo(() => {
     const sourceNodes = data?.nodes || initialNodes;
     const sourceEdges = data?.edges || initialEdges;
-    return createTreeLayout(sourceNodes, sourceEdges, activeNodeId, highlightedNodes);
-  }, [data, activeNodeId, highlightedNodes]);
+    
+    // Apply user label changes
+    const modifiedNodes = sourceNodes.map(node => ({
+      ...node,
+      label: userNodeLabels.get(node.id) || node.label,
+    }));
+    
+    return createTreeLayout(modifiedNodes, sourceEdges, activeNodeId, highlightedNodes, isZenMode);
+  }, [data, activeNodeId, highlightedNodes, isZenMode, userNodeLabels]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(layoutResult.nodes);
+  // Apply user position changes to layout result
+  const nodesWithUserPositions = useMemo(() => {
+    if (userNodePositions.size === 0) return layoutResult.nodes;
+    return layoutResult.nodes.map(node => {
+      const userPos = userNodePositions.get(node.id);
+      return userPos ? { ...node, position: userPos } : node;
+    });
+  }, [layoutResult.nodes, userNodePositions]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(nodesWithUserPositions);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutResult.edges);
 
+  // Sync nodes when layout changes (but preserve user positions)
   useEffect(() => {
-    setNodes(layoutResult.nodes);
-    setEdges(layoutResult.edges);
-  }, [layoutResult, setNodes, setEdges]);
+    if (!hasUserChanges) {
+      setNodes(nodesWithUserPositions);
+      setEdges(layoutResult.edges);
+    } else {
+      // Only update edges, keep user node positions
+      setEdges(layoutResult.edges);
+    }
+  }, [nodesWithUserPositions, layoutResult.edges, hasUserChanges, setNodes, setEdges]);
+
+  // Handle node position changes (drag)
+  const handleNodesChange = useCallback((changes: NodeChange<Node>[]) => {
+    onNodesChange(changes);
+    
+    // Track position changes for persistence
+    changes.forEach(change => {
+      if (change.type === 'position' && change.position) {
+        const posChange = change as NodePositionChange;
+        if (posChange.position) {
+          setUserNodePositions(prev => {
+            const newMap = new Map(prev);
+            newMap.set(change.id, posChange.position!);
+            return newMap;
+          });
+          setHasUserChanges(true);
+        }
+      }
+    });
+  }, [onNodesChange]);
+
+  // Handle node double-click for editing
+  const handleNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    const nodeData = node.data as { label: string };
+    setEditingNode({ id: node.id, label: nodeData.label });
+  }, []);
+
+  // Save edited label
+  const handleSaveLabel = useCallback((nodeId: string, newLabel: string) => {
+    setUserNodeLabels(prev => {
+      const newMap = new Map(prev);
+      newMap.set(nodeId, newLabel);
+      return newMap;
+    });
+    setHasUserChanges(true);
+    setEditingNode(null);
+    
+    // Update the selected node if it's the one being edited
+    setSelectedNode(prev => prev?.id === nodeId ? { ...prev, label: newLabel } : prev);
+    
+    // Update nodes state directly
+    setNodes(nds => nds.map(n => 
+      n.id === nodeId ? { ...n, data: { ...n.data, label: newLabel } } : n
+    ));
+  }, [setNodes]);
 
   // Handle node click - show comprehensive info panel
   const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
@@ -363,14 +460,14 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
     
     setSelectedNode({
       id: nodeId,
-      label: nodeData.label,
+      label: userNodeLabels.get(nodeId) || nodeData.label,
       category: nodeData.category,
       description: nodeInfo.description,
       details: nodeInfo.details,
       connections: connectionLabels,
     });
     onNodeClick?.(nodeData.label, nodeInfo.description, nodeData.category);
-  }, [onNodeClick, data]);
+  }, [onNodeClick, data, userNodeLabels]);
 
   const closeInfoPanel = useCallback(() => {
     setSelectedNode(null);
@@ -381,9 +478,66 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
     setEdges([]);
   }, [setNodes, setEdges]);
 
-  const toggleFullscreen = useCallback(() => {
-    setIsFullscreen(prev => !prev);
-  }, []);
+  // Reset to initial layout
+  const resetToInitial = useCallback(() => {
+    setUserNodePositions(new Map());
+    setUserNodeLabels(new Map());
+    setHasUserChanges(false);
+    setNodes(layoutResult.nodes);
+    setEdges(layoutResult.edges);
+    toast({
+      title: labels.mapCleared,
+      description: labels.mapClearedDesc,
+    });
+  }, [layoutResult, setNodes, setEdges, toast, labels]);
+
+  // Zen Mode toggle with Browser Fullscreen API
+  const toggleZenMode = useCallback(async () => {
+    if (!isZenMode) {
+      // Enter Zen Mode
+      try {
+        if (containerRef.current?.requestFullscreen) {
+          await containerRef.current.requestFullscreen();
+        }
+      } catch (e) {
+        console.warn('Fullscreen API not available:', e);
+      }
+      setIsZenMode(true);
+    } else {
+      // Exit Zen Mode
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        }
+      } catch (e) {
+        console.warn('Error exiting fullscreen:', e);
+      }
+      setIsZenMode(false);
+    }
+  }, [isZenMode]);
+
+  // Handle ESC key and fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isZenMode) {
+        setIsZenMode(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isZenMode) {
+        toggleZenMode();
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isZenMode, toggleZenMode]);
 
   const handleClearMap = useCallback(() => {
     clearState();
@@ -423,196 +577,247 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
   }, [toast, labels]);
 
   return (
-    <div
-      className={`relative transition-all duration-300 ${isFullscreen
-        ? 'fixed inset-0 z-50'
-        : 'h-full w-full'
-        }`}
-    >
-      {/* Dark glassmorphism background */}
-      <div
-        className="absolute inset-0 rounded-xl overflow-hidden"
-        style={{
-          background: 'linear-gradient(135deg, hsl(215 30% 12% / 0.95), hsl(215 28% 8% / 0.98))',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid hsl(215 20% 25% / 0.5)',
-        }}
-      >
-        <div ref={flowRef} className="w-full h-full">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onNodeClick={handleNodeClick}
-            nodeTypes={nodeTypes}
-            connectionLineType={ConnectionLineType.SmoothStep}
-            fitView
-            fitViewOptions={{ padding: 0.3 }}
-            minZoom={0.2}
-            maxZoom={3}
-            proOptions={{ hideAttribution: true }}
-            panOnDrag={true}
-            zoomOnPinch={true}
-            zoomOnScroll={true}
-            preventScrolling={false}
-          >
-            <Background
-              color="hsl(215, 20%, 30%)"
-              gap={20}
-              size={1}
-            />
-            <Controls
-              className="!bg-card/80 !backdrop-blur-sm !border-border !rounded-lg !shadow-lg"
-              showInteractive={false}
-            />
-            <MiniMap
-              nodeColor={getNodeColor}
-              maskColor="hsl(215, 30%, 12% / 0.8)"
-              className="!bg-card/60 !backdrop-blur-sm !border-border !rounded-lg"
-            />
-
-            {/* Control Panel */}
-            <Panel position="top-right" className="flex flex-col sm:flex-row gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearMap}
-                className="bg-card/90 backdrop-blur-sm border-border hover:bg-destructive/20 hover:text-destructive hover:border-destructive/50 shadow-md text-xs sm:text-sm"
-              >
-                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">{labels.clearMap}</span>
-                <span className="sm:hidden">{labels.clear}</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportImage}
-                className="bg-card/90 backdrop-blur-sm border-border hover:bg-primary/20 hover:text-primary hover:border-primary/50 shadow-md text-xs sm:text-sm"
-              >
-                <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">{labels.export}</span>
-                <span className="sm:hidden">{labels.save}</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={toggleFullscreen}
-                className="bg-card/90 backdrop-blur-sm border-border hover:bg-secondary shadow-md"
-              >
-                {isFullscreen ? (
-                  <Minimize2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                ) : (
-                  <Maximize2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                )}
-              </Button>
-            </Panel>
-
-            {/* Title */}
-            <Panel position="top-left">
-              <div className="flex items-center gap-2 bg-card/90 backdrop-blur-sm border border-border rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 shadow-md">
-                <MapIcon className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-                <span className="text-xs sm:text-sm font-medium text-foreground">{labels.knowledgeMap}</span>
-              </div>
-            </Panel>
-          </ReactFlow>
-        </div>
-      </div>
-
-      {/* Fullscreen close button */}
-      {isFullscreen && (
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={toggleFullscreen}
-          className="absolute top-4 right-4 z-10 bg-card/80 backdrop-blur-sm border-border"
+    <>
+      <AnimatePresence>
+        <motion.div
+          ref={containerRef}
+          layout
+          initial={false}
+          animate={{
+            width: isZenMode ? '100vw' : '100%',
+            height: isZenMode ? '100vh' : '100%',
+          }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className={`relative ${isZenMode ? 'fixed inset-0 z-50' : 'h-full w-full'}`}
         >
-          <X className="h-4 w-4" />
-        </Button>
-      )}
-
-      {/* Node Info Panel - Comprehensive Details */}
-      {selectedNode && (
-        <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 z-20 max-h-[70vh] overflow-y-auto">
+          {/* Dark glassmorphism background */}
           <div
-            className="rounded-xl p-5 backdrop-blur-xl border animate-in slide-in-from-bottom-4 duration-300"
+            className="absolute inset-0 rounded-xl overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, hsl(265 70% 20% / 0.95), hsl(265 60% 15% / 0.98))',
-              borderColor: 'hsl(265 60% 50% / 0.5)',
-              boxShadow: '0 20px 50px -10px hsl(265 60% 30% / 0.5)',
+              background: 'linear-gradient(135deg, hsl(215 30% 12% / 0.95), hsl(215 28% 8% / 0.98))',
+              backdropFilter: 'blur(20px)',
+              border: isZenMode ? 'none' : '1px solid hsl(215 20% 25% / 0.5)',
+              borderRadius: isZenMode ? 0 : undefined,
             }}
           >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="h-4 w-4 text-purple-400" />
-                  <span className="text-xs uppercase tracking-wider text-purple-300 font-medium px-2 py-0.5 rounded-full bg-purple-500/20">
-                    {selectedNode.category}
-                  </span>
-                </div>
-                <h3 className="text-xl font-bold text-white">{selectedNode.label}</h3>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={closeInfoPanel}
-                className="h-8 w-8 text-purple-300 hover:text-white hover:bg-purple-500/20 shrink-0"
+            <div ref={flowRef} className="w-full h-full">
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={handleNodesChange}
+                onEdgesChange={onEdgesChange}
+                onNodeClick={handleNodeClick}
+                onNodeDoubleClick={handleNodeDoubleClick}
+                nodeTypes={nodeTypes}
+                connectionLineType={ConnectionLineType.SmoothStep}
+                fitView
+                fitViewOptions={{ padding: isZenMode ? 0.2 : 0.3 }}
+                minZoom={0.1}
+                maxZoom={isZenMode ? 4 : 3}
+                proOptions={{ hideAttribution: true }}
+                panOnDrag={true}
+                zoomOnPinch={true}
+                zoomOnScroll={true}
+                preventScrolling={false}
+                nodesDraggable={true}
               >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+                <Background
+                  color="hsl(215, 20%, 30%)"
+                  gap={isZenMode ? 30 : 20}
+                  size={1}
+                />
+                <Controls
+                  className={`!backdrop-blur-sm !border-border !rounded-lg !shadow-lg ${
+                    isZenMode 
+                      ? '!bg-card/95 [&>button]:!w-10 [&>button]:!h-10 [&>button]:!text-base' 
+                      : '!bg-card/80'
+                  }`}
+                  showInteractive={false}
+                  style={{
+                    boxShadow: isZenMode ? '0 10px 40px -10px hsl(0 0% 0% / 0.5)' : undefined,
+                  }}
+                />
+                <MiniMap
+                  nodeColor={getNodeColor}
+                  maskColor="hsl(215, 30%, 12% / 0.8)"
+                  className="!bg-card/60 !backdrop-blur-sm !border-border !rounded-lg"
+                />
 
-            {/* Description */}
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="h-4 w-4 text-purple-400" />
-                <span className="text-sm font-semibold text-purple-200">Description</span>
-              </div>
-              <p className="text-sm text-purple-100/90 leading-relaxed">{selectedNode.description}</p>
-            </div>
-
-            {/* Key Details */}
-            {selectedNode.details && selectedNode.details.length > 0 && (
-              <div className="mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Info className="h-4 w-4 text-purple-400" />
-                  <span className="text-sm font-semibold text-purple-200">Key Facts</span>
-                </div>
-                <ul className="space-y-1.5">
-                  {selectedNode.details.map((detail, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-purple-100/80">
-                      <span className="text-purple-400 mt-0.5">•</span>
-                      <span>{detail}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Connected Concepts */}
-            {selectedNode.connections && selectedNode.connections.length > 0 && (
-              <div className="pt-3 border-t border-purple-500/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowRight className="h-4 w-4 text-purple-400" />
-                  <span className="text-sm font-semibold text-purple-200">Connected To</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {selectedNode.connections.map((conn, index) => (
-                    <span 
-                      key={index} 
-                      className="text-xs px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30"
+                {/* Control Panel */}
+                <Panel position="top-right" className="flex flex-col sm:flex-row gap-2">
+                  {hasUserChanges && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetToInitial}
+                      className="bg-card/90 backdrop-blur-sm border-border hover:bg-secondary shadow-md text-xs sm:text-sm active:scale-95 transition-all"
                     >
-                      {conn}
+                      <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">{labels.reset}</span>
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearMap}
+                    className="bg-card/90 backdrop-blur-sm border-border hover:bg-destructive/20 hover:text-destructive hover:border-destructive/50 shadow-md text-xs sm:text-sm active:scale-95 transition-all"
+                  >
+                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">{labels.clearMap}</span>
+                    <span className="sm:hidden">{labels.clear}</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportImage}
+                    className="bg-card/90 backdrop-blur-sm border-border hover:bg-primary/20 hover:text-primary hover:border-primary/50 shadow-md text-xs sm:text-sm active:scale-95 transition-all"
+                  >
+                    <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">{labels.export}</span>
+                    <span className="sm:hidden">{labels.save}</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleZenMode}
+                    className="bg-card/90 backdrop-blur-sm border-border hover:bg-secondary shadow-md active:scale-95 transition-all"
+                  >
+                    {isZenMode ? (
+                      <Minimize2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                    ) : (
+                      <Maximize2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                    )}
+                  </Button>
+                </Panel>
+
+                {/* Title */}
+                <Panel position="top-left">
+                  <motion.div 
+                    layout
+                    className="flex items-center gap-2 bg-card/90 backdrop-blur-sm border border-border rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 shadow-md"
+                  >
+                    <MapIcon className={`text-primary ${isZenMode ? 'h-5 w-5' : 'h-3 w-3 sm:h-4 sm:w-4'}`} />
+                    <span className={`font-medium text-foreground ${isZenMode ? 'text-base' : 'text-xs sm:text-sm'}`}>
+                      {labels.knowledgeMap}
+                      {isZenMode && <span className="text-muted-foreground ml-2">• {labels.zenMode}</span>}
                     </span>
-                  ))}
-                </div>
-              </div>
-            )}
+                  </motion.div>
+                </Panel>
+              </ReactFlow>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+
+          {/* Zen Mode exit button (appears on hover at top) */}
+          {isZenMode && <FullscreenExitButton onExit={toggleZenMode} />}
+
+          {/* Node Info Panel - Bottom panel for non-Zen mode */}
+          {selectedNode && !isZenMode && (
+            <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 z-20 max-h-[70vh] overflow-y-auto">
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 20, opacity: 0 }}
+                className="rounded-xl p-5 backdrop-blur-xl border"
+                style={{
+                  background: 'linear-gradient(135deg, hsl(265 70% 20% / 0.95), hsl(265 60% 15% / 0.98))',
+                  borderColor: 'hsl(265 60% 50% / 0.5)',
+                  boxShadow: '0 20px 50px -10px hsl(265 60% 30% / 0.5)',
+                }}
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="h-4 w-4 text-purple-400" />
+                      <span className="text-xs uppercase tracking-wider text-purple-300 font-medium px-2 py-0.5 rounded-full bg-purple-500/20">
+                        {selectedNode.category}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white">{selectedNode.label}</h3>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={closeInfoPanel}
+                    className="h-8 w-8 text-purple-300 hover:text-white hover:bg-purple-500/20 shrink-0 backdrop-blur-sm active:scale-95 transition-all"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Description */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BookOpen className="h-4 w-4 text-purple-400" />
+                    <span className="text-sm font-semibold text-purple-200">Description</span>
+                  </div>
+                  <p className="text-sm text-purple-100/90 leading-relaxed">{selectedNode.description}</p>
+                </div>
+
+                {/* Key Details */}
+                {selectedNode.details && selectedNode.details.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Info className="h-4 w-4 text-purple-400" />
+                      <span className="text-sm font-semibold text-purple-200">Key Facts</span>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {selectedNode.details.map((detail, index) => (
+                        <li key={index} className="flex items-start gap-2 text-sm text-purple-100/80">
+                          <span className="text-purple-400 mt-0.5">•</span>
+                          <span>{detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Connected Concepts */}
+                {selectedNode.connections && selectedNode.connections.length > 0 && (
+                  <div className="pt-3 border-t border-purple-500/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ArrowRight className="h-4 w-4 text-purple-400" />
+                      <span className="text-sm font-semibold text-purple-200">Connected To</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedNode.connections.map((conn, index) => (
+                        <span 
+                          key={index} 
+                          className="text-xs px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30"
+                        >
+                          {conn}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Zen Mode Side Panel */}
+      <ZenModeSidePanel
+        isOpen={isZenMode && !!selectedNode}
+        node={selectedNode}
+        onClose={closeInfoPanel}
+        onEditLabel={(nodeId, label) => setEditingNode({ id: nodeId, label })}
+      />
+
+      {/* Edit Node Label Modal */}
+      <AnimatePresence>
+        {editingNode && (
+          <EditableNodeLabel
+            isOpen={!!editingNode}
+            nodeId={editingNode.id}
+            currentLabel={editingNode.label}
+            onSave={handleSaveLabel}
+            onCancel={() => setEditingNode(null)}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

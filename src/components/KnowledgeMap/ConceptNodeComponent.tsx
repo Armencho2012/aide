@@ -26,6 +26,7 @@ interface ConceptNodeData {
   centrality?: number;
   masteryStatus?: 'locked' | 'unlocked' | 'mastered';
   isRoot?: boolean;
+  isZenMode?: boolean;
   onClick?: (label: string, description?: string, category?: string) => void;
 }
 
@@ -48,7 +49,10 @@ const iconMap: Record<NodeCategory, LucideIcon> = {
 };
 
 const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
-  const { label, category, isActive, isHighlighted, description, size = 40, centrality = 0, masteryStatus = 'unlocked', isRoot = false, onClick } = data;
+  const { label, category, isActive, isHighlighted, description, size = 40, centrality = 0, masteryStatus = 'unlocked', isRoot = false, isZenMode = false, onClick } = data;
+  
+  // Zen Mode scaling factor (25% larger)
+  const zenScale = isZenMode ? 1.25 : 1;
   const colors = categoryColors[category] || categoryColors.general;
   const Icon = iconMap[category] || Lightbulb;
 
@@ -86,13 +90,21 @@ const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
     }
   };
 
-  // Root node dimensions
-  const nodeMinWidth = isRoot ? 220 : Math.max(160, size);
-  const nodeMaxWidth = isRoot ? 280 : 200;
-  const nodePadding = isRoot ? 'px-7 py-6' : 'px-5 py-4';
-  const iconSize = isRoot ? 'h-8 w-8' : 'h-5 w-5';
-  const textSize = isRoot ? 'text-xl' : 'text-base';
-  const iconPadding = isRoot ? 'p-3' : 'p-2';
+  // Root node dimensions with Zen Mode scaling
+  const nodeMinWidth = (isRoot ? 220 : Math.max(160, size)) * zenScale;
+  const nodeMaxWidth = (isRoot ? 280 : 200) * zenScale;
+  const nodePadding = isRoot 
+    ? (isZenMode ? 'px-9 py-8' : 'px-7 py-6') 
+    : (isZenMode ? 'px-6 py-5' : 'px-5 py-4');
+  const iconSize = isRoot 
+    ? (isZenMode ? 'h-10 w-10' : 'h-8 w-8') 
+    : (isZenMode ? 'h-6 w-6' : 'h-5 w-5');
+  const textSize = isRoot 
+    ? (isZenMode ? 'text-2xl' : 'text-xl') 
+    : (isZenMode ? 'text-lg' : 'text-base');
+  const iconPadding = isRoot 
+    ? (isZenMode ? 'p-4' : 'p-3') 
+    : (isZenMode ? 'p-3' : 'p-2');
 
   return (
     <div
