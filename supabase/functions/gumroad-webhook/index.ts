@@ -42,6 +42,22 @@ function isValidSaleId(saleId: string): boolean {
   return saleIdRegex.test(saleId);
 }
 
+// Validate product ID format
+function isValidProductId(productId: string): boolean {
+  if (!productId || typeof productId !== 'string') return false;
+  // Gumroad product IDs are alphanumeric, reasonable length
+  const productIdRegex = /^[a-zA-Z0-9_-]{1,50}$/;
+  return productIdRegex.test(productId);
+}
+
+// Validate text fields (names, etc.) - allow safe characters only
+function isValidTextField(text: string): boolean {
+  if (!text || typeof text !== 'string') return true; // Optional fields
+  // Allow letters, numbers, spaces, and common punctuation
+  const safeTextRegex = /^[a-zA-Z0-9\s\-_.,'@#&()]+$/;
+  return safeTextRegex.test(text) && text.length <= 200;
+}
+
 // Sanitize string input
 function sanitizeString(input: string): string {
   if (!input || typeof input !== 'string') return '';
@@ -141,9 +157,20 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Validate product ID
-    if (!productId || typeof productId !== 'string' || productId.length > 100) {
-      console.warn("Invalid product_id");
+    // Validate product ID format
+    if (!isValidProductId(productId)) {
+      console.warn("Invalid product_id format");
+      return new Response("Invalid request", {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "text/plain" }
+      });
+    }
+
+    // Validate text fields if present
+    const fullName = webhookData.full_name;
+    const productName = webhookData.product_name;
+    if ((fullName && !isValidTextField(fullName)) || (productName && !isValidTextField(productName))) {
+      console.warn("Invalid text field format");
       return new Response("Invalid request", {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "text/plain" }
