@@ -84,7 +84,7 @@ export const ChatPanel = ({ language, onClose, initialMessage }: ChatPanelProps)
       if (!session) throw new Error('Not authenticated');
 
       const response = await fetch(
-        `https://obiiwmdcykfredsbhmoc.supabase.co/functions/v1/content-chat`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/content-chat`,
         {
           method: 'POST',
           headers: {
