@@ -33,10 +33,10 @@ function parseJSON(text: string): any {
   try { return JSON.parse(t); } catch { return null; }
 }
 
-// Ultra-fast parallel call using Lovable AI Gateway
+// Parallel call using Lovable AI Gateway with 30s timeout
 async function callLovableAI(apiKey: string, systemPrompt: string, userContent: string) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 30000);
 
   try {
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

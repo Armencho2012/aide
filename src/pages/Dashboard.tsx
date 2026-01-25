@@ -429,7 +429,7 @@ const Dashboard = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 pb-96">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 pb-[400px]">
       <div className="container max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8 animate-in fade-in-50 slide-in-from-top-4">
