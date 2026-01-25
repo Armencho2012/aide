@@ -83,11 +83,11 @@ export const BottomInputBar = ({
 
   const handleFilesAdd = async (files: FileList) => {
     const newMedia: MediaFile[] = [];
-    
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const reader = new FileReader();
-      
+
       await new Promise<void>((resolve) => {
         reader.onloadend = () => {
           const base64String = (reader.result as string).split(',')[1];
@@ -101,7 +101,7 @@ export const BottomInputBar = ({
         reader.readAsDataURL(file);
       });
     }
-    
+
     setMedia(prev => prev ? [...prev, ...newMedia] : newMedia);
   };
 
@@ -119,7 +119,7 @@ export const BottomInputBar = ({
   };
 
   return (
-    <div 
+    <div
       className={`fixed bottom-0 left-0 right-0 z-50 p-4 transition-all ${isDragging ? 'bg-primary/5' : ''}`}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
@@ -173,11 +173,11 @@ export const BottomInputBar = ({
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="min-h-[100px] sm:min-h-[120px] max-h-[200px] resize-none text-base p-4 pr-14 rounded-xl border-border/30 bg-background/50 focus:bg-background transition-colors"
+              className="min-h-[60px] max-h-[200px] resize-none text-base p-4 pr-14 rounded-xl border-border/30 bg-background/50 focus:bg-background transition-colors"
               disabled={isLocked}
               rows={3}
             />
-            
+
             {/* Voice Input Button (inside textarea) */}
             {isSupported && (
               <Button
