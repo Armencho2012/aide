@@ -6,7 +6,7 @@ const DAILY_LIMIT_PRO = 50;
 
 // Reduced counts for speed
 const QUIZ_QUESTIONS_COUNT = 5;
-const FLASHCARDS_COUNT = 8;
+const FLASHCARDS_COUNT = 10;
 const KNOWLEDGE_MAP_NODES_COUNT = 6;
 
 const MAX_FLASHCARDS_FREE = 20;
@@ -110,7 +110,7 @@ Deno.serve(async (req: Request) => {
     const mediaParts: any[] = media ? [{ inlineData: { data: media.data, mimeType: media.mimeType } }] : [];
 
     // PARALLEL CALLS - 3 specialized fast calls instead of 1 big slow call
-    const quizCount = isProOrClass ? 10 : QUIZ_QUESTIONS_COUNT;
+    const quizCount = isProOrClass ? 20 : QUIZ_QUESTIONS_COUNT;
 
     const [summaryResult, quizResult, mapResult] = await Promise.all([
       // Call 1: Summary, key terms, lesson sections (fastest)
@@ -147,7 +147,7 @@ ${KNOWLEDGE_MAP_NODES_COUNT} nodes, 8 edges. Short labels.`, contentText, mediaP
     };
 
     // Background: log usage (fire and forget)
-    supabaseAdmin.from("usage_logs").insert({ user_id: user.id, action_type: "text_analysis" }).then(() => {});
+    supabaseAdmin.from("usage_logs").insert({ user_id: user.id, action_type: "text_analysis" }).then(() => { });
     console.log(`Analysis complete: ${Date.now() - startTime}ms total`);
 
     return new Response(JSON.stringify(analysis), {
