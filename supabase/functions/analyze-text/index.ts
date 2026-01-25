@@ -33,29 +33,41 @@ function parseJSON(text: string): any {
   try { return JSON.parse(t); } catch { return null; }
 }
 
-// Ultra-fast parallel call with 12s timeout
-async function callGemini(apiKey: string, systemPrompt: string, userContent: string, parts: any[] = []) {
+// Ultra-fast parallel call using Lovable AI Gateway
+async function callLovableAI(apiKey: string, systemPrompt: string, userContent: string) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const allParts = [...parts, { text: userContent }];
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
       signal: controller.signal,
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: "user", parts: allParts }],
-        generationConfig: { temperature: 0.1, responseMimeType: "application/json", maxOutputTokens: 4000 },
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent }
+        ],
+        response_format: { type: "json_object" }
       }),
     });
     clearTimeout(timeout);
+    
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("Lovable AI error:", res.status, errText);
+      return null;
+    }
+    
     const json = await res.json();
-    return json?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    return json?.choices?.[0]?.message?.content || null;
   } catch (e) {
     clearTimeout(timeout);
-    console.error("Gemini call failed:", e);
+    console.error("Lovable AI call failed:", e);
     return null;
   }
 }
@@ -79,8 +91,8 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) throw new Error("API key not configured");
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
 
     const supabase = createClient(supabaseUrl, supabaseKey, { global: { headers: { Authorization: authHeader } } });
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
@@ -104,29 +116,46 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    console.log(`User ${user.id} plan: ${userPlan} (${Date.now() - startTime}ms)`);
+    console.log(`Processing analysis for user ${user.id}, plan: ${userPlan}`);
 
     const contentText = text || "Analyze the content.";
-    const mediaParts: any[] = media ? [{ inlineData: { data: media.data, mimeType: media.mimeType } }] : [];
+    
+    // Include media info in prompt if present
+    const mediaContext = media ? "\n[User has attached an image/document for analysis]" : "";
 
-    // PARALLEL CALLS - 3 specialized fast calls instead of 1 big slow call
+    // PARALLEL CALLS - 3 specialized fast calls
     const quizCount = isProOrClass ? 20 : QUIZ_QUESTIONS_COUNT;
 
     const [summaryResult, quizResult, mapResult] = await Promise.all([
-      // Call 1: Summary, key terms, lesson sections (fastest)
-      callGemini(apiKey, `Respond in same language as input. Return JSON:
-{"metadata":{"language":"string","subject_domain":"string","complexity_level":"beginner|intermediate|advanced"},"three_bullet_summary":["b1","b2","b3"],"key_terms":[{"term":"string","definition":"string","importance":"high|medium|low"}],"lesson_sections":[{"title":"string","summary":"string","key_takeaway":"string"}]}
-3 bullets, 4 key terms, 3 sections. Be concise.`, contentText, mediaParts),
+      // Call 1: Summary, key terms, lesson sections
+      callLovableAI(apiKey, `You are an education AI. Respond ONLY with valid JSON in the exact format specified. Analyze the content and respond in the same language as the input.`, 
+        `Analyze this content and return JSON:
+{"metadata":{"language":"detected language code","subject_domain":"topic area","complexity_level":"beginner|intermediate|advanced"},"three_bullet_summary":["summary point 1","summary point 2","summary point 3"],"key_terms":[{"term":"term name","definition":"definition","importance":"high|medium|low"}],"lesson_sections":[{"title":"section title","summary":"section content","key_takeaway":"main insight"}]}
+
+Provide exactly 3 bullet points, 4-6 key terms, and 2-3 lesson sections. Be concise but informative.
+
+Content to analyze:
+${contentText.substring(0, 8000)}${mediaContext}`),
 
       // Call 2: Quiz + Flashcards
-      callGemini(apiKey, `Respond in same language as input. Return JSON:
-{"quiz_questions":[{"question":"string","options":["a","b","c","d"],"correct_answer_index":0,"explanation":"string","difficulty":"easy|medium|hard"}],"flashcards":[{"front":"string","back":"string"}]}
-${quizCount} quiz questions, ${FLASHCARDS_COUNT} flashcards. Concise answers.`, contentText, mediaParts),
+      callLovableAI(apiKey, `You are an education AI. Respond ONLY with valid JSON. Create quiz questions and flashcards in the same language as the input content.`,
+        `Create educational materials and return JSON:
+{"quiz_questions":[{"question":"question text","options":["option A","option B","option C","option D"],"correct_answer_index":0,"explanation":"why this is correct","difficulty":"easy|medium|hard"}],"flashcards":[{"front":"question or term","back":"answer or definition"}]}
+
+Create ${quizCount} quiz questions (mix of easy, medium, hard) and ${FLASHCARDS_COUNT} flashcards.
+
+Content:
+${contentText.substring(0, 8000)}${mediaContext}`),
 
       // Call 3: Knowledge map
-      callGemini(apiKey, `Respond in same language as input. Return JSON:
-{"knowledge_map":{"nodes":[{"id":"n1","label":"string","category":"string","description":"string"}],"edges":[{"source":"n1","target":"n2","label":"string","strength":5}]}}
-${KNOWLEDGE_MAP_NODES_COUNT} nodes, 8 edges. Short labels.`, contentText, mediaParts),
+      callLovableAI(apiKey, `You are an education AI. Respond ONLY with valid JSON. Create a knowledge map in the same language as the input.`,
+        `Create a knowledge map and return JSON:
+{"knowledge_map":{"nodes":[{"id":"n1","label":"concept name","category":"category","description":"brief description"}],"edges":[{"source":"n1","target":"n2","label":"relationship","strength":5}]}}
+
+Create ${KNOWLEDGE_MAP_NODES_COUNT} nodes representing main concepts and 8-10 edges showing relationships. Strength is 1-10.
+
+Content:
+${contentText.substring(0, 8000)}${mediaContext}`),
     ]);
 
     console.log(`All 3 parallel calls done (${Date.now() - startTime}ms)`);
@@ -135,6 +164,11 @@ ${KNOWLEDGE_MAP_NODES_COUNT} nodes, 8 edges. Short labels.`, contentText, mediaP
     const summary = parseJSON(summaryResult) || {};
     const quiz = parseJSON(quizResult) || {};
     const map = parseJSON(mapResult) || {};
+
+    // Debug: log what we got
+    if (!summaryResult) console.error("Summary call returned null");
+    if (!quizResult) console.error("Quiz call returned null");
+    if (!mapResult) console.error("Map call returned null");
 
     const analysis: AnalysisResult = {
       metadata: summary.metadata || { language: "en", subject_domain: "General", complexity_level: "intermediate" },
