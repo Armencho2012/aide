@@ -104,28 +104,40 @@ export type Database = {
       user_content: {
         Row: {
           analysis_data: Json | null
+          content_type: string | null
+          course_data: Json | null
           created_at: string | null
+          generation_status: Json | null
           id: string
           language: string | null
           original_text: string
+          podcast_url: string | null
           title: string | null
           user_id: string
         }
         Insert: {
           analysis_data?: Json | null
+          content_type?: string | null
+          course_data?: Json | null
           created_at?: string | null
+          generation_status?: Json | null
           id?: string
           language?: string | null
           original_text: string
+          podcast_url?: string | null
           title?: string | null
           user_id: string
         }
         Update: {
           analysis_data?: Json | null
+          content_type?: string | null
+          course_data?: Json | null
           created_at?: string | null
+          generation_status?: Json | null
           id?: string
           language?: string | null
           original_text?: string
+          podcast_url?: string | null
           title?: string | null
           user_id?: string
         }

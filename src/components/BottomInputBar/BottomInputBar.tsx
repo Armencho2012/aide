@@ -2,6 +2,7 @@ import { useState, useRef, DragEvent, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Sparkles,
@@ -13,11 +14,9 @@ import {
   Plus,
   Upload,
   Send,
-  Headphones,
-  GraduationCap
 } from 'lucide-react';
 import { useVoiceInput } from './useVoiceInput';
-import { BottomInputBarProps, ActionMode, MediaFile, uiLabels } from './types';
+import { BottomInputBarProps, PrimaryMode, GenerationOptions, uiLabels } from './types';
 
 export const BottomInputBar = ({
   language,
@@ -25,12 +24,21 @@ export const BottomInputBar = ({
   isProcessing,
   isLocked
 }: BottomInputBarProps) => {
-  const [mode, setMode] = useState<ActionMode>('analyze');
+  const [primaryMode, setPrimaryMode] = useState<PrimaryMode>('analyse');
   const [text, setText] = useState('');
-  const [media, setMedia] = useState<MediaFile[] | null>(null);
+  const [media, setMedia] = useState<{ data: string; mimeType: string; name: string }[] | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const labels = uiLabels[language];
+
+  // Generation options - Quiz and Flashcards checked by default
+  const [generationOptions, setGenerationOptions] = useState<GenerationOptions>({
+    quiz: true,
+    flashcards: true,
+    map: false,
+    course: false,
+    podcast: false
+  });
 
   const handleTranscript = useCallback((transcript: string) => {
     setText(prev => prev ? `${prev} ${transcript}` : transcript);
@@ -43,7 +51,11 @@ export const BottomInputBar = ({
 
   const handleSubmit = () => {
     if (!text.trim() && (!media || media.length === 0)) return;
-    onSubmit(text, mode, media);
+    
+    // For analyse mode, pass generation options
+    // For chat mode, just send to chat
+    const mode = primaryMode === 'analyse' ? 'analyze' : 'chat';
+    onSubmit(text, mode, media, primaryMode === 'analyse' ? generationOptions : undefined);
     setText('');
     setMedia(null);
   };
@@ -82,7 +94,7 @@ export const BottomInputBar = ({
   };
 
   const handleFilesAdd = async (files: FileList) => {
-    const newMedia: MediaFile[] = [];
+    const newMedia: { data: string; mimeType: string; name: string }[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -111,11 +123,11 @@ export const BottomInputBar = ({
     }
   };
 
-  const modeIcons = {
-    analyze: <Sparkles className="h-4 w-4" />,
-    chat: <MessageSquare className="h-4 w-4" />,
-    podcast: <Headphones className="h-4 w-4" />,
-    course: <GraduationCap className="h-4 w-4" />
+  const toggleGenerationOption = (option: keyof GenerationOptions) => {
+    setGenerationOptions(prev => ({
+      ...prev,
+      [option]: !prev[option]
+    }));
   };
 
   return (
@@ -138,28 +150,60 @@ export const BottomInputBar = ({
 
       <div className="container max-w-3xl mx-auto">
         <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl p-4 sm:p-5">
-          {/* Mode Selector - Centered at top */}
+          {/* Primary Mode Toggle - Analyse | Chat */}
           <div className="flex justify-center mb-4">
             <ToggleGroup
               type="single"
-              value={mode}
-              onValueChange={(value) => value && setMode(value as ActionMode)}
+              value={primaryMode}
+              onValueChange={(value) => value && setPrimaryMode(value as PrimaryMode)}
               className="bg-muted/50 rounded-xl p-1.5"
             >
-              {(['analyze', 'chat', 'podcast', 'course'] as const).map((m) => (
-                <ToggleGroupItem
-                  key={m}
-                  value={m}
-                  aria-label={labels.tooltips[m]}
-                  className="gap-2 px-3 sm:px-4 py-2 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-lg transition-all"
-                  disabled={isLocked}
-                >
-                  {modeIcons[m]}
-                  <span className="hidden sm:inline">{labels.modes[m]}</span>
-                </ToggleGroupItem>
-              ))}
+              <ToggleGroupItem
+                value="analyse"
+                aria-label={labels.tooltips.analyze}
+                className="gap-2 px-4 sm:px-6 py-2 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-lg transition-all"
+                disabled={isLocked}
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>{labels.primaryModes.analyse}</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="chat"
+                aria-label={labels.tooltips.chat}
+                className="gap-2 px-4 sm:px-6 py-2 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-lg transition-all"
+                disabled={isLocked}
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span>{labels.primaryModes.chat}</span>
+              </ToggleGroupItem>
             </ToggleGroup>
           </div>
+
+          {/* Generation Options - Only show when Analyse is selected */}
+          {primaryMode === 'analyse' && (
+            <div className="flex flex-wrap justify-center gap-3 mb-4 px-2">
+              {(['quiz', 'flashcards', 'map', 'course', 'podcast'] as const).map((option) => (
+                <label
+                  key={option}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all ${
+                    generationOptions[option]
+                      ? 'bg-primary/10 border border-primary/30 text-primary'
+                      : 'bg-muted/50 border border-transparent text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Checkbox
+                    checked={generationOptions[option]}
+                    onCheckedChange={() => toggleGenerationOption(option)}
+                    disabled={isLocked}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm font-medium capitalize">
+                    {labels.generationOptions[option]}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
 
           {/* Main Input Area */}
           <div className="relative">
@@ -169,7 +213,7 @@ export const BottomInputBar = ({
               </Badge>
             )}
             <Textarea
-              placeholder={isLocked ? labels.upgradeTooltip : labels.placeholder[mode]}
+              placeholder={isLocked ? labels.upgradeTooltip : labels.placeholder[primaryMode === 'analyse' ? 'analyze' : 'chat']}
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}

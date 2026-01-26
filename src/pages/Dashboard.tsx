@@ -6,7 +6,8 @@ import { Settings, LogOut, BookOpen, CreditCard, User as UserIcon, Lock, Pause, 
 import { SettingsModal } from "@/components/SettingsModal";
 import { AnalysisOutput } from "@/components/AnalysisOutput";
 import { UpgradeModal } from "@/components/UpgradeModal";
-import { BottomInputBar, ActionMode, MediaFile } from "@/components/BottomInputBar";
+import { BottomInputBar } from "@/components/BottomInputBar";
+import { ActionMode, MediaFile, GenerationOptions } from "@/components/BottomInputBar/types";
 import { ChatPanel } from "@/components/ChatPanel";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/useSettings";
@@ -276,7 +277,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleSubmit = async (text: string, mode: ActionMode, media?: MediaFile[] | null) => {
+  const handleSubmit = async (text: string, mode: ActionMode, media?: MediaFile[] | null, generationOptions?: GenerationOptions) => {
     if (!user) {
       toast({
         title: "Error",
