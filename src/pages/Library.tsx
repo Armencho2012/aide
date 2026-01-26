@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Search, Trash2, Calendar, PlayCircle, Menu, X } from 'lucide-react';
+import { ArrowLeft, Search, Trash2, Calendar, PlayCircle, Menu, MessageCircle, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useContent } from '@/hooks/useContent';
 import { LibrarySkeleton } from '@/components/ui/skeleton-loader';
@@ -8,7 +8,8 @@ import { LibrarySkeleton } from '@/components/ui/skeleton-loader';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +27,7 @@ const Library = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'analyse' | 'chat'>('all');
   const navigate = useNavigate();
 
   const handleDelete = (id: string) => {
@@ -36,14 +38,27 @@ const Library = () => {
   };
 
   const filteredContent = useMemo(() => {
-    if (!searchQuery.trim()) return contentList;
-    const query = searchQuery.toLowerCase();
-    return contentList.filter(
-      item =>
-        item.title?.toLowerCase().includes(query) ||
-        item.original_text?.toLowerCase().includes(query)
-    );
-  }, [contentList, searchQuery]);
+    let filtered = contentList;
+    
+    // Filter by content type tab
+    if (activeTab === 'analyse') {
+      filtered = filtered.filter(item => item.content_type !== 'chat');
+    } else if (activeTab === 'chat') {
+      filtered = filtered.filter(item => item.content_type === 'chat');
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        item =>
+          item.title?.toLowerCase().includes(query) ||
+          item.original_text?.toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
+  }, [contentList, searchQuery, activeTab]);
 
   // Show skeleton while loading OR while auth is not yet checked
   if (!isAuthChecked || isLoading) {
@@ -108,6 +123,23 @@ const Library = () => {
             </h1>
           </div>
         </div>
+
+        {/* Tabs for filtering content type */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'analyse' | 'chat')} className="mb-4 sm:mb-6">
+          <TabsList className="bg-card/50">
+            <TabsTrigger value="all" className="flex items-center gap-2">
+              All
+            </TabsTrigger>
+            <TabsTrigger value="analyse" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Analyses</span>
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">Chats</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         <div className="relative w-full max-w-md mb-4 sm:mb-6">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

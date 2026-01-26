@@ -361,11 +361,19 @@ const Dashboard = () => {
           ? { data: media[0].data, mimeType: media[0].mimeType }
           : null;
 
+        // Pass generation options to edge function
         const { data, error } = await supabase.functions.invoke('analyze-text', {
           body: {
             text,
             media: mediaPayload,
-            isCourse: mode === 'course'
+            isCourse: mode === 'course',
+            generationOptions: generationOptions || {
+              quiz: true,
+              flashcards: true,
+              map: true,
+              course: mode === 'course',
+              podcast: false
+            }
           }
         });
 
@@ -393,7 +401,15 @@ const Dashboard = () => {
               original_text: text,
               analysis_data: data,
               language: language,
-              title: text.substring(0, 50) + (text.length > 50 ? '...' : '')
+              title: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+              content_type: 'analyse',
+              generation_status: generationOptions || {
+                quiz: true,
+                flashcards: true,
+                map: true,
+                course: mode === 'course',
+                podcast: false
+              }
             });
           } catch (saveError) {
             console.error('Error saving to archive:', saveError);

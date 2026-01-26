@@ -3,6 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
+export interface GenerationStatus {
+  quiz?: boolean;
+  flashcards?: boolean;
+  map?: boolean;
+  course?: boolean;
+  podcast?: boolean;
+}
+
 export interface ContentItem {
   id: string;
   title: string | null;
@@ -11,6 +19,9 @@ export interface ContentItem {
   language: string | null;
   created_at: string | null;
   user_id: string;
+  content_type: string | null;
+  generation_status: GenerationStatus | null;
+  podcast_url: string | null;
 }
 
 interface UseContentOptions {
@@ -53,7 +64,11 @@ export const useContent = (options: UseContentOptions = {}): UseContentResult =>
         return;
       }
 
-      const typedItems: ContentItem[] = items || [];
+      // Map the Supabase data to ContentItem type
+      const typedItems: ContentItem[] = (items || []).map(item => ({
+        ...item,
+        generation_status: item.generation_status as GenerationStatus | null
+      }));
       setContentList(typedItems);
 
       if (contentId) {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, FileText, Layers, Bot, Download, Map, PlayCircle, BookOpen } from 'lucide-react';
+import { ArrowLeft, Loader2, FileText, Layers, Bot, Download, Map, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useContent } from '@/hooks/useContent';
 import { ContentDetailSkeleton } from '@/components/ui/skeleton-loader';
 import { KnowledgeMap } from '@/components/KnowledgeMap';
+import { MissingAssetsBar } from '@/components/MissingAssetsBar';
+import { supabase } from '@/integrations/supabase/client';
 import jsPDF from 'jspdf';
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
@@ -91,11 +93,77 @@ const uiLabels = {
 
 const ContentDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { content, isLoading, isAuthChecked } = useContent({ id });
+  const { content, isLoading, isAuthChecked, refetch } = useContent({ id });
   const [exporting, setExporting] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const handleRegenerateMissing = async (missingAssets: string[]) => {
+    if (!content) return;
+    
+    setIsRegenerating(true);
+    try {
+      const generationOptions = {
+        quiz: missingAssets.includes('quiz'),
+        flashcards: missingAssets.includes('flashcards'),
+        map: missingAssets.includes('map'),
+        course: missingAssets.includes('course'),
+        podcast: missingAssets.includes('podcast')
+      };
+
+      const { data, error } = await supabase.functions.invoke('analyze-text', {
+        body: {
+          text: content.original_text,
+          generationOptions
+        }
+      });
+
+      if (error) throw error;
+
+      // Update the content with the new data
+      const updatedAnalysisData = {
+        ...content.analysis_data,
+        ...(data.quiz_questions && { quiz_questions: data.quiz_questions }),
+        ...(data.flashcards && { flashcards: data.flashcards }),
+        ...(data.knowledge_map && { knowledge_map: data.knowledge_map })
+      };
+
+      const updatedGenerationStatus = {
+        ...content.generation_status,
+        quiz: generationOptions.quiz ? true : content.generation_status?.quiz,
+        flashcards: generationOptions.flashcards ? true : content.generation_status?.flashcards,
+        map: generationOptions.map ? true : content.generation_status?.map,
+        course: generationOptions.course ? true : content.generation_status?.course,
+        podcast: generationOptions.podcast ? true : content.generation_status?.podcast
+      };
+
+      await supabase
+        .from('user_content')
+        .update({
+          analysis_data: updatedAnalysisData,
+          generation_status: updatedGenerationStatus
+        })
+        .eq('id', content.id);
+
+      refetch();
+      
+      toast({
+        title: 'Assets Generated',
+        description: 'Missing content has been generated successfully.'
+      });
+    } catch (error) {
+      console.error('Regeneration error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate missing assets.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   const handleExportPdf = async () => {
     if (!content || !content.analysis_data) return;
@@ -361,6 +429,13 @@ const ContentDetail = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Missing Assets Bar */}
+        <MissingAssetsBar
+          generationStatus={content.generation_status}
+          onRegenerate={handleRegenerateMissing}
+          isRegenerating={isRegenerating}
+        />
 
         {/* Tabbed Content Area */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
