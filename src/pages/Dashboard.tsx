@@ -325,17 +325,12 @@ const Dashboard = () => {
           throw new Error(error.message || 'Failed to generate podcast');
         }
 
-        if (!data?.audio) {
-          throw new Error('No audio returned from podcast generation');
+        if (!data?.podcast_url) {
+          throw new Error('No podcast URL returned from generation');
         }
 
-        // Convert base64 to audio URL
-        const audioBlob = new Blob(
-          [Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))],
-          { type: data.mimeType || 'audio/wav' }
-        );
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setPodcastAudio(audioUrl);
+        // Use the returned podcast URL directly
+        setPodcastAudio(data.podcast_url);
 
         toast({
           title: language === 'en' ? 'Podcast Ready!' : language === 'ru' ? 'Подкаст готов!' : language === 'hy' ? 'Պոդկաստը պատրաստ է!' : '팟캐스트 준비됨!',
