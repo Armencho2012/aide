@@ -12,12 +12,14 @@ interface GenerationStatus {
 
 interface MissingAssetsBarProps {
   generationStatus: GenerationStatus | null;
+  podcastUrl?: string | null;
   onRegenerate: (assets: string[]) => void;
   isRegenerating?: boolean;
 }
 
 export const MissingAssetsBar = ({ 
   generationStatus, 
+  podcastUrl,
   onRegenerate, 
   isRegenerating = false 
 }: MissingAssetsBarProps) => {
@@ -29,7 +31,10 @@ export const MissingAssetsBar = ({
   if (generationStatus.flashcards === false) missingAssets.push('flashcards');
   if (generationStatus.map === false) missingAssets.push('map');
   if (generationStatus.course === false) missingAssets.push('course');
-  if (generationStatus.podcast === false) missingAssets.push('podcast');
+  // Check both generation_status AND actual podcast_url presence
+  if (generationStatus.podcast === false || (!podcastUrl && generationStatus.podcast !== true)) {
+    missingAssets.push('podcast');
+  }
 
   if (missingAssets.length === 0) return null;
 

@@ -497,6 +497,7 @@ const ContentDetail = () => {
         {/* Missing Assets Bar */}
         <MissingAssetsBar
           generationStatus={content.generation_status}
+          podcastUrl={content.podcast_url}
           onRegenerate={handleRegenerateMissing}
           isRegenerating={isRegenerating}
         />
