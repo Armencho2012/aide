@@ -1,9 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -34,6 +33,58 @@ function base64ToUint8Array(base64: string): Uint8Array {
     bytes[i] = binaryString.charCodeAt(i);
   }
   return bytes;
+}
+
+// Retry helper with exponential backoff
+async function fetchWithRetry(
+  url: string, 
+  options: RequestInit, 
+  maxRetries = 3,
+  baseDelay = 1000
+): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      
+      // Don't retry on client errors (4xx) except rate limits
+      if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+        return response;
+      }
+      
+      // Retry on 5xx errors or rate limits
+      if (response.status >= 500 || response.status === 429) {
+        const errorJson = await response.json().catch(() => ({}));
+        console.log(`Attempt ${attempt + 1}/${maxRetries} failed with ${response.status}:`, errorJson?.error?.message || 'Unknown error');
+        
+        if (attempt < maxRetries - 1) {
+          const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+          console.log(`Retrying in ${Math.round(delay)}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        // Return the response on final attempt
+        return new Response(JSON.stringify(errorJson), {
+          status: response.status,
+          headers: response.headers
+        });
+      }
+      
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+      console.error(`Attempt ${attempt + 1}/${maxRetries} network error:`, lastError.message);
+      
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError || new Error('All retry attempts failed');
 }
 
 Deno.serve(async (req: Request) => {
@@ -75,7 +126,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) throw new Error("API key not configured");
+    if (!apiKey) throw new Error("Gemini API key not configured");
 
     // Build the podcast dialogue prompt
     const languageInstruction = language === 'en' ? 'English' : 
@@ -103,7 +154,7 @@ Begin the podcast dialogue now:`;
 
     console.log(`Generating podcast for user ${user.id}, topic: ${truncatedPrompt.substring(0, 50)}...`);
 
-    // Call Gemini TTS API with multi-speaker configuration
+    // Call Gemini TTS API with retry mechanism
     const ttsUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
     
     const ttsPayload = {
@@ -135,18 +186,41 @@ Begin the podcast dialogue now:`;
       }
     };
 
-    console.log('Calling Gemini TTS API...');
+    console.log('Calling Gemini TTS API with retry...');
     
-    const ttsRes = await fetch(ttsUrl, {
+    const ttsRes = await fetchWithRetry(ttsUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(ttsPayload),
-    });
+    }, 3, 2000);
 
     if (!ttsRes.ok) {
       const errorJson = await ttsRes.json().catch(() => ({}));
+      const errorMessage = errorJson?.error?.message || `TTS API error (HTTP ${ttsRes.status})`;
       console.error('Gemini TTS error:', ttsRes.status, JSON.stringify(errorJson));
-      throw new Error(errorJson?.error?.message || `TTS API error (HTTP ${ttsRes.status})`);
+      
+      // Return user-friendly error message
+      if (ttsRes.status === 429) {
+        return new Response(JSON.stringify({ 
+          error: "Podcast generation is temporarily unavailable due to high demand. Please try again in a few minutes.",
+          retryable: true
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      if (ttsRes.status === 500) {
+        return new Response(JSON.stringify({ 
+          error: "The podcast service encountered a temporary issue. Please try again.",
+          retryable: true
+        }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const ttsJson = await ttsRes.json();
