@@ -65,11 +65,8 @@ async function fetchWithRetry(
           continue;
         }
         
-        // Return the response on final attempt
-        return new Response(JSON.stringify(errorJson), {
-          status: response.status,
-          headers: response.headers
-        });
+        // Throw on final attempt instead of returning error response
+        throw new Error(`TTS API failed after ${maxRetries} attempts (HTTP ${response.status}): ${errorJson?.error?.message || 'Unknown error'}`);
       }
       
       return response;
@@ -117,6 +114,34 @@ Deno.serve(async (req: Request) => {
     // Get user's subscription plan
     const userPlan = await getUserPlan(supabaseAdmin, user.id);
     console.log(`User ${user.id} has plan: ${userPlan}`);
+
+    // Enforce rate limits for free users
+    if (userPlan === 'free') {
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const startOfDay = today.toISOString();
+
+      const { count, error: countError } = await supabaseAdmin
+        .from('usage_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('action_type', 'podcast_generation')
+        .gte('created_at', startOfDay);
+
+      if (countError) {
+        console.warn('Could not check usage limit:', countError);
+      } else if (count && count >= 5) {
+        // Free users limited to 5 podcasts per day
+        return new Response(JSON.stringify({
+          error: 'Daily podcast generation limit reached. Upgrade to Pro for unlimited access.',
+          limit_reached: true,
+          retryable: false
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
 
     const body = await req.json().catch(() => ({}));
     const { prompt, language = 'en', contentId } = body;
@@ -188,11 +213,21 @@ Begin the podcast dialogue now:`;
 
     console.log('Calling Gemini TTS API with retry...');
     
-    const ttsRes = await fetchWithRetry(ttsUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(ttsPayload),
-    }, 3, 2000);
+    // Add timeout protection (90 seconds for TTS generation)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+    let ttsRes: Response;
+    try {
+      ttsRes = await fetchWithRetry(ttsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ttsPayload),
+        signal: controller.signal
+      }, 3, 2000);
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     console.log(`TTS Response status: ${ttsRes.status}`);
 
@@ -246,12 +281,17 @@ Begin the podcast dialogue now:`;
       const candidate = ttsJson.candidates[0];
       console.log('Candidate structure:', JSON.stringify(candidate).substring(0, 500));
       
-      // Try alternative paths
+      // Try alternative paths - but validate mime type strictly
       if (candidate.content?.parts?.length > 0) {
-        audioPart = candidate.content.parts.find((p: any) => p.data || p.inlineData?.data);
+        audioPart = candidate.content.parts.find((p: any) => {
+          const hasMimeType = p.inlineData?.mimeType?.startsWith('audio/');
+          const hasData = p.inlineData?.data;
+          return hasMimeType && hasData;
+        });
       }
     }
 
+    // Strict validation: must have data AND valid audio mime type
     if (!audioPart?.inlineData?.data) {
       console.error('No audio data found in TTS response');
       console.error('Full response:', JSON.stringify(ttsJson));
@@ -259,14 +299,26 @@ Begin the podcast dialogue now:`;
     }
 
     const audioBase64 = audioPart.inlineData.data;
-    const audioMimeType = audioPart.inlineData.mimeType || 'audio/wav';
+    const audioMimeType = audioPart.inlineData.mimeType;
     
+    // Validate mime type is actually audio
+    if (!audioMimeType?.startsWith('audio/')) {
+      throw new Error(`Invalid audio format in response: ${audioMimeType}`);
+    }
+
     if (!audioBase64 || typeof audioBase64 !== 'string') {
       console.error('Invalid audio data format:', typeof audioBase64);
       throw new Error('Audio data is invalid or empty');
     }
     
     console.log(`Audio data received, type: ${audioMimeType}, base64 length: ${audioBase64.length}`);
+    
+    // Validate audio size before decoding (estimate: base64 is ~33% larger than binary)
+    const estimatedSize = Math.ceil((audioBase64.length * 3) / 4);
+    const maxAudioSize = 50 * 1024 * 1024; // 50MB limit
+    if (estimatedSize > maxAudioSize) {
+      throw new Error(`Generated audio exceeds maximum size limit (${(estimatedSize / 1024 / 1024).toFixed(2)}MB)`);
+    }
     
     // Decode base64 to bytes
     const audioBytes = base64ToUint8Array(audioBase64);
