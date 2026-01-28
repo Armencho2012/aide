@@ -34,11 +34,11 @@ const labels = {
     error: 'Что-то пошло не так. Попробуйте снова.'
   },
   hy: {
-    title: 'ԱԲ Զdelays',
-    placeholder: 'Հdelays delays delays...',
-    send: ' Delays',
-    thinking: 'Ֆdelays...',
-    error: 'Ինdelays delays: Նdelays նdelays delays:'
+    title: 'ԱԲ Զրուցարան',
+    placeholder: 'Հարցրեք ինձ ինչ-որ բան...',
+    send: 'Ուղարկել',
+    thinking: 'Մտածում եմ...',
+    error: 'Ինչ-որ բան խնդիր լինել: Խնդրում ենք կրկին փորձել:'
   },
   ko: {
     title: 'AI 채팅',

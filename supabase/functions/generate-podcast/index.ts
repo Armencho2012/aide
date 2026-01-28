@@ -194,9 +194,18 @@ Begin the podcast dialogue now:`;
       body: JSON.stringify(ttsPayload),
     }, 3, 2000);
 
+    console.log(`TTS Response status: ${ttsRes.status}`);
+
     if (!ttsRes.ok) {
-      const errorJson = await ttsRes.json().catch(() => ({}));
-      const errorMessage = errorJson?.error?.message || `TTS API error (HTTP ${ttsRes.status})`;
+      const errorText = await ttsRes.text();
+      const errorJson = (() => {
+        try {
+          return JSON.parse(errorText);
+        } catch {
+          return { message: errorText };
+        }
+      })();
+      const errorMessage = errorJson?.error?.message || errorJson?.message || `TTS API error (HTTP ${ttsRes.status})`;
       console.error('Gemini TTS error:', ttsRes.status, JSON.stringify(errorJson));
       
       // Return user-friendly error message
@@ -224,20 +233,40 @@ Begin the podcast dialogue now:`;
     }
 
     const ttsJson = await ttsRes.json();
-    console.log('TTS response received');
+    console.log('TTS response received, checking for audio data...');
+    console.log('Response structure:', JSON.stringify(ttsJson).substring(0, 1000));
 
-    // Extract audio data from response
-    const audioPart = ttsJson?.candidates?.[0]?.content?.parts?.find(
+    // Extract audio data from response - check multiple possible locations
+    let audioPart = ttsJson?.candidates?.[0]?.content?.parts?.find(
       (part: any) => part.inlineData?.mimeType?.startsWith('audio/')
     );
 
+    // If not found in content.parts, check if audio is in a different structure
+    if (!audioPart && ttsJson?.candidates?.[0]) {
+      const candidate = ttsJson.candidates[0];
+      console.log('Candidate structure:', JSON.stringify(candidate).substring(0, 500));
+      
+      // Try alternative paths
+      if (candidate.content?.parts?.length > 0) {
+        audioPart = candidate.content.parts.find((p: any) => p.data || p.inlineData?.data);
+      }
+    }
+
     if (!audioPart?.inlineData?.data) {
-      console.error('No audio data in response:', JSON.stringify(ttsJson).substring(0, 500));
-      throw new Error('No audio generated from TTS API');
+      console.error('No audio data found in TTS response');
+      console.error('Full response:', JSON.stringify(ttsJson));
+      throw new Error('No audio generated from TTS API - response structure unexpected');
     }
 
     const audioBase64 = audioPart.inlineData.data;
     const audioMimeType = audioPart.inlineData.mimeType || 'audio/wav';
+    
+    if (!audioBase64 || typeof audioBase64 !== 'string') {
+      console.error('Invalid audio data format:', typeof audioBase64);
+      throw new Error('Audio data is invalid or empty');
+    }
+    
+    console.log(`Audio data received, type: ${audioMimeType}, base64 length: ${audioBase64.length}`);
     
     // Decode base64 to bytes
     const audioBytes = base64ToUint8Array(audioBase64);

@@ -36,14 +36,14 @@ const labels = {
     generateDescription: 'Создайте AI-подкаст на основе вашего контента'
   },
   hy: {
-    podcast: 'Podcast',
-    generatedPodcast: 'Generated Podcast',
-    clickPlay: 'Click play to listen',
-    download: 'Download',
-    generate: 'Generate Podcast',
-    generating: 'Generating...',
-    noPodcast: 'No podcast generated yet',
-    generateDescription: 'Generate an AI podcast based on your content'
+    podcast: 'Պոդկաստ',
+    generatedPodcast: 'Ստեղծված Պոդկաստ',
+    clickPlay: 'Սեղմեք վերարտադրել ձեր ԱԲ-ի կողմից ստեղծված պոդկաստ լսելու համար',
+    download: 'Ներբեռնել',
+    generate: 'Ստեղծել պոդկաստ',
+    generating: 'Ստեղծվում է...',
+    noPodcast: 'Պոդկաստ դեռ չի ստեղծվել',
+    generateDescription: 'Ստեղծեք ԱԲ պոդկաստ ձեր բովանդակության հիման վրա'
   },
   ko: {
     podcast: '팟캐스트',

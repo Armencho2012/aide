@@ -15,13 +15,60 @@ interface MissingAssetsBarProps {
   podcastUrl?: string | null;
   onRegenerate: (assets: string[]) => void;
   isRegenerating?: boolean;
+  language?: 'en' | 'ru' | 'hy' | 'ko';
 }
+
+type Language = 'en' | 'ru' | 'hy' | 'ko';
+
+const labels = {
+  en: {
+    missingAssets: 'Missing Assets',
+    generating: 'Generating...',
+    generateMissing: 'Generate Missing',
+    quiz: 'Quiz',
+    flashcards: 'Flashcards',
+    map: 'Knowledge Map',
+    course: 'Course',
+    podcast: 'Podcast'
+  },
+  ru: {
+    missingAssets: 'Отсутствующие активы',
+    generating: 'Создание...',
+    generateMissing: 'Создать отсутствующие',
+    quiz: 'Тест',
+    flashcards: 'Карточки',
+    map: 'Карта знаний',
+    course: 'Курс',
+    podcast: 'Подкаст'
+  },
+  hy: {
+    missingAssets: 'Բացակա ակտիվներ',
+    generating: 'Ստեղծվում է...',
+    generateMissing: 'Ստեղծել բացակա',
+    quiz: 'Թեստ',
+    flashcards: 'Քարտեր',
+    map: 'Գիտելիքների քարտեզ',
+    course: 'Դասընթաց',
+    podcast: 'Պոդկաստ'
+  },
+  ko: {
+    missingAssets: '누락된 자산',
+    generating: '생성 중...',
+    generateMissing: '누락된 항목 생성',
+    quiz: '퀴즈',
+    flashcards: '플래시카드',
+    map: '지식 지도',
+    course: '코스',
+    podcast: '팟캐스트'
+  }
+};
 
 export const MissingAssetsBar = ({ 
   generationStatus, 
   podcastUrl,
   onRegenerate, 
-  isRegenerating = false 
+  isRegenerating = false,
+  language = 'en'
 }: MissingAssetsBarProps) => {
   if (!generationStatus) return null;
 
@@ -38,12 +85,14 @@ export const MissingAssetsBar = ({
 
   if (missingAssets.length === 0) return null;
 
+  const l = labels[language as Language] || labels.en;
+
   const assetLabels: Record<string, string> = {
-    quiz: 'Quiz',
-    flashcards: 'Flashcards',
-    map: 'Knowledge Map',
-    course: 'Course',
-    podcast: 'Podcast'
+    quiz: l.quiz,
+    flashcards: l.flashcards,
+    map: l.map,
+    course: l.course,
+    podcast: l.podcast
   };
 
   return (
@@ -53,7 +102,7 @@ export const MissingAssetsBar = ({
           <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5 sm:mt-0" />
           <div>
             <p className="text-sm font-medium text-warning">
-              Missing Assets
+              {l.missingAssets}
             </p>
             <div className="flex flex-wrap gap-1.5 mt-1">
               {missingAssets.map(asset => (
@@ -78,12 +127,12 @@ export const MissingAssetsBar = ({
           {isRegenerating ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Generating...
+              {l.generating}
             </>
           ) : (
             <>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Generate Missing
+              {l.generateMissing}
             </>
           )}
         </Button>
