@@ -379,13 +379,14 @@ Begin the podcast dialogue now:`;
       }
     }
 
-    // Log usage (fire and forget)
-    supabaseAdmin.from("usage_logs").insert({
-      user_id: user.id,
-      action_type: "podcast_generation",
-    }).then(({ error }) => {
+    // Log usage (fire and forget with proper async handling)
+    (async () => {
+      const { error } = await supabaseAdmin.from("usage_logs").insert({
+        user_id: user.id,
+        action_type: "podcast_generation",
+      });
       if (error) console.error("Error logging usage:", error);
-    });
+    })();
 
     // Return podcast URL
     return new Response(JSON.stringify({

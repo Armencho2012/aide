@@ -175,8 +175,11 @@ ${contentText.substring(0, 8000)}${mediaContext}`),
       knowledge_map: map.knowledge_map || { nodes: [], edges: [] },
     };
 
-    // Log usage (fire and forget)
-    supabaseAdmin.from("usage_logs").insert({ user_id: user.id, action_type: "text_analysis" }).catch(() => {});
+    // Log usage (fire and forget with proper async handling)
+    (async () => {
+      const { error } = await supabaseAdmin.from("usage_logs").insert({ user_id: user.id, action_type: "text_analysis" });
+      if (error) console.error("Error logging usage:", error);
+    })();
     console.log(`Analysis complete`);
 
     return new Response(JSON.stringify(analysis), {

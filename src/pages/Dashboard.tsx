@@ -128,7 +128,7 @@ const Dashboard = () => {
   // Use custom hooks for cleaner state management
   const { user, isAuthChecked, signOut, refreshUser } = useAuth();
   const { language, theme, setLanguage, setTheme, isLoaded: settingsLoaded } = useSettings();
-  const { usageCount, dailyLimit, userPlan, isLocked, isLoading: usageLoading, refreshUsage } = useUsageLimit(user?.id || '');
+  const { usageCount, dailyLimit, userPlan, isLocked, isLoading: usageLoading, refreshUsage } = useUsageLimit();
   const { podcastAudio, isPlaying, isGenerating: podcastGenerating, error: podcastError, audioRef, generatePodcast, togglePlayback, clearError: clearPodcastError, clearAudio } = usePodcast();
 
   // Local UI state
