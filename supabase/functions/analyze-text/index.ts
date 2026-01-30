@@ -34,40 +34,39 @@ function parseJSON(text: string): any {
   try { return JSON.parse(t); } catch { return null; }
 }
 
-// Lovable AI call with timeout
-async function callLovableAI(apiKey: string, systemPrompt: string, userContent: string) {
+// Gemini API call with timeout
+async function callGeminiAI(apiKey: string, systemPrompt: string, userContent: string) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 35000);
 
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       signal: controller.signal,
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent }
-        ],
-        response_format: { type: "json_object" }
+        contents: [{ 
+          role: "user", 
+          parts: [{ text: `${systemPrompt}\n\n${userContent}` }] 
+        }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.7
+        }
       }),
     });
     clearTimeout(timeout);
     
     if (!res.ok) {
-      console.error("Lovable AI error:", res.status);
+      console.error("Gemini API error:", res.status);
       return null;
     }
     
     const json = await res.json();
-    return json?.choices?.[0]?.message?.content || null;
+    return json?.candidates?.[0]?.content?.parts?.[0]?.text || null;
   } catch (e) {
     clearTimeout(timeout);
-    console.error("Lovable AI call failed:", e);
+    console.error("Gemini API call failed:", e);
     return null;
   }
 }
@@ -94,9 +93,9 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
     
-    if (!supabaseUrl || !supabaseKey || !serviceRoleKey || !apiKey) {
+    if (!supabaseUrl || !supabaseKey || !serviceRoleKey || !geminiKey) {
       throw new Error("Missing environment variables");
     }
 
@@ -133,7 +132,7 @@ Deno.serve(async (req: Request) => {
     const quizCount = isProOrClass ? 20 : QUIZ_QUESTIONS_COUNT;
 
     const [summaryResult, quizResult, mapResult] = await Promise.all([
-      callLovableAI(apiKey, `You are an education AI. Respond ONLY with valid JSON in the exact format specified. Analyze the content and respond in the same language as the input.`, 
+      callGeminiAI(geminiKey, `You are an education AI. Respond ONLY with valid JSON in the exact format specified. Analyze the content and respond in the same language as the input.`, 
         `Analyze this content and return JSON:
 {"metadata":{"language":"detected language code","subject_domain":"topic area","complexity_level":"beginner|intermediate|advanced"},"three_bullet_summary":["summary point 1","summary point 2","summary point 3"],"key_terms":[{"term":"term name","definition":"definition","importance":"high|medium|low"}],"lesson_sections":[{"title":"section title","summary":"section content","key_takeaway":"main insight"}]}
 
@@ -142,7 +141,7 @@ Provide exactly 3 bullet points, 4-6 key terms, and 2-3 lesson sections. Be conc
 Content to analyze:
 ${contentText.substring(0, 8000)}${mediaContext}`),
 
-      callLovableAI(apiKey, `You are an education AI. Respond ONLY with valid JSON. Create quiz questions and flashcards in the same language as the input content.`,
+      callGeminiAI(geminiKey, `You are an education AI. Respond ONLY with valid JSON. Create quiz questions and flashcards in the same language as the input content.`,
         `Create educational materials and return JSON:
 {"quiz_questions":[{"question":"question text","options":["option A","option B","option C","option D"],"correct_answer_index":0,"explanation":"why this is correct","difficulty":"easy|medium|hard"}],"flashcards":[{"front":"question or term","back":"answer or definition"}]}
 
@@ -151,7 +150,7 @@ Create ${quizCount} quiz questions (mix of easy, medium, hard) and ${FLASHCARDS_
 Content:
 ${contentText.substring(0, 8000)}${mediaContext}`),
 
-      callLovableAI(apiKey, `You are an education AI. Respond ONLY with valid JSON. Create a knowledge map in the same language as the input.`,
+      callGeminiAI(geminiKey, `You are an education AI. Respond ONLY with valid JSON. Create a knowledge map in the same language as the input.`,
         `Create a knowledge map and return JSON:
 {"knowledge_map":{"nodes":[{"id":"n1","label":"concept name","category":"category","description":"brief description"}],"edges":[{"source":"n1","target":"n2","label":"relationship","strength":5}]}}
 
