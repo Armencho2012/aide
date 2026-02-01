@@ -38,8 +38,7 @@ function parseJSON(text: string): any {
 const GEMINI_MODEL_CANDIDATES = [
   "gemini-2.5-flash-lite",
   "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.0-pro",
+  "gemini-2.0-flash"
 ];
 
 async function callGeminiAI(apiKey: string, systemPrompt: string, userContent: string) {
