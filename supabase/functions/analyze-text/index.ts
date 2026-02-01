@@ -36,8 +36,9 @@ function parseJSON(text: string): any {
 
 // Gemini API call with timeout
 const GEMINI_MODEL_CANDIDATES = [
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
   "gemini-1.0-pro",
 ];
 
