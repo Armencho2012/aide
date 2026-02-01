@@ -34,11 +34,11 @@ function parseJSON(text: string): any {
   try { return JSON.parse(t); } catch { return null; }
 }
 
-// Gemini API call with timeout
 const GEMINI_MODEL_CANDIDATES = [
-  "gemini-2.5-flash-lite",
-  "gemini-2.5-flash",
-  "gemini-2.0-flash"
+  "gemini-3-flash-preview", // Latest (Feb 2026) - PhD reasoning at Flash speed
+  "gemini-3-pro-preview",   // Most powerful for complex logic/coding
+  "gemini-2.5-flash",       // Current stable workhorse
+  "gemini-2.5-flash-lite",  // Current stable for high-throughput/low-cost
 ];
 
 async function callGeminiAI(apiKey: string, systemPrompt: string, userContent: string) {
