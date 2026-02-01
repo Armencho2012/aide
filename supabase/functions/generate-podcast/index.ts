@@ -48,12 +48,10 @@ async function fetchWithRetry(
     try {
       const response = await fetch(url, options);
       
-      // Don't retry on client errors (4xx) except rate limits
       if (response.status >= 400 && response.status < 500 && response.status !== 429) {
         return response;
       }
       
-      // Retry on 5xx errors or rate limits
       if (response.status >= 500 || response.status === 429) {
         const errorJson = await response.json().catch(() => ({}));
         console.log(`Attempt ${attempt + 1}/${maxRetries} failed with ${response.status}:`, errorJson?.error?.message || 'Unknown error');
@@ -65,7 +63,7 @@ async function fetchWithRetry(
           continue;
         }
         
-        throw new Error(`TTS API failed after ${maxRetries} attempts (HTTP ${response.status}): ${errorJson?.error?.message || 'Unknown error'}`);
+        throw new Error(`API failed after ${maxRetries} attempts (HTTP ${response.status}): ${errorJson?.error?.message || 'Unknown error'}`);
       }
       
       return response;
@@ -100,19 +98,22 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
 
-    // Client for user auth
+    if (!supabaseUrl || !apiKey || !serviceRoleKey) {
+      return new Response(JSON.stringify({ error: "Missing environment variables" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Admin client for storage and DB operations (bypasses RLS)
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
@@ -120,11 +121,9 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Get user's subscription plan
     const userPlan = await getUserPlan(supabaseAdmin, user.id);
     console.log(`User ${user.id} has plan: ${userPlan}`);
 
-    // Enforce rate limits for free users
     if (userPlan === 'free') {
       const today = new Date();
       today.setUTCHours(0, 0, 0, 0);
@@ -161,47 +160,66 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "Gemini API key not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    // Build the podcast dialogue prompt
     const languageInstruction = language === 'en' ? 'English' : 
                                 language === 'ru' ? 'Russian' : 
                                 language === 'hy' ? 'Armenian' : 
                                 language === 'ko' ? 'Korean' : 'English';
 
-    // Truncate prompt to avoid exceeding token limits
     const truncatedPrompt = prompt.substring(0, 4000);
 
-    const dialoguePrompt = `You are creating an educational podcast dialogue between two speakers discussing the following topic. The conversation should be informative, engaging, and natural-sounding.
+    // Step 1: Generate podcast dialogue using Gemini chat completions
+    const dialoguePrompt = `You are creating an educational podcast dialogue between two speakers. Create natural, flowing conversation.
 
 Topic: ${truncatedPrompt}
 
-Instructions:
-- Create a dialogue between Speaker 1 and Speaker 2
-- Speaker 1 is the host/interviewer who asks insightful questions
-- Speaker 2 is the expert who provides detailed explanations
-- Make the conversation flow naturally with appropriate reactions and follow-up questions
-- Include interesting facts, examples, and analogies to make the content accessible
-- The dialogue should be 2-3 minutes when spoken
-- Respond in ${languageInstruction}
+Format the dialogue like a real podcast with Speaker 1 (host) and Speaker 2 (expert) alternating. Include natural speech patterns, questions, and responses. Make it 2-3 minutes when spoken (about 300-400 words). Respond in ${languageInstruction}.`;
 
-Begin the podcast dialogue now:`;
+    console.log(`Step 1: Generating dialogue for user ${user.id}...`);
 
-    console.log(`Generating podcast for user ${user.id}, topic: ${truncatedPrompt.substring(0, 50)}...`);
+    const dialogueUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+    
+    const dialoguePayload = {
+      contents: [{
+        role: "user",
+        parts: [{ text: dialoguePrompt }]
+      }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2000
+      }
+    };
 
-    // Call Gemini TTS API with retry mechanism
+    const dialogueRes = await fetchWithRetry(dialogueUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dialoguePayload)
+    }, 3, 2000);
+
+    if (!dialogueRes.ok) {
+      const errorText = await dialogueRes.text();
+      console.error('Dialogue generation error:', dialogueRes.status, errorText);
+      throw new Error(`Failed to generate dialogue: ${dialogueRes.status}`);
+    }
+
+    const dialogueJson = await dialogueRes.json();
+    const dialogueText = dialogueJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!dialogueText) {
+      console.error('No dialogue generated, response:', JSON.stringify(dialogueJson));
+      throw new Error("Failed to generate podcast dialogue");
+    }
+
+    console.log('Dialogue generated, length:', dialogueText.length);
+
+    // Step 2: Convert dialogue to speech using Gemini TTS
+    console.log('Step 2: Converting dialogue to speech...');
+
     const ttsUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
     
     const ttsPayload = {
       contents: [{
         role: 'user',
-        parts: [{ text: dialoguePrompt }]
+        parts: [{ text: dialogueText }]
       }],
       generationConfig: {
         temperature: 1,
@@ -211,15 +229,11 @@ Begin the podcast dialogue now:`;
             speakerVoiceConfigs: [
               { 
                 speaker: 'Speaker 1', 
-                voiceConfig: { 
-                  prebuiltVoiceConfig: { voiceName: 'Zephyr' } 
-                } 
+                voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } 
               },
               { 
                 speaker: 'Speaker 2', 
-                voiceConfig: { 
-                  prebuiltVoiceConfig: { voiceName: 'Puck' } 
-                } 
+                voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } } 
               }
             ]
           }
@@ -227,11 +241,8 @@ Begin the podcast dialogue now:`;
       }
     };
 
-    console.log('Calling Gemini TTS API with retry...');
-    
-    // Add timeout protection (90 seconds for TTS generation)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 90000);
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
 
     let ttsRes: Response;
     try {
@@ -240,7 +251,7 @@ Begin the podcast dialogue now:`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ttsPayload),
         signal: controller.signal
-      }, 3, 2000);
+      }, 3, 3000);
     } finally {
       clearTimeout(timeoutId);
     }
@@ -249,101 +260,69 @@ Begin the podcast dialogue now:`;
 
     if (!ttsRes.ok) {
       const errorText = await ttsRes.text();
-      const errorJson = (() => {
-        try {
-          return JSON.parse(errorText);
-        } catch {
-          return { message: errorText };
-        }
-      })();
-      const errorMessage = errorJson?.error?.message || errorJson?.message || `TTS API error (HTTP ${ttsRes.status})`;
-      console.error('Gemini TTS error:', ttsRes.status, JSON.stringify(errorJson));
+      console.error('TTS API error:', ttsRes.status, errorText);
       
-      if (ttsRes.status === 429) {
-        return new Response(JSON.stringify({ 
-          error: "Podcast generation is temporarily unavailable due to high demand. Please try again in a few minutes.",
-          retryable: true
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      
-      if (ttsRes.status === 500) {
-        return new Response(JSON.stringify({ 
-          error: "The podcast service encountered a temporary issue. Please try again.",
-          retryable: true
-        }), {
-          status: 503,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      
-      throw new Error(errorMessage);
+      // If TTS fails, return the dialogue text so frontend can display it
+      return new Response(JSON.stringify({
+        error: "Audio generation failed, but dialogue is ready",
+        dialogue_text: dialogueText,
+        retryable: ttsRes.status === 429 || ttsRes.status === 503
+      }), {
+        status: ttsRes.status === 429 ? 429 : 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     const ttsJson = await ttsRes.json();
-    console.log('TTS response received, checking for audio data...');
-    console.log('Response structure:', JSON.stringify(ttsJson).substring(0, 1000));
+    console.log('TTS response received');
 
-    // Extract audio data from response - check multiple possible locations
+    // Extract audio data
     let audioPart = ttsJson?.candidates?.[0]?.content?.parts?.find(
       (part: any) => part.inlineData?.mimeType?.startsWith('audio/')
     );
 
-    // If not found in content.parts, check if audio is in a different structure
-    if (!audioPart && ttsJson?.candidates?.[0]) {
-      const candidate = ttsJson.candidates[0];
-      console.log('Candidate structure:', JSON.stringify(candidate).substring(0, 500));
-      
-      if (candidate.content?.parts?.length > 0) {
-        audioPart = candidate.content.parts.find((p: any) => {
-          const hasMimeType = p.inlineData?.mimeType?.startsWith('audio/');
-          const hasData = p.inlineData?.data;
-          return hasMimeType && hasData;
-        });
-      }
+    if (!audioPart && ttsJson?.candidates?.[0]?.content?.parts?.length > 0) {
+      audioPart = ttsJson.candidates[0].content.parts.find((p: any) => 
+        p.inlineData?.mimeType?.startsWith('audio/') && p.inlineData?.data
+      );
     }
 
-    // Strict validation: must have data AND valid audio mime type
     if (!audioPart?.inlineData?.data) {
-      console.error('No audio data found in TTS response');
-      console.error('Full response:', JSON.stringify(ttsJson));
-      throw new Error('No audio generated from TTS API - response structure unexpected');
+      console.error('No audio data in TTS response');
+      console.error('Response:', JSON.stringify(ttsJson).substring(0, 500));
+      // Return dialogue as fallback
+      return new Response(JSON.stringify({
+        error: "Audio generation produced no audio data",
+        dialogue_text: dialogueText,
+        retryable: true
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     const audioBase64 = audioPart.inlineData.data;
     const audioMimeType = audioPart.inlineData.mimeType;
     
-    // Validate mime type is actually audio
-    if (!audioMimeType?.startsWith('audio/')) {
-      throw new Error(`Invalid audio format in response: ${audioMimeType}`);
+    if (!audioMimeType?.startsWith('audio/') || !audioBase64) {
+      throw new Error("Invalid audio format in response");
     }
+    
+    console.log(`Audio data received, type: ${audioMimeType}, length: ${audioBase64.length}`);
 
-    if (!audioBase64 || typeof audioBase64 !== 'string') {
-      console.error('Invalid audio data format:', typeof audioBase64);
-      throw new Error('Audio data is invalid or empty');
-    }
-    
-    console.log(`Audio data received, type: ${audioMimeType}, base64 length: ${audioBase64.length}`);
-    
-    // Validate audio size before decoding (estimate: base64 is ~33% larger than binary)
     const estimatedSize = Math.ceil((audioBase64.length * 3) / 4);
-    const maxAudioSize = 50 * 1024 * 1024; // 50MB limit
+    const maxAudioSize = 50 * 1024 * 1024;
     if (estimatedSize > maxAudioSize) {
-      throw new Error(`Generated audio exceeds maximum size limit (${(estimatedSize / 1024 / 1024).toFixed(2)}MB)`);
+      throw new Error(`Audio exceeds size limit (${(estimatedSize / 1024 / 1024).toFixed(2)}MB)`);
     }
     
-    // Decode base64 to bytes
     const audioBytes = base64ToUint8Array(audioBase64);
     console.log(`Audio size: ${audioBytes.length} bytes`);
 
-    // Generate unique filename
     const timestamp = Date.now();
     const extension = audioMimeType.includes('wav') ? 'wav' : 'mp3';
     const filename = `${user.id}/${timestamp}.${extension}`;
 
-    // Upload to storage
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('podcasts')
       .upload(filename, audioBytes, {
@@ -356,7 +335,6 @@ Begin the podcast dialogue now:`;
       throw new Error('Failed to save podcast audio');
     }
 
-    // Get public URL
     const { data: urlData } = supabaseAdmin.storage
       .from('podcasts')
       .getPublicUrl(filename);
@@ -364,7 +342,6 @@ Begin the podcast dialogue now:`;
     const podcastUrl = urlData.publicUrl;
     console.log(`Podcast uploaded: ${podcastUrl}`);
 
-    // Update user_content if contentId provided
     if (contentId) {
       const { data: contentData } = await supabaseAdmin
         .from('user_content')
@@ -374,33 +351,20 @@ Begin the podcast dialogue now:`;
 
       const existingStatus = contentData?.generation_status || {};
       
-      const { error: updateError } = await supabaseAdmin
+      await supabaseAdmin
         .from('user_content')
         .update({
           podcast_url: podcastUrl,
-          generation_status: {
-            ...existingStatus,
-            podcast: true
-          }
+          generation_status: { ...existingStatus, podcast: true }
         })
         .eq('id', contentId);
-
-      if (updateError) {
-        console.error('Error updating content:', updateError);
-      } else {
-        console.log(`Content ${contentId} updated with podcast URL`);
-      }
     }
 
-    // Log usage (fire and forget)
     supabaseAdmin.from("usage_logs").insert({
       user_id: user.id,
       action_type: "podcast_generation",
-    }).then((err: any) => {
-      if (err) console.error("Error logging usage:", err);
-    });
+    }).catch((err: any) => console.error("Error logging usage:", err));
 
-    // Return podcast URL
     return new Response(JSON.stringify({
       podcast_url: podcastUrl,
       success: true
@@ -409,7 +373,7 @@ Begin the podcast dialogue now:`;
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  } catch (err: unknown) {
+  } catch (err) {
     console.error("Podcast generation error:", err);
     const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
     return new Response(JSON.stringify({ error: errorMessage }), {
