@@ -48,42 +48,45 @@ async function callGeminiAI(apiKey: string, systemPrompt: string, userContent: s
   try {
     let lastErrorText = "";
     for (const model of GEMINI_MODEL_CANDIDATES) {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: controller.signal,
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [{ text: `${systemPrompt}\n\n${userContent}` }],
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: "user",
+                  parts: [{ text: `${systemPrompt}\n\n${userContent}` }],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.7,
               },
-            ],
-            generationConfig: {
-              responseMimeType: "application/json",
-              temperature: 0.7,
-            },
-          }),
-        },
-      );
-
-      if (!res.ok) {
-        lastErrorText = await res.text().catch(() => "");
-        console.error(
-          `Gemini API error: ${res.status} (model=${model}) ${lastErrorText}`,
+            }),
+          },
         );
-        // Try next model on 404; otherwise keep trying but log.
+
+        if (!res.ok) {
+          lastErrorText = await res.text().catch(() => "");
+          console.error(`Gemini API error: ${res.status} (model=${model}) ${lastErrorText}`);
+          continue;
+        }
+
+        clearTimeout(timeout);
+        const json = await res.json();
+        const text = json?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+        console.log(`Gemini success with model=${model}`);
+        return text;
+      } catch (fetchErr) {
+        console.error(`Gemini fetch error (model=${model}):`, fetchErr);
         continue;
       }
-
-      const json = await res.json();
-      return json?.candidates?.[0]?.content?.parts?.[0]?.text || null;
     }
-    clearTimeout(timeout);
 
-    // All models failed
+    clearTimeout(timeout);
     console.error("Gemini API error: all model candidates failed", lastErrorText);
     return null;
   } catch (e) {
@@ -203,9 +206,10 @@ ${contentText.substring(0, 8000)}${mediaContext}`),
     };
 
     // Log usage (fire and forget)
-    supabaseAdmin.from("usage_logs").insert({ user_id: user.id, action_type: "text_analysis" }).then(({ error }) => {
+    (async () => {
+      const { error } = await supabaseAdmin.from("usage_logs").insert({ user_id: user.id, action_type: "text_analysis" });
       if (error) console.error("Error logging usage:", error);
-    });
+    })();
     console.log(`Analysis complete`);
 
     return new Response(JSON.stringify(analysis), {
