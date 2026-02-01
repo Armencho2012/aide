@@ -1,10 +1,12 @@
-import { corsHeaders } from "./_shared-index.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
 
 const DAILY_LIMIT_FREE = 1;
 const DAILY_LIMIT_PRO = 50;
-
-// Reduced counts for speed
 const QUIZ_QUESTIONS_COUNT = 5;
 const FLASHCARDS_COUNT = 10;
 const KNOWLEDGE_MAP_NODES_COUNT = 6;
@@ -18,7 +20,6 @@ interface AnalysisResult {
   quiz_questions?: Array<{ question: string; options: string[]; correct_answer_index: number; explanation: string; difficulty: string }>;
   flashcards?: Array<{ front: string; back: string }>;
   knowledge_map?: { nodes: Array<{ id: string; label: string; category: string; description: string }>; edges: Array<{ source: string; target: string; label: string; strength: number }> };
-  study_plan?: unknown;
   error?: string;
 }
 
@@ -33,70 +34,44 @@ function parseJSON(text: string): any {
   try { return JSON.parse(t); } catch { return null; }
 }
 
-/**
- * Updated for 2026: Gemini 3 series provides superior reasoning for 
- * educational content. 2.0 series is deprecated as of March 2026.
- */
-const GEMINI_MODEL_CANDIDATES = [
-  "gemini-3-flash-preview", 
-  "gemini-3-pro-preview",   
-  "gemini-2.5-flash",       
-  "gemini-2.5-flash-lite",  
-];
+async function callAIGateway(apiKey: string, systemPrompt: string, userContent: string): Promise<string | null> {
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent }
+        ],
+        stream: false
+      })
+    });
 
-async function callGeminiAI(apiKey: string, systemPrompt: string, userContent: string) {
-  let lastErrorText = "";
-
-  for (const model of GEMINI_MODEL_CANDIDATES) {
-    // FIX: New controller per model so a timeout on one doesn't kill the next
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 40000); 
-
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: controller.signal,
-          body: JSON.stringify({
-            contents: [{
-              role: "user",
-              parts: [{ text: `${systemPrompt}\n\n${userContent}` }],
-            }],
-            generationConfig: { temperature: 0.7 },
-          }),
-        },
-      );
-
-      clearTimeout(timeout);
-
-      if (!res.ok) {
-        lastErrorText = await res.text().catch(() => "");
-        console.warn(`Model ${model} failed (${res.status}). Trying next...`);
-        continue;
+    if (!response.ok) {
+      if (response.status === 429) {
+        console.error("Rate limit exceeded");
+        return null;
       }
-
-      const json = await res.json();
-      const text = json?.candidates?.[0]?.content?.parts?.[0]?.text || null;
-      
-      if (text) {
-        console.log(`Gemini success with model=${model}`);
-        return text;
+      if (response.status === 402) {
+        console.error("Payment required");
+        return null;
       }
-    } catch (err: any) {
-      clearTimeout(timeout);
-      if (err.name === 'AbortError') {
-        console.error(`Model ${model} timed out after 40s.`);
-      } else {
-        console.error(`Fetch error for ${model}:`, err.message);
-      }
-      continue;
+      const errorText = await response.text();
+      console.error("AI gateway error:", response.status, errorText);
+      return null;
     }
-  }
 
-  console.error("All model candidates failed.");
-  return null;
+    const json = await response.json();
+    return json?.choices?.[0]?.message?.content || null;
+  } catch (e) {
+    console.error("AI gateway call failed:", e);
+    return null;
+  }
 }
 
 async function getUserPlan(supabaseAdmin: any, userId: string): Promise<string> {
@@ -112,57 +87,115 @@ async function getUserPlan(supabaseAdmin: any, userId: string): Promise<string> 
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response('ok', { headers: corsHeaders });
+  }
 
   try {
+    // Authentication
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Authorization required");
-
-    const env = Deno.env.toObject();
-    const { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY } = env;
-    
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
-      throw new Error("Missing environment variables");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Authorization required" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: authHeader } } });
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const apiKey = Deno.env.get("LOVABLE_API_KEY")!;
 
-    const [userResult, bodyData] = await Promise.all([
-      supabase.auth.getUser(),
-      req.json().catch(() => ({}))
-    ]);
-    
-    const { data: { user }, error: authError } = userResult;
-    if (authError || !user) throw new Error("Invalid or expired token.");
+    if (!supabaseUrl || !supabaseKey || !serviceRoleKey || !apiKey) {
+      return new Response(JSON.stringify({ error: "Missing environment variables" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
 
-    const { text, media } = bodyData;
-    if (!text?.trim() && !media) throw new Error("No content provided");
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Parse request body
+    const body = await req.json().catch(() => ({}));
+    const { text, media, language = 'en' } = body;
+
+    if (!text?.trim() && !media) {
+      return new Response(JSON.stringify({ error: "No content provided" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Check usage limits
     const userPlan = await getUserPlan(supabaseAdmin, user.id);
     const isProOrClass = userPlan === 'pro' || userPlan === 'class';
 
-    // Usage check via RPC
-    const { data: usageCount } = await supabase.rpc("get_daily_usage_count", { p_user_id: user.id });
-    const dailyLimit = userPlan === 'pro' ? DAILY_LIMIT_PRO : DAILY_LIMIT_FREE;
-    if (userPlan !== 'class' && (usageCount || 0) >= dailyLimit) {
-      return new Response(JSON.stringify({ error: "Daily limit reached." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (userPlan !== 'class') {
+      const { data: usageCount } = await supabase.rpc("get_daily_usage_count", { p_user_id: user.id });
+      const dailyLimit = userPlan === 'pro' ? DAILY_LIMIT_PRO : DAILY_LIMIT_FREE;
+      if ((usageCount || 0) >= dailyLimit) {
+        return new Response(JSON.stringify({ error: "Daily limit reached. Upgrade for more." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
     }
 
     const contentText = text || "Analyze the content.";
-    const mediaContext = media ? "\n[Attached Media Content]" : "";
-    const quizCount = isProOrClass ? 15 : QUIZ_QUESTIONS_COUNT;
+    const mediaContext = media ? "\n[User has attached an image/document for analysis]" : "";
+    const quizCount = isProOrClass ? 20 : QUIZ_QUESTIONS_COUNT;
 
-    // Execute multiple AI calls in parallel for speed
+    const languageInstruction = {
+      'en': 'Respond in English.',
+      'ru': 'Отвечайте на русском языке.',
+      'hy': 'Պատասխանեք հայերեն։',
+      'ko': '한국어로 답변하세요.'
+    }[language as string] || 'Respond in English.';
+
+    console.log(`Processing analysis for user ${user.id}, plan: ${userPlan}, language: ${language}`);
+
+    // Parallel AI calls
     const [summaryResult, quizResult, mapResult] = await Promise.all([
-      callGeminiAI(GEMINI_API_KEY, "You are an education AI. Respond ONLY with valid JSON. Use the language of the input.", 
-        `Analyze and return JSON: {"metadata":{"language":"code","subject_domain":"topic","complexity_level":"beginner|intermediate|advanced"},"three_bullet_summary":["s1","s2","s3"],"key_terms":[{"term":"name","definition":"def","importance":"high"}],"lesson_sections":[{"title":"T","summary":"S","key_takeaway":"K"}]} \n\n Content: ${contentText.substring(0, 10000)}${mediaContext}`),
+      callAIGateway(apiKey,
+        `You are an education AI. Respond ONLY with valid JSON in the exact format specified. ${languageInstruction}`,
+        `Analyze this content and return JSON:
+{"metadata":{"language":"detected language code","subject_domain":"topic area","complexity_level":"beginner|intermediate|advanced"},"three_bullet_summary":["summary point 1","summary point 2","summary point 3"],"key_terms":[{"term":"term name","definition":"definition","importance":"high|medium|low"}],"lesson_sections":[{"title":"section title","summary":"section content","key_takeaway":"main insight"}]}
 
-      callGeminiAI(GEMINI_API_KEY, "You are an education AI. Respond ONLY with valid JSON.",
-        `Create ${quizCount} questions and ${FLASHCARDS_COUNT} cards. JSON: {"quiz_questions":[{"question":"Q","options":["A","B","C","D"],"correct_answer_index":0,"explanation":"E","difficulty":"medium"}],"flashcards":[{"front":"F","back":"B"}]} \n\n Content: ${contentText.substring(0, 10000)}${mediaContext}`),
+Provide exactly 3 bullet points, 4-6 key terms, and 2-3 lesson sections. Be concise but informative.
 
-      callGeminiAI(GEMINI_API_KEY, "You are an education AI. Respond ONLY with valid JSON.",
-        `Create a knowledge map. JSON: {"knowledge_map":{"nodes":[{"id":"n1","label":"L","category":"C","description":"D"}],"edges":[{"source":"n1","target":"n2","label":"R","strength":5}]}} \n\n Content: ${contentText.substring(0, 10000)}${mediaContext}`),
+Content to analyze:
+${contentText.substring(0, 8000)}${mediaContext}`),
+
+      callAIGateway(apiKey,
+        `You are an education AI. Respond ONLY with valid JSON. ${languageInstruction}`,
+        `Create educational materials and return JSON:
+{"quiz_questions":[{"question":"question text","options":["option A","option B","option C","option D"],"correct_answer_index":0,"explanation":"why this is correct","difficulty":"easy|medium|hard"}],"flashcards":[{"front":"question or term","back":"answer or definition"}]}
+
+Create ${quizCount} quiz questions (mix of easy, medium, hard) and ${FLASHCARDS_COUNT} flashcards.
+
+Content:
+${contentText.substring(0, 8000)}${mediaContext}`),
+
+      callAIGateway(apiKey,
+        `You are an education AI. Respond ONLY with valid JSON. ${languageInstruction}`,
+        `Create a knowledge map and return JSON:
+{"knowledge_map":{"nodes":[{"id":"n1","label":"concept name","category":"category","description":"brief description"}],"edges":[{"source":"n1","target":"n2","label":"relationship","strength":5}]}}
+
+Create ${KNOWLEDGE_MAP_NODES_COUNT} nodes representing main concepts and 8-10 edges showing relationships. Strength is 1-10.
+
+Content:
+${contentText.substring(0, 8000)}${mediaContext}`),
     ]);
 
     const summary = parseJSON(summaryResult) || {};
@@ -171,7 +204,7 @@ Deno.serve(async (req: Request) => {
 
     const analysis: AnalysisResult = {
       metadata: summary.metadata || { language: "en", subject_domain: "General", complexity_level: "intermediate" },
-      three_bullet_summary: summary.three_bullet_summary || [],
+      three_bullet_summary: summary.three_bullet_summary || ["Content analyzed", "Key concepts identified", "Study materials generated"],
       key_terms: summary.key_terms || [],
       lesson_sections: summary.lesson_sections || [],
       quiz_questions: quiz.quiz_questions || [],
@@ -179,17 +212,23 @@ Deno.serve(async (req: Request) => {
       knowledge_map: map.knowledge_map || { nodes: [], edges: [] },
     };
 
-    // Background logging
+    // Log usage (fire and forget)
     supabaseAdmin.from("usage_logs").insert({ user_id: user.id, action_type: "text_analysis" }).then(({ error }) => {
-      if (error) console.error("Logging error:", error);
+      if (error) console.error("Error logging usage:", error);
     });
+
+    console.log(`Analysis complete for user ${user.id}`);
 
     return new Response(JSON.stringify(analysis), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err: any) {
-    console.error("Critical Function Error:", err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("Analysis error:", error.message);
+    return new Response(JSON.stringify({ error: error.message || "Unknown error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
   }
 });
