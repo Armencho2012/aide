@@ -24,7 +24,9 @@ export const BottomInputBar = ({
   language,
   onSubmit,
   isProcessing,
-  isLocked
+  isLocked,
+  isSessionLocked = false,
+  onDraftStart
 }: BottomInputBarProps) => {
   const [primaryMode, setPrimaryMode] = useState<PrimaryMode>('analyse');
   const [text, setText] = useState('');
@@ -58,9 +60,17 @@ export const BottomInputBar = ({
     }));
   });
 
+  const handleDraftStart = useCallback(() => {
+    if (primaryMode !== 'analyse') return;
+    if (isSessionLocked && onDraftStart) {
+      onDraftStart();
+    }
+  }, [primaryMode, isSessionLocked, onDraftStart]);
+
   const handleTranscript = useCallback((transcript: string) => {
+    handleDraftStart();
     setText(prev => prev ? `${prev} ${transcript}` : transcript);
-  }, []);
+  }, [handleDraftStart]);
 
   const { isListening, isSupported, toggleListening } = useVoiceInput({
     onTranscript: handleTranscript,
@@ -117,6 +127,7 @@ export const BottomInputBar = ({
   };
 
   const handleFilesAdd = async (files: FileList) => {
+    handleDraftStart();
     const newMedia: { data: string; mimeType: string; name: string }[] = [];
 
     for (let i = 0; i < files.length; i++) {
@@ -147,6 +158,7 @@ export const BottomInputBar = ({
   };
 
   const toggleGenerationOption = (option: keyof GenerationOptions) => {
+    handleDraftStart();
     setGenerationOptions(prev => ({
       ...prev,
       [option]: !prev[option]
@@ -250,7 +262,7 @@ export const BottomInputBar = ({
                       min={quizLimits.min}
                       max={quizLimits.max}
                       step={1}
-                      disabled={isLocked}
+                      disabled={isLocked || isSessionLocked}
                       className="cursor-pointer"
                     />
                   </div>
@@ -276,7 +288,7 @@ export const BottomInputBar = ({
                       min={flashcardLimits.min}
                       max={flashcardLimits.max}
                       step={1}
-                      disabled={isLocked}
+                      disabled={isLocked || isSessionLocked}
                       className="cursor-pointer"
                     />
                   </div>
@@ -295,7 +307,10 @@ export const BottomInputBar = ({
             <Textarea
               placeholder={isLocked ? labels.upgradeTooltip : labels.placeholder[primaryMode === 'analyse' ? 'analyze' : 'chat']}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                handleDraftStart();
+                setText(e.target.value);
+              }}
               onKeyDown={handleKeyDown}
               className="min-h-[60px] max-h-[200px] resize-none text-base p-4 pr-14 rounded-xl border-border/30 bg-background/50 focus:bg-background transition-colors"
               disabled={isLocked}

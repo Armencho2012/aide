@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -135,7 +135,9 @@ const Dashboard = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSessionLocked, setIsSessionLocked] = useState(false);
 
   const labels = uiLabels[language];
 
@@ -175,6 +177,13 @@ const Dashboard = () => {
     }
   }, [isAuthChecked, user, navigate]);
 
+  const handleDraftStart = useCallback(() => {
+    if (!isSessionLocked) return;
+    setAnalysisData(null);
+    setAnalysisId(null);
+    setIsSessionLocked(false);
+  }, [isSessionLocked]);
+
 
 
   const handleSubmit = async (text: string, mode: ActionMode, media?: MediaFile[] | null, generationOptions?: GenerationOptions) => {
@@ -201,6 +210,14 @@ const Dashboard = () => {
         variant: 'destructive'
       });
       return;
+    }
+
+    const isAnalysisMode = mode === 'analyze' || mode === 'course';
+
+    if (isAnalysisMode) {
+      setIsSessionLocked(true);
+      setAnalysisData(null);
+      setAnalysisId(null);
     }
 
     setIsProcessing(true);
@@ -249,15 +266,24 @@ const Dashboard = () => {
         // Save to archive
         if (user?.id) {
           try {
-            await (supabase as any).from('user_content').insert({
-              user_id: user.id,
-              original_text: text,
-              analysis_data: data,
-              language,
-              title: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
-              content_type: 'analyse',
-              generation_status: generationOptions || { quiz: true, flashcards: true, map: true, course: mode === 'course', podcast: false }
-            });
+            const { data: savedContent, error: saveError } = await (supabase as any)
+              .from('user_content')
+              .insert({
+                user_id: user.id,
+                original_text: text,
+                analysis_data: data,
+                language,
+                title: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+                content_type: 'analyse',
+                generation_status: generationOptions || { quiz: true, flashcards: true, map: true, course: mode === 'course', podcast: false }
+              })
+              .select('id')
+              .single();
+            if (saveError) {
+              console.error('Error saving to archive:', saveError);
+            } else if (savedContent?.id) {
+              setAnalysisId(savedContent.id);
+            }
           } catch (saveError) {
             console.error('Error saving to archive:', saveError);
           }
@@ -267,6 +293,9 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Processing error:', error);
+      if (isAnalysisMode) {
+        setIsSessionLocked(false);
+      }
       
       // Handle authentication errors
       if (error instanceof Error && (error.message.includes('Invalid') || error.message.includes('token') || error.message.includes('Refresh Token'))) {
@@ -459,7 +488,7 @@ const Dashboard = () => {
 
         {/* Output Area */}
         {analysisData && (
-          <AnalysisOutput data={analysisData} language={language} />
+          <AnalysisOutput data={analysisData} language={language} preview analysisId={analysisId} previewLimit={5} />
         )}
 
         {/* Settings Modal */}
@@ -486,6 +515,8 @@ const Dashboard = () => {
         onSubmit={handleSubmit}
         isProcessing={isProcessing}
         isLocked={isLocked}
+        isSessionLocked={isSessionLocked}
+        onDraftStart={handleDraftStart}
       />
     </div>
   );

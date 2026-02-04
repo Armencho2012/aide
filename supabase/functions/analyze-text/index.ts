@@ -5,6 +5,20 @@ import { corsHeaders } from "./_shared-index.ts";
 const DAILY_LIMIT_FREE = 1;
 const DAILY_LIMIT_PRO = 50;
 const KNOWLEDGE_MAP_NODES_COUNT = 6;
+const DEFAULT_QUIZ_COUNT = 5;
+const DEFAULT_FLASHCARD_COUNT = 10;
+const QUIZ_LIMITS = {
+  free: { min: 1, max: 5 },
+  pro: { min: 1, max: 15 },
+  class: { min: 1, max: 50 }
+};
+const FLASHCARD_LIMITS = {
+  free: { min: 1, max: 10 },
+  pro: { min: 1, max: 20 },
+  class: { min: 1, max: 20 }
+};
+const BASE_MAX_TOKENS = 8192;
+const PRO_MAP_MAX_TOKENS = 12288;
 
 Deno.serve(async (req: Request) => {
   // 1. Handle CORS Preflight
@@ -49,7 +63,7 @@ Deno.serve(async (req: Request) => {
 
     // 3. Parse Request & Check Limits
     const body = await req.json().catch(() => ({}));
-    const { text, media, language = 'en', generationOptions, n_questions = 5, n_flashcards = 10 } = body;
+    const { text, media, language = 'en', generationOptions, n_questions, n_flashcards } = body;
     if (!text?.trim() && !media) {
       return new Response(JSON.stringify({ error: "No content provided" }), {
         status: 400,
@@ -83,34 +97,54 @@ Deno.serve(async (req: Request) => {
     const mediaContext = media ? "\n[Analyzing attached visual media]" : "";
 
     // Build conditional system prompt based on generation options
-    const opts = generationOptions || { quiz: true, flashcards: true, map: false, course: false, podcast: false };
-    
+    const opts = {
+      quiz: true,
+      flashcards: true,
+      map: false,
+      course: false,
+      podcast: false,
+      ...(generationOptions || {})
+    };
+
+    const quizLimits = QUIZ_LIMITS[userPlan] || QUIZ_LIMITS.free;
+    const flashcardLimits = FLASHCARD_LIMITS[userPlan] || FLASHCARD_LIMITS.free;
+    const parseCount = (value: unknown, fallback: number) =>
+      typeof value === "number" && Number.isFinite(value) ? value : fallback;
+    const requestedQuizCount = parseCount(n_questions, parseCount(generationOptions?.n_questions, DEFAULT_QUIZ_COUNT));
+    const requestedFlashcardCount = parseCount(n_flashcards, parseCount(generationOptions?.n_flashcards, DEFAULT_FLASHCARD_COUNT));
+    const quizCount = opts.quiz
+      ? Math.min(Math.max(requestedQuizCount, quizLimits.min), quizLimits.max)
+      : 0;
+    const flashcardCount = opts.flashcards
+      ? Math.min(Math.max(requestedFlashcardCount, flashcardLimits.min), flashcardLimits.max)
+      : 0;
+
     const sections = [];
-    
+
     // Always include core sections
     sections.push(`"metadata": {"language": "${language}", "subject_domain": "string", "complexity_level": "beginner|intermediate|advanced"}`);
     sections.push(`"three_bullet_summary": ["string", "string", "string"]`);
     sections.push(`"key_terms": [{"term": "string", "definition": "string", "importance": "high|medium|low"}]`);
     sections.push(`"lesson_sections": [{"title": "string", "summary": "string", "key_takeaway": "string"}]`);
-    
-    // Conditional sections
+
+    // Conditional sections (only include if requested)
     if (opts.quiz) {
       sections.push(`"quiz_questions": [{"question": "string", "options": ["A", "B", "C", "D"], "correct_answer_index": 0, "explanation": "string", "difficulty": "easy|medium|hard"}]`);
-    } else {
-      sections.push(`"quiz_questions": []`);
     }
-    
+
     if (opts.flashcards) {
       sections.push(`"flashcards": [{"front": "string", "back": "string"}]`);
-    } else {
-      sections.push(`"flashcards": []`);
     }
-    
+
     if (opts.map) {
       sections.push(`"knowledge_map": {"nodes": [{"id": "n1", "label": "string", "category": "string", "description": "string"}], "edges": [{"source": "n1", "target": "n2", "label": "string", "strength": 5}]}`);
-    } else {
-      sections.push(`"knowledge_map": {"nodes": [], "edges": []}`);
     }
+
+    const knowledgeMapInstruction = opts.map
+      ? isProOrClass
+        ? `Create exactly ${KNOWLEDGE_MAP_NODES_COUNT} knowledge map nodes with 2-4 sentence descriptions that are more detailed than the summary bullets, include concrete examples, and use clear categories. Include 8-12 edges with specific labels and strengths from 1-5.`
+        : `Create exactly ${KNOWLEDGE_MAP_NODES_COUNT} knowledge map nodes.`
+      : null;
 
     const systemPrompt = `You are a world-class education engine. Respond in ${language}.
 Return a SINGLE JSON object exactly like this:
@@ -119,11 +153,13 @@ ${sections.join(",\n")}
 }
 
 Math: Use LaTeX notation like $x^2$.
-${opts.quiz ? `Create exactly ${n_questions} quiz questions.` : 'Do not create quiz questions.'}
-${opts.flashcards ? `Create exactly ${n_flashcards} flashcards.` : 'Do not create flashcards.'}
-${opts.map ? `Create exactly ${KNOWLEDGE_MAP_NODES_COUNT} knowledge map nodes.` : 'Do not create a knowledge map.'}`;
+${opts.quiz ? `Create exactly ${quizCount} quiz questions.` : ''}
+${opts.flashcards ? `Create exactly ${flashcardCount} flashcards.` : ''}
+${knowledgeMapInstruction ?? ''}`.trim();
 
-    console.log(`Analyzing for user: ${user.id} (Plan: ${userPlan}, Quiz: ${opts.quiz}, Flashcards: ${opts.flashcards}, Map: ${opts.map})`);
+    const maxTokens = opts.map && isProOrClass ? PRO_MAP_MAX_TOKENS : BASE_MAX_TOKENS;
+
+    console.log(`Analyzing for user: ${user.id} (Plan: ${userPlan}, Quiz: ${opts.quiz}, Flashcards: ${opts.flashcards}, Map: ${opts.map}, QuizCount: ${quizCount}, FlashcardsCount: ${flashcardCount})`);
 
     // Use Lovable AI Gateway with JSON response mode
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -139,7 +175,7 @@ ${opts.map ? `Create exactly ${KNOWLEDGE_MAP_NODES_COUNT} knowledge map nodes.` 
           { role: "user", content: `Content: ${contentContext}${mediaContext}` }
         ],
         response_format: { type: "json_object" },
-        max_tokens: 8192
+        max_tokens: maxTokens
       })
     });
 
@@ -177,6 +213,9 @@ ${opts.map ? `Create exactly ${KNOWLEDGE_MAP_NODES_COUNT} knowledge map nodes.` 
     if (!analysis.knowledge_map) {
       analysis.knowledge_map = { nodes: [], edges: [] };
     }
+    if (!opts.quiz) analysis.quiz_questions = [];
+    if (!opts.flashcards) analysis.flashcards = [];
+    if (!opts.map) analysis.knowledge_map = { nodes: [], edges: [] };
 
     // 5. Async Logging & Final Response
     supabaseAdmin.from("usage_logs").insert({ user_id: user.id, action_type: "analysis" }).then();

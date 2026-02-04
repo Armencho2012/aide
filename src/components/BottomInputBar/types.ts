@@ -16,7 +16,7 @@ export interface GenerationOptions {
 // Quantity limits by plan
 export const QUIZ_LIMITS = {
   free: { min: 1, max: 5 },
-  pro: { min: 1, max: 50 },
+  pro: { min: 1, max: 15 },
   class: { min: 1, max: 50 }
 };
 
@@ -37,6 +37,8 @@ export interface BottomInputBarProps {
   onSubmit: (text: string, mode: ActionMode, media?: MediaFile[] | null, generationOptions?: GenerationOptions) => void;
   isProcessing: boolean;
   isLocked: boolean;
+  isSessionLocked?: boolean;
+  onDraftStart?: () => void;
 }
 
 export const uiLabels = {

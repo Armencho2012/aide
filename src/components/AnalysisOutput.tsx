@@ -7,6 +7,7 @@ import { CheckCircle2, XCircle, Calendar, GraduationCap, Lightbulb, BookOpen } f
 import { useEffect, useMemo, useState } from "react";
 import { Flashcards } from "./Flashcards";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import { Link } from "react-router-dom";
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
 
@@ -47,6 +48,9 @@ interface AnalysisData {
 interface AnalysisOutputProps {
   data: AnalysisData;
   language: Language;
+  preview?: boolean;
+  previewLimit?: number;
+  analysisId?: string | null;
 }
 
 const uiLabels = {
@@ -64,7 +68,8 @@ const uiLabels = {
     studyPlan: '7-Day Study Plan',
     day: 'Day',
     topics: 'Topics',
-    count: 'Count'
+    count: 'Count',
+    viewFull: 'View Full Analysis'
   },
   ru: {
     summary: 'Ключевое Резюме',
@@ -80,7 +85,8 @@ const uiLabels = {
     studyPlan: '7-дневный план обучения',
     day: 'День',
     topics: 'Темы',
-    count: 'Количество'
+    count: 'Количество',
+    viewFull: 'Посмотреть полный анализ'
   },
   hy: {
     summary: 'Կարևոր Ամփոփում',
@@ -96,7 +102,8 @@ const uiLabels = {
     studyPlan: '7-օրյա ուսումնական պլան',
     day: 'Օր',
     topics: 'Թեմաներ',
-    count: 'Քանակ'
+    count: 'Քանակ',
+    viewFull: 'Դիտել ամբողջական վերլուծությունը'
   },
   ko: {
     summary: '주요 요약',
@@ -112,14 +119,16 @@ const uiLabels = {
     studyPlan: '7일 학습 계획',
     day: '일차',
     topics: '주제',
-    count: '개수'
+    count: '개수',
+    viewFull: '전체 분석 보기'
   }
 };
 
-export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
+export const AnalysisOutput = ({ data, language, preview = false, previewLimit = 5, analysisId }: AnalysisOutputProps) => {
   const [questionStates, setQuestionStates] = useState<{ selectedAnswer: number | null; showResult: boolean; }[]>([]);
   const [numQuestions, setNumQuestions] = useState<number>(10);
   const labels = uiLabels[language] || uiLabels.en;
+  const isPreview = preview;
 
   const lessonSections = useMemo(() => (data.lesson_sections && data.lesson_sections.length > 0 ? data.lesson_sections : []), [data.lesson_sections]);
 
@@ -132,21 +141,27 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
     [data.quiz_questions, data.quick_quiz_question]
   );
 
-  const quizQuestions = useMemo(
-    () => allQuizQuestions.slice(0, Math.min(numQuestions, allQuizQuestions.length)),
-    [allQuizQuestions, numQuestions]
-  );
+  const quizQuestions = useMemo(() => {
+    const limit = isPreview ? previewLimit : numQuestions;
+    return allQuizQuestions.slice(0, Math.min(limit, allQuizQuestions.length));
+  }, [allQuizQuestions, isPreview, previewLimit, numQuestions]);
+
+  const flashcardsToShow = useMemo(() => {
+    const flashcards = data.flashcards || [];
+    return isPreview ? flashcards.slice(0, previewLimit) : flashcards;
+  }, [data.flashcards, isPreview, previewLimit]);
 
   useEffect(() => {
     setQuestionStates(quizQuestions.map(() => ({ selectedAnswer: null, showResult: false })));
   }, [quizQuestions]);
 
   useEffect(() => {
+    if (isPreview) return;
     if (allQuizQuestions.length > 0) {
       const maxQuestions = Math.min(50, allQuizQuestions.length);
       setNumQuestions(maxQuestions);
     }
-  }, [allQuizQuestions.length]);
+  }, [allQuizQuestions.length, isPreview]);
 
   const handleSelectOption = (questionIndex: number, optionIndex: number) => {
     setQuestionStates((prev) =>
@@ -277,7 +292,7 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
               <CardTitle className="text-primary">
                 {labels.quiz} ({quizQuestions.length})
               </CardTitle>
-              {allQuizQuestions.length >= 5 && (
+              {!isPreview && allQuizQuestions.length >= 5 && (
                 <div className="flex items-center gap-3 sm:gap-4 min-w-[200px] sm:min-w-[250px]">
                   <Label htmlFor="quiz-count" className="text-xs sm:text-sm whitespace-nowrap">
                     {labels.count}: {numQuestions}
@@ -379,8 +394,16 @@ export const AnalysisOutput = ({ data, language }: AnalysisOutputProps) => {
         </Card>
       )}
 
-      {data.flashcards && data.flashcards.length > 0 && (
-        <Flashcards flashcards={data.flashcards} language={language} />
+      {flashcardsToShow.length > 0 && (
+        <Flashcards flashcards={flashcardsToShow} language={language} />
+      )}
+
+      {isPreview && analysisId && (
+        <div className="flex justify-center">
+          <Button asChild className="px-6 rounded-full bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20">
+            <Link to={`/library/${analysisId}`}>{labels.viewFull}</Link>
+          </Button>
+        </div>
       )}
     </div>
   );
