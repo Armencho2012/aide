@@ -137,13 +137,13 @@ Deno.serve(async (req: Request) => {
     }
 
     if (opts.map) {
-      sections.push(`"knowledge_map": {"nodes": [{"id": "n1", "label": "string", "category": "string", "description": "string"}], "edges": [{"source": "n1", "target": "n2", "label": "string", "strength": 5}]}`);
+      sections.push(`"knowledge_map": {"nodes": [{"id": "n1", "label": "string", "category": "Concept|Problem|Technology|Science|History|Math|Language|Philosophy|Art|General", "description": "string", "source_snippet": "string", "is_high_yield": true}], "edges": [{"source": "n1", "target": "n2", "label": "string", "type": "enables|challenges|relates_to|is_a_type_of|essential_for", "direction": "uni|bi", "strength": 5}]}`);
     }
 
     const knowledgeMapInstruction = opts.map
       ? isProOrClass
-        ? `Create exactly ${KNOWLEDGE_MAP_NODES_COUNT} knowledge map nodes with 2-4 sentence descriptions that are more detailed than the summary bullets, include concrete examples, and use clear categories. Include 8-12 edges with specific labels and strengths from 1-5.`
-        : `Create exactly ${KNOWLEDGE_MAP_NODES_COUNT} knowledge map nodes.`
+        ? `Create exactly ${KNOWLEDGE_MAP_NODES_COUNT} knowledge map nodes with 2-4 sentence descriptions that are more detailed than the summary bullets, include concrete examples, and use clear categories. Each node must include a short source_snippet taken verbatim or near-verbatim from the input. Mark 1-2 nodes as is_high_yield: true. Include 8-12 edges with specific labels, types (enables, challenges, relates_to, is_a_type_of, essential_for), directions (uni or bi), and strengths from 1-5.`
+        : `Create exactly ${KNOWLEDGE_MAP_NODES_COUNT} knowledge map nodes. Each node must include a source_snippet. Include 6-10 edges with labels, types, directions, and strengths.`
       : null;
 
     const systemPrompt = `You are a world-class education engine. Respond in ${language}.
@@ -216,6 +216,33 @@ ${knowledgeMapInstruction ?? ''}`.trim();
     if (!opts.quiz) analysis.quiz_questions = [];
     if (!opts.flashcards) analysis.flashcards = [];
     if (!opts.map) analysis.knowledge_map = { nodes: [], edges: [] };
+
+    if (analysis.knowledge_map?.nodes && Array.isArray(analysis.knowledge_map.nodes)) {
+      analysis.knowledge_map.nodes = analysis.knowledge_map.nodes.map((node: any, idx: number) => ({
+        id: node?.id || `n${idx + 1}`,
+        label: node?.label || 'Node',
+        category: node?.category || 'General',
+        description: node?.description || '',
+        source_snippet: node?.source_snippet || '',
+        is_high_yield: Boolean(node?.is_high_yield),
+      }));
+    } else {
+      analysis.knowledge_map.nodes = [];
+    }
+
+    if (analysis.knowledge_map?.edges && Array.isArray(analysis.knowledge_map.edges)) {
+      analysis.knowledge_map.edges = analysis.knowledge_map.edges.map((edge: any, idx: number) => ({
+        id: edge?.id || `e${idx + 1}`,
+        source: edge?.source,
+        target: edge?.target,
+        label: edge?.label || edge?.type || 'relates to',
+        type: edge?.type || 'relates_to',
+        direction: edge?.direction || 'uni',
+        strength: edge?.strength ?? 3,
+      })).filter((edge: any) => edge.source && edge.target);
+    } else {
+      analysis.knowledge_map.edges = [];
+    }
 
     // 5. Async Logging & Final Response
     supabaseAdmin.from("usage_logs").insert({ user_id: user.id, action_type: "analysis" }).then();

@@ -608,6 +608,8 @@ const ContentDetail = () => {
                 <div className="h-[500px] sm:h-[600px] md:h-[700px]">
                   <KnowledgeMap
                     data={analysisData?.knowledge_map}
+                    analysisId={content?.id}
+                    sourceText={content?.original_text}
                     onNodeClick={(label, description) => {
                       toast({
                         title: label,

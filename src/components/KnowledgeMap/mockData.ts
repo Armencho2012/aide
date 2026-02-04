@@ -128,67 +128,87 @@ export const initialNodes: ConceptNode[] = [
   {
     id: 'photosynthesis',
     label: 'Photosynthesis',
-    category: 'science',
+    category: 'concept',
     connectedTo: ['chlorophyll', 'sunlight', 'glucose', 'oxygen'],
+    source_snippet: 'Plants convert light into chemical energy during photosynthesis.',
+    is_high_yield: true,
     isActive: true,
   },
   {
     id: 'chlorophyll',
     label: 'Chlorophyll',
-    category: 'science',
+    category: 'technology',
     connectedTo: ['photosynthesis', 'plant-cells'],
+    source_snippet: 'Chlorophyll is the pigment that captures light energy.',
   },
   {
     id: 'sunlight',
     label: 'Sunlight',
-    category: 'science',
+    category: 'concept',
     connectedTo: ['photosynthesis', 'energy'],
+    source_snippet: 'Sunlight provides the energy for photosynthesis.',
   },
   {
     id: 'glucose',
     label: 'Glucose',
-    category: 'science',
+    category: 'concept',
     connectedTo: ['photosynthesis', 'energy', 'cellular-respiration'],
+    source_snippet: 'Glucose is produced by photosynthesis and used for energy.',
   },
   {
     id: 'oxygen',
     label: 'Oxygen',
-    category: 'science',
+    category: 'concept',
     connectedTo: ['photosynthesis', 'cellular-respiration'],
+    source_snippet: 'Oxygen is released during photosynthesis.',
   },
   {
     id: 'energy',
     label: 'Energy',
-    category: 'science',
+    category: 'concept',
     connectedTo: ['sunlight', 'glucose', 'atp'],
+    source_snippet: 'Energy is stored in chemical bonds.',
   },
   {
     id: 'cellular-respiration',
     label: 'Cellular Respiration',
-    category: 'science',
+    category: 'concept',
     connectedTo: ['glucose', 'oxygen', 'atp'],
+    source_snippet: 'Cellular respiration breaks down glucose to make ATP.',
   },
   {
     id: 'atp',
     label: 'ATP',
-    category: 'science',
+    category: 'concept',
     connectedTo: ['energy', 'cellular-respiration'],
+    source_snippet: 'ATP is the primary energy currency of cells.',
   },
   {
     id: 'plant-cells',
     label: 'Plant Cells',
-    category: 'science',
+    category: 'concept',
     connectedTo: ['chlorophyll', 'mitochondria'],
+    source_snippet: 'Plant cells contain chloroplasts and mitochondria.',
   },
   {
     id: 'mitochondria',
     label: 'Mitochondria',
-    category: 'science',
+    category: 'technology',
     connectedTo: ['plant-cells', 'cellular-respiration'],
+    source_snippet: 'Mitochondria are the site of cellular respiration.',
   },
 ];
 
 // Generate edges from node connections with labels
+const labelToType = (label: string): ConceptEdge['type'] => {
+  const normalized = label.toLowerCase();
+  if (normalized.includes('enables') || normalized.includes('powers') || normalized.includes('produces')) return 'enables';
+  if (normalized.includes('requires') || normalized.includes('required')) return 'essential_for';
+  if (normalized.includes('contradicts') || normalized.includes('debate')) return 'challenges';
+  if (normalized.includes('type')) return 'is_a_type_of';
+  return 'relates_to';
+};
+
 export const generateEdges = (nodes: ConceptNode[]): ConceptEdge[] => {
   const edges: ConceptEdge[] = [];
   const addedEdges = new Set<string>();
@@ -206,6 +226,8 @@ export const generateEdges = (nodes: ConceptNode[]): ConceptEdge[] => {
           source: node.id,
           target: targetId,
           label: label,
+          type: labelToType(label),
+          direction: 'bi',
         });
       }
     });

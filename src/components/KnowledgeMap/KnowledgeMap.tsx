@@ -22,11 +22,12 @@ import { Trash2, Download, Maximize2, Minimize2, Map as MapIcon, X, Info, Sparkl
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import ConceptNodeComponent from './ConceptNodeComponent';
-import { initialNodes, initialEdges, nodeDescriptions, edgeRelationships } from './mockData';
-import { ConceptNode, ConceptEdge, KnowledgeMapData, categoryColors, NodeCategory } from './types';
+import { initialNodes, initialEdges, nodeDescriptions } from './mockData';
+import { ConceptNode, ConceptEdge, KnowledgeMapData, categoryColors, NodeCategory, EdgeType } from './types';
 import { ZenModeSidePanel } from './components/ZenModeSidePanel';
 import { EditableNodeLabel } from './components/EditableNodeLabel';
 import { FullscreenExitButton } from './components/FullscreenExitButton';
+import { supabase } from '@/integrations/supabase/client';
 
 interface KnowledgeMapProps {
   onNodeClick?: (nodeName: string, description?: string, category?: string) => void;
@@ -34,6 +35,8 @@ interface KnowledgeMapProps {
   data?: KnowledgeMapData | null;
   highlightedNodes?: Set<string>;
   language?: 'en' | 'ru' | 'hy' | 'ko';
+  analysisId?: string;
+  sourceText?: string;
 }
 
 const uiLabels = {
@@ -50,7 +53,16 @@ const uiLabels = {
     exportSuccessDesc: 'Your knowledge map has been exported as an image.',
     exportFail: 'Export Failed',
     exportFailDesc: 'Could not export the map. Please try again.',
-    zenMode: 'Zen Mode'
+    zenMode: 'Zen Mode',
+    scan: 'Scan for Gaps',
+    scanning: 'Scanning...',
+    outline: 'Outline',
+    download: 'Download .md',
+    filters: 'Filters',
+    layout: 'Layout',
+    radial: 'Radial',
+    force: 'Force',
+    undo: 'Undo'
   },
   ru: {
     knowledgeMap: 'Карта Знаний',
@@ -65,7 +77,16 @@ const uiLabels = {
     exportSuccessDesc: 'Ваша карта знаний была экспортирована как изображение.',
     exportFail: 'Ошибка экспорта',
     exportFailDesc: 'Не удалось экспортировать карту. Попробуйте снова.',
-    zenMode: 'Режим Дзен'
+    zenMode: 'Режим Дзен',
+    scan: 'Поиск пробелов',
+    scanning: 'Сканирование...',
+    outline: 'План',
+    download: 'Скачать .md',
+    filters: 'Фильтры',
+    layout: 'Макет',
+    radial: 'Радиальный',
+    force: 'Силовой',
+    undo: 'Отменить'
   },
   hy: {
     knowledgeMap: 'Գիտելիքների Քարտեզ',
@@ -80,7 +101,16 @@ const uiLabels = {
     exportSuccessDesc: 'Ձեր գիտելիքների քարտեզը արտահանվել է որպես պատկեր:',
     exportFail: 'Արտահանումը ձախողվեց',
     exportFailDesc: 'Չհաջողվեց արտահանել քարտեզը: Խնդրում ենք փորձել կրկին:',
-    zenMode: 'Զեն ռեժիմ'
+    zenMode: 'Զեն ռեժիմ',
+    scan: 'Բացթողումների սկանավորում',
+    scanning: 'Սկանավորում...',
+    outline: 'Ընդհանուր պլան',
+    download: 'Ներբեռնել .md',
+    filters: 'Ֆիլտրեր',
+    layout: 'Դասավորություն',
+    radial: 'Շառավղային',
+    force: 'Ուժային',
+    undo: 'Հետարկել'
   },
   ko: {
     knowledgeMap: '지식 맵',
@@ -95,7 +125,16 @@ const uiLabels = {
     exportSuccessDesc: '지식 맵이 이미지로 내보내졌습니다.',
     exportFail: '내보내기 실패',
     exportFailDesc: '맵을 내보낼 수 없습니다. 다시 시도해 주세요.',
-    zenMode: '젠 모드'
+    zenMode: '젠 모드',
+    scan: '빈틈 스캔',
+    scanning: '스캔 중...',
+    outline: '아웃라인',
+    download: '다운로드 .md',
+    filters: '필터',
+    layout: '레이아웃',
+    radial: '방사형',
+    force: '포스',
+    undo: '되돌리기'
   }
 };
 
@@ -109,17 +148,166 @@ const getNodeColor = (node: Node): string => {
   return colors.bg;
 };
 
+const labelFromType = (type?: EdgeType, fallback?: string) => {
+  if (fallback) return fallback;
+  switch (type) {
+    case 'enables':
+      return 'enables';
+    case 'essential_for':
+      return 'essential for';
+    case 'challenges':
+      return 'challenges';
+    case 'is_a_type_of':
+      return 'is a type of';
+    case 'relates_to':
+      return 'relates to';
+    default:
+      return 'relates to';
+  }
+};
+
+const styleForEdgeType = (type: EdgeType | undefined, isZenMode: boolean) => {
+  const base = {
+    stroke: 'hsl(265, 60%, 55%)',
+    strokeWidth: isZenMode ? 3 : 2,
+  };
+  if (type === 'challenges') {
+    return {
+      ...base,
+      strokeDasharray: '6 6',
+    };
+  }
+  if (type === 'enables' || type === 'essential_for') {
+    return {
+      ...base,
+      strokeWidth: isZenMode ? 4 : 3,
+    };
+  }
+  return {
+    ...base,
+    strokeWidth: isZenMode ? 2 : 1.5,
+  };
+};
+
+const normalizeCategory = (value?: string): NodeCategory => {
+  const normalized = (value || '').toLowerCase();
+  if (normalized === 'concept') return 'concept';
+  if (normalized === 'problem') return 'problem';
+  if (normalized === 'technology') return 'technology';
+  if (normalized === 'science') return 'science';
+  if (normalized === 'history') return 'history';
+  if (normalized === 'math') return 'math';
+  if (normalized === 'language') return 'language';
+  if (normalized === 'philosophy') return 'philosophy';
+  if (normalized === 'art') return 'art';
+  if (normalized === 'main') return 'main';
+  if (normalized === 'section') return 'section';
+  return 'general';
+};
+
+const normalizeEdgeType = (value?: string): EdgeType => {
+  const normalized = (value || '').toLowerCase();
+  if (normalized === 'enables') return 'enables';
+  if (normalized === 'challenges') return 'challenges';
+  if (normalized === 'is_a_type_of' || normalized === 'is a type of') return 'is_a_type_of';
+  if (normalized === 'essential_for' || normalized === 'essential for') return 'essential_for';
+  return 'relates_to';
+};
+
 interface LayoutResult {
   nodes: Node[];
   edges: Edge[];
 }
+
+const createForcePositions = (
+  conceptNodes: ConceptNode[],
+  conceptEdges: ConceptEdge[],
+  isZenMode?: boolean
+): globalThis.Map<string, { x: number; y: number }> => {
+  const positions = new globalThis.Map<string, { x: number; y: number }>();
+  const nodeCount = conceptNodes.length || 1;
+  const radius = isZenMode ? 520 : 420;
+
+  conceptNodes.forEach((node, index) => {
+    const angle = (index / nodeCount) * Math.PI * 2;
+    positions.set(node.id, {
+      x: Math.cos(angle) * radius,
+      y: Math.sin(angle) * radius,
+    });
+  });
+
+  const iterations = isZenMode ? 220 : 140;
+  const repulsion = 12000;
+  const spring = 0.05;
+  const desired = 220;
+
+  for (let iter = 0; iter < iterations; iter += 1) {
+    const forces = new globalThis.Map<string, { x: number; y: number }>();
+    conceptNodes.forEach(node => forces.set(node.id, { x: 0, y: 0 }));
+
+    for (let i = 0; i < conceptNodes.length; i += 1) {
+      for (let j = i + 1; j < conceptNodes.length; j += 1) {
+        const a = conceptNodes[i];
+        const b = conceptNodes[j];
+        const pa = positions.get(a.id) || { x: 0, y: 0 };
+        const pb = positions.get(b.id) || { x: 0, y: 0 };
+        const dx = pa.x - pb.x;
+        const dy = pa.y - pb.y;
+        const dist = Math.max(40, Math.hypot(dx, dy));
+        const force = repulsion / (dist * dist);
+        const fx = (dx / dist) * force;
+        const fy = (dy / dist) * force;
+        const fa = forces.get(a.id)!;
+        const fb = forces.get(b.id)!;
+        fa.x += fx;
+        fa.y += fy;
+        fb.x -= fx;
+        fb.y -= fy;
+      }
+    }
+
+    conceptEdges.forEach(edge => {
+      const pa = positions.get(edge.source);
+      const pb = positions.get(edge.target);
+      if (!pa || !pb) return;
+      const dx = pb.x - pa.x;
+      const dy = pb.y - pa.y;
+      const dist = Math.max(20, Math.hypot(dx, dy));
+      const delta = dist - desired;
+      const fx = (dx / dist) * delta * spring;
+      const fy = (dy / dist) * delta * spring;
+      const fa = forces.get(edge.source);
+      const fb = forces.get(edge.target);
+      if (fa) {
+        fa.x += fx;
+        fa.y += fy;
+      }
+      if (fb) {
+        fb.x -= fx;
+        fb.y -= fy;
+      }
+    });
+
+    conceptNodes.forEach(node => {
+      const pos = positions.get(node.id) || { x: 0, y: 0 };
+      const force = forces.get(node.id) || { x: 0, y: 0 };
+      positions.set(node.id, {
+        x: pos.x + force.x * 0.08,
+        y: pos.y + force.y * 0.08,
+      });
+    });
+  }
+
+  return positions;
+};
 
 const createTreeLayout = (
   conceptNodes: ConceptNode[],
   conceptEdges: ConceptEdge[],
   activeNodeId?: string,
   highlightedNodes?: Set<string>,
-  isZenMode?: boolean
+  isZenMode?: boolean,
+  layoutMode: 'radial' | 'force' = 'radial'
 ): LayoutResult => {
   if (conceptNodes.length === 0) return { nodes: [], edges: [] };
 
@@ -216,47 +404,53 @@ const createTreeLayout = (
   };
   calcDepth(rootId, 0);
 
-  // 6. Radial Tree Layout - MUCH more spacing, guaranteed no crossing
-  const positions = new globalThis.Map<string, { x: number; y: number }>();
-  const LAYER_SPACING = 400 * scaleFactor; // Much bigger spacing between layers
-  const MIN_NODE_SPACING = 0.3; // Minimum angle gap between siblings (radians)
+  // 6. Layout positions
+  let positions = new globalThis.Map<string, { x: number; y: number }>();
 
-  const layoutNode = (u: string, startAngle: number, endAngle: number) => {
-    const depth = depths.get(u) || 0;
-    const radius = depth * LAYER_SPACING;
-    const midAngle = (startAngle + endAngle) / 2;
+  if (layoutMode === 'force') {
+    positions = createForcePositions(conceptNodes, conceptEdges, isZenMode);
+  } else {
+    // Radial Tree Layout - MUCH more spacing, guaranteed no crossing
+    const LAYER_SPACING = 400 * scaleFactor; // Much bigger spacing between layers
+    const MIN_NODE_SPACING = 0.3; // Minimum angle gap between siblings (radians)
 
-    positions.set(u, {
-      x: Math.cos(midAngle) * radius,
-      y: Math.sin(midAngle) * radius
-    });
+    const layoutNode = (u: string, startAngle: number, endAngle: number) => {
+      const depth = depths.get(u) || 0;
+      const radius = depth * LAYER_SPACING;
+      const midAngle = (startAngle + endAngle) / 2;
 
-    const children = childrenMap.get(u) || [];
-    if (children.length === 0) return;
+      positions.set(u, {
+        x: Math.cos(midAngle) * radius,
+        y: Math.sin(midAngle) * radius
+      });
 
-    const totalWeight = children.reduce((sum, v) => sum + (subtreeSizes.get(v) || 1), 0);
-    const totalSweep = endAngle - startAngle;
+      const children = childrenMap.get(u) || [];
+      if (children.length === 0) return;
 
-    // Ensure minimum spacing between children
-    const requiredPadding = MIN_NODE_SPACING * (children.length - 1);
-    const availableSweep = Math.max(totalSweep - requiredPadding, totalSweep * 0.7);
-    const actualPadding = (totalSweep - availableSweep) / Math.max(1, children.length - 1);
+      const totalWeight = children.reduce((sum, v) => sum + (subtreeSizes.get(v) || 1), 0);
+      const totalSweep = endAngle - startAngle;
 
-    let currentAngle = startAngle;
+      // Ensure minimum spacing between children
+      const requiredPadding = MIN_NODE_SPACING * (children.length - 1);
+      const availableSweep = Math.max(totalSweep - requiredPadding, totalSweep * 0.7);
+      const actualPadding = (totalSweep - availableSweep) / Math.max(1, children.length - 1);
 
-    for (let i = 0; i < children.length; i++) {
-      const v = children[i];
-      const weight = subtreeSizes.get(v) || 1;
-      const share = weight / totalWeight;
-      const angleWidth = availableSweep * share;
+      let currentAngle = startAngle;
 
-      layoutNode(v, currentAngle, currentAngle + angleWidth);
-      currentAngle += angleWidth + actualPadding;
-    }
-  };
+      for (let i = 0; i < children.length; i++) {
+        const v = children[i];
+        const weight = subtreeSizes.get(v) || 1;
+        const share = weight / totalWeight;
+        const angleWidth = availableSweep * share;
 
-  // Start layout from root with full circle
-  layoutNode(rootId, 0, 2 * Math.PI);
+        layoutNode(v, currentAngle, currentAngle + angleWidth);
+        currentAngle += angleWidth + actualPadding;
+      }
+    };
+
+    // Start layout from root with full circle
+    layoutNode(rootId, 0, 2 * Math.PI);
+  }
 
   // 7. Create Flow Nodes
   const flowNodes: Node[] = conceptNodes.map((node) => {
@@ -280,7 +474,10 @@ const createTreeLayout = (
       data: {
         label: node.label,
         category: isRoot ? 'main' : node.category,
-        description: '',
+        description: node.description || '',
+        sourceSnippet: node.source_snippet,
+        isGhost: node.is_ghost,
+        isHighYield: node.is_high_yield,
         isActive,
         isHighlighted,
         size,
@@ -290,19 +487,30 @@ const createTreeLayout = (
     };
   });
 
-  // 8. Create STRAIGHT tree edges ONLY with labels - these NEVER cross in radial layout
-  const flowEdges: Edge[] = treeEdges.map((edge, index) => {
-    // Get relationship label from the original edge data
-    const relationKey = `${edge.source}-${edge.target}`;
-    const reverseKey = `${edge.target}-${edge.source}`;
-    const label = edgeRelationships[relationKey] || edgeRelationships[reverseKey] || 'relates to';
+  // 8. Create edges from the original data (preserve types + direction)
+  const flowEdges: Edge[] = conceptEdges.map((edge, index) => {
+    const label = labelFromType(edge.type, edge.label);
+    const edgeStyle = styleForEdgeType(edge.type, isZenMode);
+    const isHighlightedEdge = highlightedNodes?.has(edge.source) && highlightedNodes?.has(edge.target);
+    const finalStyle = {
+      ...edgeStyle,
+      stroke: isHighlightedEdge ? 'hsl(195, 85%, 70%)' : edgeStyle.stroke,
+      strokeWidth: isHighlightedEdge ? (isZenMode ? 4 : 3) : edgeStyle.strokeWidth,
+      opacity: highlightedNodes && !isHighlightedEdge ? 0.3 : 1,
+    };
+    const marker = {
+      type: MarkerType.ArrowClosed,
+      color: finalStyle.stroke as string,
+      width: isZenMode ? 18 : 15,
+      height: isZenMode ? 18 : 15,
+    };
 
     return {
-      id: `tree-edge-${index}`,
+      id: edge.id || `map-edge-${index}`,
       source: edge.source,
       target: edge.target,
       type: 'straight',
-      label: label,
+      label,
       labelStyle: {
         fill: 'hsl(265, 80%, 80%)',
         fontWeight: 600,
@@ -316,23 +524,17 @@ const createTreeLayout = (
         ry: 4,
       },
       labelBgPadding: [6, 4] as [number, number],
-      style: {
-        stroke: 'hsl(265, 60%, 55%)',
-        strokeWidth: isZenMode ? 3 : 2,
-      },
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: 'hsl(265, 60%, 55%)',
-        width: isZenMode ? 18 : 15,
-        height: isZenMode ? 18 : 15,
-      },
+      style: finalStyle,
+      markerEnd: marker,
+      markerStart: edge.direction === 'bi' ? marker : undefined,
+      data: { edgeType: edge.type, direction: edge.direction },
     };
   });
 
   return { nodes: flowNodes, edges: flowEdges };
 };
 
-export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes, language = 'en' }: KnowledgeMapProps) => {
+export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes, language = 'en', analysisId, sourceText }: KnowledgeMapProps) => {
   const { toast } = useToast();
   const flowRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -344,7 +546,26 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
     description?: string;
     details?: string[];
     connections?: string[];
+    sourceSnippet?: string;
+    isGhost?: boolean;
+    isHighYield?: boolean;
   } | null>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [layoutMode, setLayoutMode] = useState<'radial' | 'force'>('radial');
+  const [edgeTypeFilters, setEdgeTypeFilters] = useState<Record<EdgeType, boolean>>({
+    enables: true,
+    challenges: true,
+    relates_to: true,
+    is_a_type_of: true,
+    essential_for: true,
+  });
+  const [ghostNodes, setGhostNodes] = useState<ConceptNode[]>([]);
+  const [ghostEdges, setGhostEdges] = useState<ConceptEdge[]>([]);
+  const [outlineContent, setOutlineContent] = useState<string | null>(null);
+  const [showOutlinePanel, setShowOutlinePanel] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [positionHistory, setPositionHistory] = useState<Map<string, { x: number; y: number }>[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Edit modal state
   const [editingNode, setEditingNode] = useState<{ id: string; label: string } | null>(null);
@@ -356,19 +577,47 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
 
   const labels = uiLabels[language] || uiLabels.en;
 
-  // Calculate layout with user modifications applied
-  const layoutResult = useMemo(() => {
+  const hoveredNodes = useMemo(() => {
+    if (!hoveredNodeId) return new Set<string>();
     const sourceNodes = data?.nodes || initialNodes;
     const sourceEdges = data?.edges || initialEdges;
+    const connected = new Set<string>([hoveredNodeId]);
+    sourceEdges.forEach(edge => {
+      if (edge.source === hoveredNodeId) connected.add(edge.target);
+      if (edge.target === hoveredNodeId) connected.add(edge.source);
+    });
+    sourceNodes.forEach(node => {
+      if (node.connectedTo?.includes(hoveredNodeId)) connected.add(node.id);
+    });
+    return connected;
+  }, [hoveredNodeId, data]);
 
-    // Apply user label changes
-    const modifiedNodes = sourceNodes.map(node => ({
+  const currentMapData = useMemo(() => {
+    const sourceNodes = data?.nodes || initialNodes;
+    const sourceEdges = data?.edges || initialEdges;
+    const nodes = [...sourceNodes, ...ghostNodes].map(node => ({
       ...node,
+      category: normalizeCategory(node.category),
       label: userNodeLabels.get(node.id) || node.label,
     }));
+    const edges = [...sourceEdges, ...ghostEdges].map(edge => ({
+      ...edge,
+      type: normalizeEdgeType(edge.type),
+      direction: edge.direction === 'bi' ? 'bi' : 'uni',
+    }));
+    return { nodes, edges };
+  }, [data, ghostNodes, ghostEdges, userNodeLabels]);
 
-    return createTreeLayout(modifiedNodes, sourceEdges, activeNodeId, highlightedNodes, isZenMode);
-  }, [data, activeNodeId, highlightedNodes, isZenMode, userNodeLabels]);
+  // Calculate layout with user modifications applied
+  const layoutResult = useMemo(() => {
+    const filteredEdges = currentMapData.edges.filter(edge => edgeTypeFilters[edge.type || 'relates_to']);
+
+    const combinedHighlights = highlightedNodes
+      ? new Set([...Array.from(highlightedNodes), ...Array.from(hoveredNodes)])
+      : hoveredNodes;
+
+    return createTreeLayout(currentMapData.nodes, filteredEdges, activeNodeId, combinedHighlights, isZenMode, layoutMode);
+  }, [currentMapData, activeNodeId, highlightedNodes, isZenMode, hoveredNodes, edgeTypeFilters, layoutMode]);
 
   // Apply user position changes to layout result
   const nodesWithUserPositions = useMemo(() => {
@@ -413,6 +662,15 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
     });
   }, [onNodesChange]);
 
+  const handleNodeDragStop = useCallback(() => {
+    const snapshot = new Map(nodes.map(node => [node.id, node.position]));
+    setPositionHistory(prev => {
+      const next = [...prev, snapshot];
+      if (next.length > 20) next.shift();
+      return next;
+    });
+  }, [nodes]);
+
   // Handle node double-click for editing
   const handleNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
     const nodeData = node.data as { label: string };
@@ -440,19 +698,24 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
 
   // Handle node click - show comprehensive info panel
   const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    const nodeData = node.data as { label: string; category: string; description?: string };
+    const nodeData = node.data as { label: string; category: string; description?: string; sourceSnippet?: string; isGhost?: boolean; isHighYield?: boolean };
     const nodeId = node.id;
 
     // Get description and details from nodeDescriptions
     const nodeInfo = nodeDescriptions[nodeId] || {
-      description: `Learn more about "${nodeData.label}"`,
+      description: currentNode?.description || nodeData.description || `Learn more about "${nodeData.label}"`,
       details: []
     };
 
     // Find connected nodes
     const sourceNodes = data?.nodes || initialNodes;
+    const sourceEdges = data?.edges || initialEdges;
     const currentNode = sourceNodes.find(n => n.id === nodeId);
-    const connections = currentNode?.connectedTo || [];
+    const connections = currentNode?.connectedTo && currentNode.connectedTo.length > 0
+      ? currentNode.connectedTo
+      : sourceEdges
+        .filter(edge => edge.source === nodeId || edge.target === nodeId)
+        .map(edge => edge.source === nodeId ? edge.target : edge.source);
     const connectionLabels = connections.map(connId => {
       const connNode = sourceNodes.find(n => n.id === connId);
       return connNode?.label || connId;
@@ -462,9 +725,12 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
       id: nodeId,
       label: userNodeLabels.get(nodeId) || nodeData.label,
       category: nodeData.category,
-      description: nodeInfo.description,
+      description: nodeData.sourceSnippet || nodeInfo.description,
       details: nodeInfo.details,
       connections: connectionLabels,
+      sourceSnippet: nodeData.sourceSnippet,
+      isGhost: nodeData.isGhost,
+      isHighYield: nodeData.isHighYield,
     });
     onNodeClick?.(nodeData.label, nodeInfo.description, nodeData.category);
   }, [onNodeClick, data, userNodeLabels]);
@@ -576,6 +842,174 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
     }
   }, [toast, labels]);
 
+  const buildOutlineMarkdown = useCallback((nodes: ConceptNode[], edges: ConceptEdge[]) => {
+    const nodesById = new Map(nodes.map(node => [node.id, node]));
+    const categories = new Map<NodeCategory, ConceptNode[]>();
+    nodes.forEach(node => {
+      const list = categories.get(node.category) || [];
+      list.push(node);
+      categories.set(node.category, list);
+    });
+
+    const connectionMap = new Map<string, ConceptEdge[]>();
+    edges.forEach(edge => {
+      if (!connectionMap.has(edge.source)) connectionMap.set(edge.source, []);
+      if (!connectionMap.has(edge.target)) connectionMap.set(edge.target, []);
+      connectionMap.get(edge.source)!.push(edge);
+      connectionMap.get(edge.target)!.push(edge);
+    });
+
+    const lines: string[] = ['# Structured Outline', ''];
+    const orderedCategories = Array.from(categories.keys());
+    orderedCategories.forEach(category => {
+      lines.push(`## ${category.replace('_', ' ').toUpperCase()}`);
+      const list = categories.get(category) || [];
+      list.forEach(node => {
+        lines.push(`- ${node.label}`);
+        const connections = connectionMap.get(node.id) || [];
+        connections.slice(0, 6).forEach(edge => {
+          const otherId = edge.source === node.id ? edge.target : edge.source;
+          const other = nodesById.get(otherId)?.label || otherId;
+          const rel = labelFromType(edge.type, edge.label);
+          lines.push(`  - ${rel} → ${other}`);
+        });
+      });
+      lines.push('');
+    });
+    return lines.join('\n');
+  }, [setNodes]);
+
+  const persistOutline = useCallback(async (outline: string) => {
+    if (!analysisId) return;
+    try {
+      const { data: existing, error: fetchError } = await supabase
+        .from('user_content')
+        .select('analysis_data')
+        .eq('id', analysisId)
+        .single();
+      if (fetchError) {
+        console.error('Outline fetch error:', fetchError);
+        return;
+      }
+      const updatedAnalysis = {
+        ...(existing?.analysis_data || {}),
+        structured_outline_md: outline,
+      };
+      const { error: updateError } = await supabase
+        .from('user_content')
+        .update({ analysis_data: updatedAnalysis })
+        .eq('id', analysisId);
+      if (updateError) {
+        console.error('Outline save error:', updateError);
+      }
+    } catch (error) {
+      console.error('Outline save error:', error);
+    }
+  }, [analysisId]);
+
+  const handleGenerateOutline = useCallback(async () => {
+    const outline = buildOutlineMarkdown(currentMapData.nodes, currentMapData.edges);
+    setOutlineContent(outline);
+    setShowOutlinePanel(true);
+    await persistOutline(outline);
+  }, [buildOutlineMarkdown, currentMapData, persistOutline]);
+
+  const handleDownloadOutline = useCallback(() => {
+    if (!outlineContent) return;
+    const blob = new Blob([outlineContent], { type: 'text/markdown;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'structured_outline.md';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }, [outlineContent]);
+
+  const handleScanForGaps = useCallback(async () => {
+    if (!sourceText) {
+      toast({
+        title: labels.exportFail,
+        description: 'Source text is not available for gap scanning.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setIsScanning(true);
+    try {
+      const { data: scanData, error } = await supabase.functions.invoke('scan-knowledge-map', {
+        body: {
+          text: sourceText,
+          knowledge_map: {
+            nodes: currentMapData.nodes,
+            edges: currentMapData.edges,
+          },
+          language,
+        },
+      });
+      if (error) throw error;
+      const ghostNodesPayload: ConceptNode[] = (scanData?.ghost_nodes || []).map((node: ConceptNode, idx: number) => ({
+        ...node,
+        id: node.id || `ghost-${idx + 1}`,
+        category: normalizeCategory(node.category),
+        is_ghost: true,
+      }));
+      const ghostEdgesPayload: ConceptEdge[] = (scanData?.ghost_edges || []).map((edge: ConceptEdge, idx: number) => ({
+        ...edge,
+        id: edge.id || `ghost-edge-${idx + 1}`,
+        type: normalizeEdgeType(edge.type),
+        direction: edge.direction === 'bi' ? 'bi' : 'uni',
+      }));
+
+      setGhostNodes(prev => {
+        const existing = new Set(prev.map(node => node.id));
+        return [...prev, ...ghostNodesPayload.filter(node => !existing.has(node.id))];
+      });
+      setGhostEdges(prev => {
+        const existing = new Set(prev.map(edge => edge.id));
+        return [...prev, ...ghostEdgesPayload.filter(edge => !existing.has(edge.id))];
+      });
+    } catch (error) {
+      console.error('Gap scan failed:', error);
+      toast({
+        title: labels.exportFail,
+        description: 'Gap scan failed. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsScanning(false);
+    }
+  }, [sourceText, currentMapData, language, toast, labels]);
+
+  const handleUndo = useCallback(() => {
+    setPositionHistory(prev => {
+      if (prev.length === 0) return prev;
+      const next = [...prev];
+      const last = next.pop();
+      if (last) {
+        setUserNodePositions(last);
+        setNodes(nds => nds.map(node => {
+          const pos = last.get(node.id);
+          return pos ? { ...node, position: pos } : node;
+        }));
+        setHasUserChanges(true);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleAcceptGhostNode = useCallback(() => {
+    if (!selectedNode?.id) return;
+    setGhostNodes(prev => prev.map(node => node.id === selectedNode.id ? { ...node, is_ghost: false } : node));
+    setSelectedNode(prev => prev ? { ...prev, isGhost: false } : prev);
+  }, [selectedNode]);
+
+  const handleDismissGhostNode = useCallback(() => {
+    if (!selectedNode?.id) return;
+    const ghostId = selectedNode.id;
+    setGhostNodes(prev => prev.filter(node => node.id !== ghostId));
+    setGhostEdges(prev => prev.filter(edge => edge.source !== ghostId && edge.target !== ghostId));
+    setSelectedNode(null);
+  }, [selectedNode]);
+
   return (
     <>
       <AnimatePresence>
@@ -608,6 +1042,9 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
                 onEdgesChange={onEdgesChange}
                 onNodeClick={handleNodeClick}
                 onNodeDoubleClick={handleNodeDoubleClick}
+                onNodeDragStop={handleNodeDragStop}
+                onNodeMouseEnter={(_evt, node) => setHoveredNodeId(node.id)}
+                onNodeMouseLeave={() => setHoveredNodeId(null)}
                 nodeTypes={nodeTypes}
                 connectionLineType={ConnectionLineType.SmoothStep}
                 fitView
@@ -644,6 +1081,63 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
 
                 {/* Control Panel */}
                 <Panel position="top-right" className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleScanForGaps}
+                    disabled={isScanning}
+                    className="bg-card/90 backdrop-blur-sm border-border hover:bg-primary/20 hover:text-primary hover:border-primary/50 shadow-md text-xs sm:text-sm active:scale-95 transition-all"
+                  >
+                    {isScanning ? (
+                      <span className="animate-pulse">{labels.scanning}</span>
+                    ) : (
+                      <span>{labels.scan}</span>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateOutline}
+                    className="bg-card/90 backdrop-blur-sm border-border hover:bg-secondary shadow-md text-xs sm:text-sm active:scale-95 transition-all"
+                  >
+                    {labels.outline}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilters((prev) => !prev)}
+                    className="bg-card/90 backdrop-blur-sm border-border hover:bg-secondary shadow-md text-xs sm:text-sm active:scale-95 transition-all"
+                  >
+                    {labels.filters}
+                  </Button>
+                  <div className="flex gap-1 bg-card/80 border border-border rounded-lg p-1 shadow-md">
+                    <Button
+                      variant={layoutMode === 'radial' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setLayoutMode('radial')}
+                      className="h-7 px-2 text-xs"
+                    >
+                      {labels.radial}
+                    </Button>
+                    <Button
+                      variant={layoutMode === 'force' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setLayoutMode('force')}
+                      className="h-7 px-2 text-xs"
+                    >
+                      {labels.force}
+                    </Button>
+                  </div>
+                  {positionHistory.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUndo}
+                      className="bg-card/90 backdrop-blur-sm border-border hover:bg-secondary shadow-md text-xs sm:text-sm active:scale-95 transition-all"
+                    >
+                      {labels.undo}
+                    </Button>
+                  )}
                   {hasUserChanges && (
                     <Button
                       variant="outline"
@@ -688,6 +1182,24 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
                     )}
                   </Button>
                 </Panel>
+
+                {showFilters && (
+                  <Panel position="top-right" className="mt-14 bg-card/90 backdrop-blur-sm border border-border rounded-lg p-3 shadow-md">
+                    <div className="flex flex-wrap gap-2">
+                      {(['enables', 'essential_for', 'challenges', 'relates_to', 'is_a_type_of'] as EdgeType[]).map((type) => (
+                        <Button
+                          key={type}
+                          variant={edgeTypeFilters[type] ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setEdgeTypeFilters(prev => ({ ...prev, [type]: !prev[type] }))}
+                          className="h-7 px-2 text-[10px]"
+                        >
+                          {labelFromType(type)}
+                        </Button>
+                      ))}
+                    </div>
+                  </Panel>
+                )}
 
                 {/* Title */}
                 <Panel position="top-left">
@@ -753,6 +1265,18 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
                   <p className="text-sm text-purple-100/90 leading-relaxed">{selectedNode.description}</p>
                 </div>
 
+                {selectedNode.sourceSnippet && (
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Info className="h-4 w-4 text-purple-400" />
+                      <span className="text-sm font-semibold text-purple-200">Source Snippet</span>
+                    </div>
+                    <p className="text-xs text-purple-100/80 leading-relaxed whitespace-pre-wrap">
+                      {selectedNode.sourceSnippet}
+                    </p>
+                  </div>
+                )}
+
                 {/* Key Details */}
                 {selectedNode.details && selectedNode.details.length > 0 && (
                   <div className="mb-4">
@@ -790,6 +1314,63 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
                     </div>
                   </div>
                 )}
+
+                {selectedNode.isGhost && (
+                  <div className="pt-3 border-t border-purple-500/30 flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAcceptGhostNode}
+                      className="flex-1 border-green-400/50 text-green-200 hover:bg-green-500/20"
+                    >
+                      Accept Node
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDismissGhostNode}
+                      className="flex-1 border-red-400/50 text-red-200 hover:bg-red-500/20"
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+          )}
+
+          {showOutlinePanel && outlineContent && !isZenMode && (
+            <div className="absolute top-20 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 z-20 max-h-[70vh] overflow-y-auto">
+              <motion.div
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -20, opacity: 0 }}
+                className="rounded-xl p-5 backdrop-blur-xl border"
+                style={{
+                  background: 'linear-gradient(135deg, hsl(215 50% 16% / 0.95), hsl(215 40% 10% / 0.98))',
+                  borderColor: 'hsl(215 60% 50% / 0.5)',
+                  boxShadow: '0 20px 50px -10px hsl(215 60% 30% / 0.5)',
+                }}
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <h3 className="text-lg font-bold text-white">{labels.outline}</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowOutlinePanel(false)}
+                    className="h-7 w-7 text-blue-200 hover:text-white hover:bg-blue-500/20"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <pre className="text-xs text-blue-100/90 whitespace-pre-wrap leading-relaxed max-h-[50vh] overflow-y-auto">
+                  {outlineContent}
+                </pre>
+                <div className="mt-3 flex justify-end">
+                  <Button variant="outline" size="sm" onClick={handleDownloadOutline}>
+                    {labels.download}
+                  </Button>
+                </div>
               </motion.div>
             </div>
           )}

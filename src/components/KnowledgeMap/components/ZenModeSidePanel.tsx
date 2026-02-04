@@ -11,6 +11,9 @@ interface ZenModeSidePanelProps {
     description?: string;
     details?: string[];
     connections?: string[];
+    sourceSnippet?: string;
+    isGhost?: boolean;
+    isHighYield?: boolean;
   } | null;
   onClose: () => void;
   onEditLabel?: (nodeId: string, currentLabel: string) => void;
@@ -87,6 +90,22 @@ export const ZenModeSidePanel = ({ isOpen, node, onClose, onEditLabel }: ZenMode
                   {node.description || `Learn more about "${node.label}" and how it connects to other concepts in your knowledge map.`}
                 </p>
               </motion.div>
+
+              {node.sourceSnippet && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <Info className="h-5 w-5 text-purple-400" />
+                    <span className="text-sm font-semibold text-purple-200">Source Snippet</span>
+                  </div>
+                  <p className="text-sm text-purple-100/80 leading-relaxed whitespace-pre-wrap">
+                    {node.sourceSnippet}
+                  </p>
+                </motion.div>
+              )}
 
               {/* Key Details */}
               {node.details && node.details.length > 0 && (

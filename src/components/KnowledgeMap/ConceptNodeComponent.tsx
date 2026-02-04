@@ -12,6 +12,7 @@ import {
   Circle,
   Star,
   FileText,
+  AlertTriangle,
   type LucideIcon
 } from 'lucide-react';
 import { NodeCategory, categoryColors } from './types';
@@ -22,9 +23,12 @@ interface ConceptNodeData {
   isActive?: boolean;
   isHighlighted?: boolean;
   description?: string;
+  sourceSnippet?: string;
   size?: number;
   centrality?: number;
   masteryStatus?: 'locked' | 'unlocked' | 'mastered';
+  isGhost?: boolean;
+  isHighYield?: boolean;
   isRoot?: boolean;
   isZenMode?: boolean;
   onClick?: (label: string, description?: string, category?: string) => void;
@@ -35,21 +39,37 @@ interface ConceptNodeProps {
 }
 
 const iconMap: Record<NodeCategory, LucideIcon> = {
+  concept: Circle,
+  problem: AlertTriangle,
+  technology: Cpu,
   science: Beaker,
   history: BookOpen,
   math: Calculator,
   language: Languages,
-  technology: Cpu,
   philosophy: Brain,
   art: Palette,
   general: Lightbulb,
-  concept: Circle,
   main: Star,
   section: FileText,
 };
 
 const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
-  const { label, category, isActive, isHighlighted, description, size = 40, centrality = 0, masteryStatus = 'unlocked', isRoot = false, isZenMode = false, onClick } = data;
+  const {
+    label,
+    category,
+    isActive,
+    isHighlighted,
+    description,
+    sourceSnippet,
+    size = 40,
+    centrality = 0,
+    masteryStatus = 'unlocked',
+    isGhost = false,
+    isHighYield = false,
+    isRoot = false,
+    isZenMode = false,
+    onClick
+  } = data;
   
   // Zen Mode scaling factor (25% larger)
   const zenScale = isZenMode ? 1.25 : 1;
@@ -68,18 +88,22 @@ const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
   // Adjust colors based on mastery status and root status
   const nodeBg = isRoot
     ? rootGradient
+    : isGhost
+      ? 'linear-gradient(135deg, hsl(215, 10%, 20%), hsl(215, 12%, 26%))'
     : isLocked
       ? 'hsl(215, 25%, 30%)'
-      : isMastered
-        ? 'linear-gradient(135deg, hsl(45, 90%, 55%), hsl(35, 95%, 60%))'
+    : isMastered
+      ? 'linear-gradient(135deg, hsl(45, 90%, 55%), hsl(35, 95%, 60%))'
         : `linear-gradient(135deg, ${colors.bg}20, ${colors.bg}40)`;
   
   const nodeBorder = isRoot
     ? rootBorder
+    : isGhost
+      ? 'hsl(215, 15%, 35%)'
     : isLocked
       ? 'hsl(215, 25%, 40%)'
-      : isMastered
-        ? 'hsl(45, 90%, 60%)'
+    : isMastered
+      ? 'hsl(45, 90%, 60%)'
         : isActive ? colors.border : `${colors.border}60`;
   
   const nodeGlow = isRoot ? rootGlow : isMastered ? 'hsl(45, 90%, 60%)' : colors.glow;
@@ -111,12 +135,17 @@ const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
       onClick={handleClick}
       className="cursor-pointer transition-all duration-300 ease-out"
       style={{
-        filter: isActive || isRoot ? `drop-shadow(0 0 ${isRoot ? '35px' : '20px'} ${isRoot ? rootGlow : colors.glow})` : 'none',
+        filter: isHighYield
+          ? `drop-shadow(0 0 22px hsl(45, 90%, 60%))`
+          : isActive || isRoot
+            ? `drop-shadow(0 0 ${isRoot ? '35px' : '20px'} ${isRoot ? rootGlow : colors.glow})`
+            : 'none',
+        opacity: isGhost ? 0.6 : 1,
       }}
     >
       {/* Glassmorphism card with improved sizing and padding */}
       <div
-        className={`relative ${nodePadding} rounded-2xl backdrop-blur-xl border-2 transition-all duration-300 hover:scale-105 ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${isMastered ? 'ring-2 ring-yellow-400 ring-offset-2' : ''} ${isRoot ? 'ring-4 ring-purple-400/50 ring-offset-4 ring-offset-transparent' : ''}`}
+        className={`relative ${nodePadding} rounded-2xl backdrop-blur-xl border-2 transition-all duration-300 hover:scale-105 ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${isMastered ? 'ring-2 ring-yellow-400 ring-offset-2' : ''} ${isHighYield ? 'ring-2 ring-amber-300 ring-offset-2 ring-offset-transparent' : ''} ${isRoot ? 'ring-4 ring-purple-400/50 ring-offset-4 ring-offset-transparent' : ''}`}
         style={{
           background: nodeBg,
           borderColor: nodeBorder,
@@ -124,16 +153,17 @@ const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
           minWidth: `${nodeMinWidth}px`,
           maxWidth: `${nodeMaxWidth}px`,
           width: 'auto',
+          borderStyle: isGhost ? 'dashed' : 'solid',
           boxShadow: isRoot
             ? `0 0 60px -10px ${rootGlow}, 0 20px 50px -10px ${rootGlow}80, inset 0 2px 0 hsl(265 85% 70% / 0.4)`
             : isActive
               ? `0 12px 40px -4px ${nodeGlow}50, inset 0 1px 0 ${nodeBorder}30`
-              : isMastered
-                ? `0 8px 24px -2px hsl(45 90% 55% / 0.5), inset 0 1px 0 hsl(45 90% 60% / 0.3)`
-                : `0 8px 24px -4px hsl(0 0% 0% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.1)`,
+            : isMastered
+              ? `0 8px 24px -2px hsl(45 90% 55% / 0.5), inset 0 1px 0 hsl(45 90% 60% / 0.3)`
+            : `0 8px 24px -4px hsl(0 0% 0% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.1)`,
           transform: isLocked ? 'scale(0.9)' : undefined,
         }}
-        title={isLocked ? 'Complete related quiz to unlock' : isMastered ? 'Mastered!' : description || label}
+        title={isLocked ? 'Complete related quiz to unlock' : isMastered ? 'Mastered!' : sourceSnippet || description || label}
       >
         {/* Root node animated background */}
         {isRoot && (
@@ -165,6 +195,12 @@ const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
         {isMastered && (
           <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 border-2 border-background flex items-center justify-center shadow-lg">
             <span className="text-xs">✓</span>
+          </div>
+        )}
+
+        {isHighYield && !isRoot && (
+          <div className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full bg-amber-400 text-[10px] font-bold text-amber-950 shadow">
+            High-Yield
           </div>
         )}
 
