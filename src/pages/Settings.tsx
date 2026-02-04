@@ -8,6 +8,7 @@ import { ArrowLeft, User, Mail, Calendar, Key, Copy, Check } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/useSettings";
+import { useUsageLimit } from "@/hooks/useUsageLimit";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 type Language = 'en' | 'ru' | 'hy' | 'ko';
@@ -28,6 +29,9 @@ const uiLabels = {
     subscriptionStatus: 'Subscription Status',
     currentPlan: 'Current Plan',
     freeTier: 'Free Tier',
+    proPlan: 'Pro Plan',
+    classPlan: 'Class Plan',
+    loading: 'Loading...',
     upgradeToPro: 'Upgrade to Pro',
     security: 'Security',
     passwordChange: 'To change your password, please sign out and use the "Forgot Password" option on the login page.',
@@ -48,6 +52,9 @@ const uiLabels = {
     subscriptionStatus: 'Статус подписки',
     currentPlan: 'Текущий план',
     freeTier: 'Бесплатный тариф',
+    proPlan: 'Тариф Pro',
+    classPlan: 'Тариф Class',
+    loading: 'Загрузка...',
     upgradeToPro: 'Обновить до Pro',
     security: 'Безопасность',
     passwordChange: 'Чтобы изменить пароль, выйдите из системы и используйте опцию "Забыли пароль" на странице входа.',
@@ -68,6 +75,9 @@ const uiLabels = {
     subscriptionStatus: 'Բաժանորդագրության կարգավիճակ',
     currentPlan: 'Ընթացիկ պլան',
     freeTier: 'Անվճար տարբերակ',
+    proPlan: 'Pro պլան',
+    classPlan: 'Class պլան',
+    loading: 'Բեռնվում է...',
     upgradeToPro: 'Թարմացնել Pro',
     security: 'Անվտանգություն',
     passwordChange: 'Գաղտնաբառը փոխելու համար դուրս եկեք և օգտագործեք "Մոռացել եմ գաղտնաբառը" տարբերակը մուտքի էջում:',
@@ -88,6 +98,9 @@ const uiLabels = {
     subscriptionStatus: '구독 상태',
     currentPlan: '현재 플랜',
     freeTier: '무료 요금제',
+    proPlan: '프로 요금제',
+    classPlan: '클래스 요금제',
+    loading: '로딩 중...',
     upgradeToPro: '프로로 업그레이드',
     security: '보안',
     passwordChange: '비밀번호를 변경하려면 로그아웃하고 로그인 페이지의 "비밀번호 찾기" 옵션을 사용하세요.',
@@ -100,6 +113,7 @@ const Settings = () => {
   const [profile, setProfile] = useState<any>(null);
   const [copied, setCopied] = useState(false);
   const { language } = useSettings();
+  const { userPlan, isLoading: planLoading, refreshUsage } = useUsageLimit();
   const navigate = useNavigate();
   const { toast } = useToast();
   const labels = uiLabels[language];
@@ -111,6 +125,7 @@ const Settings = () => {
       } else {
         setUser(session.user);
         fetchProfile(session.user.id);
+        refreshUsage(session.user.id);
       }
     });
 
@@ -120,6 +135,7 @@ const Settings = () => {
       } else {
         setUser(session.user);
         fetchProfile(session.user.id);
+        refreshUsage(session.user.id);
       }
     });
 
@@ -247,11 +263,21 @@ const Settings = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">{labels.currentPlan}</p>
-              <p className="text-sm text-muted-foreground">{labels.freeTier}</p>
+              <p className="text-sm text-muted-foreground">
+                {planLoading
+                  ? labels.loading
+                  : userPlan === 'pro'
+                    ? labels.proPlan
+                    : userPlan === 'class'
+                      ? labels.classPlan
+                      : labels.freeTier}
+              </p>
             </div>
-            <Button asChild>
-              <Link to="/billing">{labels.upgradeToPro}</Link>
-            </Button>
+            {userPlan === 'free' && (
+              <Button asChild>
+                <Link to="/billing">{labels.upgradeToPro}</Link>
+              </Button>
+            )}
           </div>
         </Card>
 
