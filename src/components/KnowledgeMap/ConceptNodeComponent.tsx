@@ -89,7 +89,7 @@ const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
   const nodeBg = isRoot
     ? rootGradient
     : isGhost
-      ? 'linear-gradient(135deg, hsl(215, 10%, 20%), hsl(215, 12%, 26%))'
+      ? 'linear-gradient(135deg, hsl(215 12% 18% / 0.6), hsl(215 16% 28% / 0.6))'
     : isLocked
       ? 'hsl(215, 25%, 30%)'
     : isMastered
@@ -133,16 +133,26 @@ const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
   return (
     <div
       onClick={handleClick}
-      className="cursor-pointer transition-all duration-300 ease-out"
+      className="relative cursor-pointer transition-all duration-300 ease-out"
       style={{
         filter: isHighYield
           ? `drop-shadow(0 0 22px hsl(45, 90%, 60%))`
           : isActive || isRoot
             ? `drop-shadow(0 0 ${isRoot ? '35px' : '20px'} ${isRoot ? rootGlow : colors.glow})`
             : 'none',
-        opacity: isGhost ? 0.6 : 1,
+        opacity: isGhost ? 0.5 : 1,
       }}
     >
+      {isHighYield && !isRoot && (
+        <div
+          className="absolute -inset-3 rounded-3xl pointer-events-none animate-[pulse_2.8s_ease-in-out_infinite]"
+          style={{
+            boxShadow: '0 0 36px 10px hsl(45 90% 60% / 0.5)',
+            filter: 'blur(1px)',
+            zIndex: 0,
+          }}
+        />
+      )}
       {/* Glassmorphism card with improved sizing and padding */}
       <div
         className={`relative ${nodePadding} rounded-2xl backdrop-blur-xl border-2 transition-all duration-300 hover:scale-105 ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${isMastered ? 'ring-2 ring-yellow-400 ring-offset-2' : ''} ${isHighYield ? 'ring-2 ring-amber-300 ring-offset-2 ring-offset-transparent' : ''} ${isRoot ? 'ring-4 ring-purple-400/50 ring-offset-4 ring-offset-transparent' : ''}`}
@@ -201,6 +211,12 @@ const ConceptNodeComponent = ({ data }: ConceptNodeProps) => {
         {isHighYield && !isRoot && (
           <div className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full bg-amber-400 text-[10px] font-bold text-amber-950 shadow">
             High-Yield
+          </div>
+        )}
+
+        {isGhost && (
+          <div className="absolute -bottom-2 -left-2 px-2 py-0.5 rounded-full bg-slate-700/80 text-[10px] font-semibold text-slate-100 border border-slate-400/60 shadow">
+            Ghost
           </div>
         )}
 

@@ -18,8 +18,9 @@ import {
 import '@xyflow/react/dist/style.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toPng } from 'html-to-image';
-import { Trash2, Download, Maximize2, Minimize2, Map as MapIcon, X, Info, Sparkles, ArrowRight, BookOpen, RotateCcw } from 'lucide-react';
+import { Trash2, Download, Maximize2, Minimize2, Map as MapIcon, X, Info, Sparkles, ArrowRight, BookOpen, RotateCcw, Copy, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import ConceptNodeComponent from './ConceptNodeComponent';
 import { initialNodes, initialEdges, nodeDescriptions } from './mockData';
@@ -53,11 +54,21 @@ const uiLabels = {
     exportSuccessDesc: 'Your knowledge map has been exported as an image.',
     exportFail: 'Export Failed',
     exportFailDesc: 'Could not export the map. Please try again.',
+    exportImage: 'Export Image',
+    exportOutline: 'Export Outline (.md)',
+    copyOutline: 'Copy for Notion',
+    outlineCopied: 'Outline Copied',
+    outlineCopiedDesc: 'Paste into Notion or any editor.',
+    outlinePlaceholder: 'Outline not generated yet.',
     zenMode: 'Zen Mode',
     scan: 'Scan for Gaps',
     scanning: 'Scanning...',
     outline: 'Outline',
     download: 'Download .md',
+    showLabels: 'Show Labels',
+    hideLabels: 'Hide Labels',
+    primaryLinks: 'Primary Links',
+    allLinks: 'All Links',
     filters: 'Filters',
     layout: 'Layout',
     radial: 'Radial',
@@ -77,11 +88,21 @@ const uiLabels = {
     exportSuccessDesc: 'Ваша карта знаний была экспортирована как изображение.',
     exportFail: 'Ошибка экспорта',
     exportFailDesc: 'Не удалось экспортировать карту. Попробуйте снова.',
+    exportImage: 'Экспорт изображения',
+    exportOutline: 'Экспорт плана (.md)',
+    copyOutline: 'Копировать для Notion',
+    outlineCopied: 'План скопирован',
+    outlineCopiedDesc: 'Вставьте в Notion или редактор.',
+    outlinePlaceholder: 'План пока не сгенерирован.',
     zenMode: 'Режим Дзен',
     scan: 'Поиск пробелов',
     scanning: 'Сканирование...',
     outline: 'План',
     download: 'Скачать .md',
+    showLabels: 'Показать подписи',
+    hideLabels: 'Скрыть подписи',
+    primaryLinks: 'Основные связи',
+    allLinks: 'Все связи',
     filters: 'Фильтры',
     layout: 'Макет',
     radial: 'Радиальный',
@@ -101,11 +122,21 @@ const uiLabels = {
     exportSuccessDesc: 'Ձեր գիտելիքների քարտեզը արտահանվել է որպես պատկեր:',
     exportFail: 'Արտահանումը ձախողվեց',
     exportFailDesc: 'Չհաջողվեց արտահանել քարտեզը: Խնդրում ենք փորձել կրկին:',
+    exportImage: 'Արտահանել պատկեր',
+    exportOutline: 'Արտահանել պլան (.md)',
+    copyOutline: 'Պատճենել Notion-ի համար',
+    outlineCopied: 'Պլանը պատճենված է',
+    outlineCopiedDesc: 'Տեղադրեք Notion-ում կամ խմբագրում։',
+    outlinePlaceholder: 'Պլանը դեռ չի ստեղծվել։',
     zenMode: 'Զեն ռեժիմ',
     scan: 'Բացթողումների սկանավորում',
     scanning: 'Սկանավորում...',
     outline: 'Ընդհանուր պլան',
     download: 'Ներբեռնել .md',
+    showLabels: 'Ցույց տալ մակագրությունները',
+    hideLabels: 'Թաքցնել մակագրությունները',
+    primaryLinks: 'Հիմնական կապեր',
+    allLinks: 'Բոլոր կապերը',
     filters: 'Ֆիլտրեր',
     layout: 'Դասավորություն',
     radial: 'Շառավղային',
@@ -125,11 +156,21 @@ const uiLabels = {
     exportSuccessDesc: '지식 맵이 이미지로 내보내졌습니다.',
     exportFail: '내보내기 실패',
     exportFailDesc: '맵을 내보낼 수 없습니다. 다시 시도해 주세요.',
+    exportImage: '이미지 내보내기',
+    exportOutline: '아웃라인 내보내기 (.md)',
+    copyOutline: 'Notion용 복사',
+    outlineCopied: '아웃라인 복사됨',
+    outlineCopiedDesc: 'Notion 또는 편집기에 붙여넣으세요.',
+    outlinePlaceholder: '아직 아웃라인이 생성되지 않았습니다.',
     zenMode: '젠 모드',
     scan: '빈틈 스캔',
     scanning: '스캔 중...',
     outline: '아웃라인',
     download: '다운로드 .md',
+    showLabels: '라벨 표시',
+    hideLabels: '라벨 숨기기',
+    primaryLinks: '주요 링크',
+    allLinks: '모든 링크',
     filters: '필터',
     layout: '레이아웃',
     radial: '방사형',
@@ -166,26 +207,43 @@ const labelFromType = (type?: EdgeType, fallback?: string) => {
   }
 };
 
-const styleForEdgeType = (type: EdgeType | undefined, isZenMode: boolean) => {
+const styleForEdgeType = (type: EdgeType | undefined, isZenMode: boolean, isGhost = false) => {
+  const palette: Record<EdgeType, string> = {
+    enables: 'hsl(145, 65%, 50%)',
+    essential_for: 'hsl(200, 80%, 60%)',
+    challenges: 'hsl(5, 80%, 60%)',
+    relates_to: 'hsl(265, 60%, 55%)',
+    is_a_type_of: 'hsl(35, 80%, 60%)',
+  };
   const base = {
-    stroke: 'hsl(265, 60%, 55%)',
+    stroke: isGhost ? 'hsl(215, 18%, 60%)' : palette[type || 'relates_to'],
     strokeWidth: isZenMode ? 3 : 2,
+    strokeLinecap: 'round' as const,
+    opacity: isGhost ? 0.45 : 1,
+    strokeDasharray: isGhost ? '6 6' : undefined,
   };
   if (type === 'challenges') {
     return {
       ...base,
-      strokeDasharray: '6 6',
+      strokeWidth: isZenMode ? 3.5 : 2.5,
+      strokeDasharray: isGhost ? '6 6' : '8 6',
     };
   }
   if (type === 'enables' || type === 'essential_for') {
     return {
       ...base,
-      strokeWidth: isZenMode ? 4 : 3,
+      strokeWidth: isZenMode ? 4.5 : 3.5,
+    };
+  }
+  if (type === 'is_a_type_of') {
+    return {
+      ...base,
+      strokeWidth: isZenMode ? 3 : 2.2,
     };
   }
   return {
     ...base,
-    strokeWidth: isZenMode ? 2 : 1.5,
+    strokeWidth: isZenMode ? 2.5 : 1.8,
   };
 };
 
@@ -209,9 +267,47 @@ const normalizeEdgeType = (value?: string): EdgeType => {
   const normalized = (value || '').toLowerCase();
   if (normalized === 'enables') return 'enables';
   if (normalized === 'challenges') return 'challenges';
+  if (normalized === 'contradiction' || normalized === 'contradictions' || normalized === 'contradicts') return 'challenges';
   if (normalized === 'is_a_type_of' || normalized === 'is a type of') return 'is_a_type_of';
   if (normalized === 'essential_for' || normalized === 'essential for') return 'essential_for';
   return 'relates_to';
+};
+
+const buildOutlineMarkdown = (nodes: ConceptNode[], edges: ConceptEdge[]) => {
+  const nodesById = new Map(nodes.map(node => [node.id, node]));
+  const categories = new Map<NodeCategory, ConceptNode[]>();
+  nodes.forEach(node => {
+    const list = categories.get(node.category) || [];
+    list.push(node);
+    categories.set(node.category, list);
+  });
+
+  const connectionMap = new Map<string, ConceptEdge[]>();
+  edges.forEach(edge => {
+    if (!connectionMap.has(edge.source)) connectionMap.set(edge.source, []);
+    if (!connectionMap.has(edge.target)) connectionMap.set(edge.target, []);
+    connectionMap.get(edge.source)!.push(edge);
+    connectionMap.get(edge.target)!.push(edge);
+  });
+
+  const lines: string[] = ['# Structured Outline', ''];
+  const orderedCategories = Array.from(categories.keys());
+  orderedCategories.forEach(category => {
+    lines.push(`## ${category.replace('_', ' ').toUpperCase()}`);
+    const list = categories.get(category) || [];
+    list.forEach(node => {
+      lines.push(`- ${node.label}`);
+      const connections = connectionMap.get(node.id) || [];
+      connections.slice(0, 6).forEach(edge => {
+        const otherId = edge.source === node.id ? edge.target : edge.source;
+        const other = nodesById.get(otherId)?.label || otherId;
+        const rel = labelFromType(edge.type, edge.label);
+        lines.push(`  - ${rel} → ${other}`);
+      });
+    });
+    lines.push('');
+  });
+  return lines.join('\n');
 };
 
 interface LayoutResult {
@@ -307,7 +403,9 @@ const createTreeLayout = (
   activeNodeId?: string,
   highlightedNodes?: Set<string>,
   isZenMode?: boolean,
-  layoutMode: 'radial' | 'force' = 'radial'
+  layoutMode: 'radial' | 'force' = 'radial',
+  showEdgeLabels = true,
+  showSecondaryEdges = true
 ): LayoutResult => {
   if (conceptNodes.length === 0) return { nodes: [], edges: [] };
 
@@ -351,7 +449,8 @@ const createTreeLayout = (
   parentMap.set(rootId, null);
 
   // Store tree edges as we build the tree
-  const treeEdges: Array<{ source: string; target: string }> = [];
+  const edgeKey = (a: string, b: string) => (a < b ? `${a}::${b}` : `${b}::${a}`);
+  const treeEdgePairs = new Set<string>();
 
   while (queue.length > 0) {
     const u = queue.shift()!;
@@ -364,7 +463,7 @@ const createTreeLayout = (
         parentMap.set(v, u);
         queue.push(v);
         // Add tree edge (parent -> child)
-        treeEdges.push({ source: u, target: v });
+        treeEdgePairs.add(edgeKey(u, v));
       }
     }
   }
@@ -376,9 +475,13 @@ const createTreeLayout = (
       childrenMap.get(rootId)?.push(node.id);
       childrenMap.set(node.id, []);
       parentMap.set(node.id, rootId);
-      treeEdges.push({ source: rootId, target: node.id });
+      treeEdgePairs.add(edgeKey(rootId, node.id));
     }
   });
+
+  const renderEdges: ConceptEdge[] = showSecondaryEdges
+    ? [...conceptEdges]
+    : conceptEdges.filter(edge => edge.is_ghost || treeEdgePairs.has(edgeKey(edge.source, edge.target)));
 
   // 4. Calculate Subtree Sizes for proportional angle allocation
   const subtreeSizes = new globalThis.Map<string, number>();
@@ -408,7 +511,7 @@ const createTreeLayout = (
   let positions = new globalThis.Map<string, { x: number; y: number }>();
 
   if (layoutMode === 'force') {
-    positions = createForcePositions(conceptNodes, conceptEdges, isZenMode);
+    positions = createForcePositions(conceptNodes, showSecondaryEdges ? conceptEdges : renderEdges, isZenMode);
   } else {
     // Radial Tree Layout - MUCH more spacing, guaranteed no crossing
     const LAYER_SPACING = 400 * scaleFactor; // Much bigger spacing between layers
@@ -488,48 +591,64 @@ const createTreeLayout = (
   });
 
   // 8. Create edges from the original data (preserve types + direction)
-  const flowEdges: Edge[] = conceptEdges.map((edge, index) => {
-    const label = labelFromType(edge.type, edge.label);
-    const edgeStyle = styleForEdgeType(edge.type, isZenMode);
-    const isHighlightedEdge = highlightedNodes?.has(edge.source) && highlightedNodes?.has(edge.target);
-    const finalStyle = {
-      ...edgeStyle,
-      stroke: isHighlightedEdge ? 'hsl(195, 85%, 70%)' : edgeStyle.stroke,
-      strokeWidth: isHighlightedEdge ? (isZenMode ? 4 : 3) : edgeStyle.strokeWidth,
-      opacity: highlightedNodes && !isHighlightedEdge ? 0.3 : 1,
-    };
-    const marker = {
-      type: MarkerType.ArrowClosed,
-      color: finalStyle.stroke as string,
-      width: isZenMode ? 18 : 15,
-      height: isZenMode ? 18 : 15,
-    };
+  const flowEdges: Edge[] = renderEdges
+    .map((edge, index) => {
+      const isGhostEdge = !!edge.is_ghost;
+      const label = showEdgeLabels ? labelFromType(edge.type, edge.label) : undefined;
+      const edgeStyle = styleForEdgeType(edge.type, isZenMode, isGhostEdge);
+      const isHighlightedEdge = highlightedNodes?.has(edge.source) && highlightedNodes?.has(edge.target);
+      const baseOpacity = typeof edgeStyle.opacity === 'number' ? edgeStyle.opacity : 1;
+      const finalOpacity = highlightedNodes && !isHighlightedEdge ? baseOpacity * 0.25 : baseOpacity;
+      const finalStyle = {
+        ...edgeStyle,
+        stroke: isHighlightedEdge ? 'hsl(195, 85%, 70%)' : edgeStyle.stroke,
+        strokeWidth: isHighlightedEdge ? (isZenMode ? 4 : 3) : edgeStyle.strokeWidth,
+        opacity: finalOpacity,
+      };
+      const markerScale =
+        edge.type === 'enables' || edge.type === 'essential_for'
+          ? 1.35
+          : edge.type === 'challenges'
+            ? 1.2
+            : 1;
+      const markerSize = (isZenMode ? 18 : 15) * markerScale * (isGhostEdge ? 0.9 : 1);
+      const marker = {
+        type: MarkerType.ArrowClosed,
+        color: finalStyle.stroke as string,
+        width: markerSize,
+        height: markerSize,
+      };
 
-    return {
-      id: edge.id || `map-edge-${index}`,
-      source: edge.source,
-      target: edge.target,
-      type: 'straight',
-      label,
-      labelStyle: {
-        fill: 'hsl(265, 80%, 80%)',
-        fontWeight: 600,
-        fontSize: isZenMode ? 14 : 11,
-        textShadow: '0 1px 3px hsl(0 0% 0% / 0.8)',
-      },
-      labelBgStyle: {
-        fill: 'hsl(265, 40%, 15%)',
-        fillOpacity: 0.9,
-        rx: 4,
-        ry: 4,
-      },
-      labelBgPadding: [6, 4] as [number, number],
-      style: finalStyle,
-      markerEnd: marker,
-      markerStart: edge.direction === 'bi' ? marker : undefined,
-      data: { edgeType: edge.type, direction: edge.direction },
-    };
-  });
+      return {
+        id: edge.id || `map-edge-${index}`,
+        source: edge.source,
+        target: edge.target,
+        type: 'straight',
+        label,
+        labelStyle: showEdgeLabels
+          ? {
+              fill: isGhostEdge ? 'hsl(215, 20%, 75%)' : 'hsl(265, 80%, 80%)',
+              fontWeight: 600,
+              fontSize: isZenMode ? 14 : 11,
+              textShadow: '0 1px 3px hsl(0 0% 0% / 0.8)',
+            }
+          : undefined,
+        labelBgStyle: showEdgeLabels
+          ? {
+              fill: isGhostEdge ? 'hsl(215, 25%, 18%)' : 'hsl(265, 40%, 15%)',
+              fillOpacity: isGhostEdge ? 0.6 : 0.9,
+              rx: 4,
+              ry: 4,
+            }
+          : undefined,
+        labelBgPadding: showEdgeLabels ? ([6, 4] as [number, number]) : undefined,
+        style: finalStyle,
+        markerEnd: marker,
+        markerStart: edge.direction === 'bi' ? marker : undefined,
+        data: { edgeType: edge.type, direction: edge.direction, isGhost: isGhostEdge },
+      };
+    })
+    .filter((edge): edge is Edge => edge !== null);
 
   return { nodes: flowNodes, edges: flowEdges };
 };
@@ -559,6 +678,8 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
     is_a_type_of: true,
     essential_for: true,
   });
+  const [showEdgeLabels, setShowEdgeLabels] = useState(true);
+  const [showSecondaryEdges, setShowSecondaryEdges] = useState(false);
   const [ghostNodes, setGhostNodes] = useState<ConceptNode[]>([]);
   const [ghostEdges, setGhostEdges] = useState<ConceptEdge[]>([]);
   const [outlineContent, setOutlineContent] = useState<string | null>(null);
@@ -604,6 +725,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
       ...edge,
       type: normalizeEdgeType(edge.type),
       direction: edge.direction === 'bi' ? 'bi' : 'uni',
+      is_ghost: edge.is_ghost,
     }));
     return { nodes, edges };
   }, [data, ghostNodes, ghostEdges, userNodeLabels]);
@@ -616,8 +738,17 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
       ? new Set([...Array.from(highlightedNodes), ...Array.from(hoveredNodes)])
       : hoveredNodes;
 
-    return createTreeLayout(currentMapData.nodes, filteredEdges, activeNodeId, combinedHighlights, isZenMode, layoutMode);
-  }, [currentMapData, activeNodeId, highlightedNodes, isZenMode, hoveredNodes, edgeTypeFilters, layoutMode]);
+    return createTreeLayout(
+      currentMapData.nodes,
+      filteredEdges,
+      activeNodeId,
+      combinedHighlights,
+      isZenMode,
+      layoutMode,
+      showEdgeLabels,
+      showSecondaryEdges
+    );
+  }, [currentMapData, activeNodeId, highlightedNodes, isZenMode, hoveredNodes, edgeTypeFilters, layoutMode, showEdgeLabels, showSecondaryEdges]);
 
   // Apply user position changes to layout result
   const nodesWithUserPositions = useMemo(() => {
@@ -701,16 +832,15 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
     const nodeData = node.data as { label: string; category: string; description?: string; sourceSnippet?: string; isGhost?: boolean; isHighYield?: boolean };
     const nodeId = node.id;
 
+    // Find connected nodes
+    const sourceNodes = data?.nodes || initialNodes;
+    const sourceEdges = data?.edges || initialEdges;
+    const currentNode = sourceNodes.find(n => n.id === nodeId);
     // Get description and details from nodeDescriptions
     const nodeInfo = nodeDescriptions[nodeId] || {
       description: currentNode?.description || nodeData.description || `Learn more about "${nodeData.label}"`,
       details: []
     };
-
-    // Find connected nodes
-    const sourceNodes = data?.nodes || initialNodes;
-    const sourceEdges = data?.edges || initialEdges;
-    const currentNode = sourceNodes.find(n => n.id === nodeId);
     const connections = currentNode?.connectedTo && currentNode.connectedTo.length > 0
       ? currentNode.connectedTo
       : sourceEdges
@@ -737,6 +867,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
 
   const closeInfoPanel = useCallback(() => {
     setSelectedNode(null);
+    setShowOutlinePanel(false);
   }, []);
 
   const clearState = useCallback(() => {
@@ -842,43 +973,6 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
     }
   }, [toast, labels]);
 
-  const buildOutlineMarkdown = useCallback((nodes: ConceptNode[], edges: ConceptEdge[]) => {
-    const nodesById = new Map(nodes.map(node => [node.id, node]));
-    const categories = new Map<NodeCategory, ConceptNode[]>();
-    nodes.forEach(node => {
-      const list = categories.get(node.category) || [];
-      list.push(node);
-      categories.set(node.category, list);
-    });
-
-    const connectionMap = new Map<string, ConceptEdge[]>();
-    edges.forEach(edge => {
-      if (!connectionMap.has(edge.source)) connectionMap.set(edge.source, []);
-      if (!connectionMap.has(edge.target)) connectionMap.set(edge.target, []);
-      connectionMap.get(edge.source)!.push(edge);
-      connectionMap.get(edge.target)!.push(edge);
-    });
-
-    const lines: string[] = ['# Structured Outline', ''];
-    const orderedCategories = Array.from(categories.keys());
-    orderedCategories.forEach(category => {
-      lines.push(`## ${category.replace('_', ' ').toUpperCase()}`);
-      const list = categories.get(category) || [];
-      list.forEach(node => {
-        lines.push(`- ${node.label}`);
-        const connections = connectionMap.get(node.id) || [];
-        connections.slice(0, 6).forEach(edge => {
-          const otherId = edge.source === node.id ? edge.target : edge.source;
-          const other = nodesById.get(otherId)?.label || otherId;
-          const rel = labelFromType(edge.type, edge.label);
-          lines.push(`  - ${rel} → ${other}`);
-        });
-      });
-      lines.push('');
-    });
-    return lines.join('\n');
-  }, [setNodes]);
-
   const persistOutline = useCallback(async (outline: string) => {
     if (!analysisId) return;
     try {
@@ -907,22 +1001,59 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
     }
   }, [analysisId]);
 
-  const handleGenerateOutline = useCallback(async () => {
+  const ensureOutline = useCallback(async (options?: { openPanel?: boolean }) => {
+    if (outlineContent) {
+      if (options?.openPanel) setShowOutlinePanel(true);
+      return outlineContent;
+    }
     const outline = buildOutlineMarkdown(currentMapData.nodes, currentMapData.edges);
     setOutlineContent(outline);
-    setShowOutlinePanel(true);
+    if (options?.openPanel) setShowOutlinePanel(true);
     await persistOutline(outline);
-  }, [buildOutlineMarkdown, currentMapData, persistOutline]);
+    return outline;
+  }, [outlineContent, currentMapData, persistOutline]);
 
-  const handleDownloadOutline = useCallback(() => {
-    if (!outlineContent) return;
-    const blob = new Blob([outlineContent], { type: 'text/markdown;charset=utf-8' });
+  const handleGenerateOutline = useCallback(async () => {
+    await ensureOutline({ openPanel: true });
+  }, [ensureOutline]);
+
+  const handleDownloadOutline = useCallback(async () => {
+    const outline = await ensureOutline();
+    if (!outline) return;
+    const blob = new Blob([outline], { type: 'text/markdown;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = 'structured_outline.md';
     link.click();
     URL.revokeObjectURL(link.href);
-  }, [outlineContent]);
+  }, [ensureOutline]);
+
+  const handleCopyOutline = useCallback(async () => {
+    const outline = await ensureOutline();
+    if (!outline) return;
+    try {
+      await navigator.clipboard.writeText(outline);
+      toast({
+        title: labels.outlineCopied,
+        description: labels.outlineCopiedDesc,
+      });
+    } catch (error) {
+      console.error('Outline copy failed:', error);
+      toast({
+        title: labels.exportFail,
+        description: labels.exportFailDesc,
+        variant: 'destructive',
+      });
+    }
+  }, [ensureOutline, toast, labels]);
+
+  useEffect(() => {
+    if (!selectedNode) return;
+    setShowOutlinePanel(true);
+    if (!outlineContent) {
+      void ensureOutline();
+    }
+  }, [selectedNode, outlineContent, ensureOutline]);
 
   const handleScanForGaps = useCallback(async () => {
     if (!sourceText) {
@@ -957,6 +1088,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
         id: edge.id || `ghost-edge-${idx + 1}`,
         type: normalizeEdgeType(edge.type),
         direction: edge.direction === 'bi' ? 'bi' : 'uni',
+        is_ghost: true,
       }));
 
       setGhostNodes(prev => {
@@ -999,6 +1131,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
   const handleAcceptGhostNode = useCallback(() => {
     if (!selectedNode?.id) return;
     setGhostNodes(prev => prev.map(node => node.id === selectedNode.id ? { ...node, is_ghost: false } : node));
+    setGhostEdges(prev => prev.map(edge => (edge.source === selectedNode.id || edge.target === selectedNode.id) ? { ...edge, is_ghost: false } : edge));
     setSelectedNode(prev => prev ? { ...prev, isGhost: false } : prev);
   }, [selectedNode]);
 
@@ -1074,6 +1207,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
                   }}
                 />
                 <MiniMap
+                  key={`${layoutMode}-${showSecondaryEdges}`}
                   nodeColor={getNodeColor}
                   maskColor="hsl(215, 30%, 12% / 0.8)"
                   className="!bg-card/60 !backdrop-blur-sm !border-border !rounded-lg"
@@ -1095,9 +1229,15 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
                     )}
                   </Button>
                   <Button
-                    variant="outline"
+                    variant={showOutlinePanel ? 'default' : 'outline'}
                     size="sm"
-                    onClick={handleGenerateOutline}
+                    onClick={() => {
+                      if (showOutlinePanel) {
+                        setShowOutlinePanel(false);
+                      } else {
+                        void handleGenerateOutline();
+                      }
+                    }}
                     className="bg-card/90 backdrop-blur-sm border-border hover:bg-secondary shadow-md text-xs sm:text-sm active:scale-95 transition-all"
                   >
                     {labels.outline}
@@ -1159,16 +1299,34 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
                     <span className="hidden sm:inline">{labels.clearMap}</span>
                     <span className="sm:hidden">{labels.clear}</span>
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExportImage}
-                    className="bg-card/90 backdrop-blur-sm border-border hover:bg-primary/20 hover:text-primary hover:border-primary/50 shadow-md text-xs sm:text-sm active:scale-95 transition-all"
-                  >
-                    <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                    <span className="hidden sm:inline">{labels.export}</span>
-                    <span className="sm:hidden">{labels.save}</span>
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-card/90 backdrop-blur-sm border-border hover:bg-primary/20 hover:text-primary hover:border-primary/50 shadow-md text-xs sm:text-sm active:scale-95 transition-all"
+                      >
+                        <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">{labels.export}</span>
+                        <span className="sm:hidden">{labels.save}</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem onClick={() => void handleExportImage()}>
+                        <Download className="mr-2 h-4 w-4" />
+                        <span>{labels.exportImage}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => void handleDownloadOutline()}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        <span>{labels.exportOutline}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => void handleCopyOutline()}>
+                        <Copy className="mr-2 h-4 w-4" />
+                        <span>{labels.copyOutline}</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button
                     variant="outline"
                     size="sm"
@@ -1197,6 +1355,23 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
                           {labelFromType(type)}
                         </Button>
                       ))}
+                      <div className="w-full h-px bg-border/50" />
+                      <Button
+                        variant={showEdgeLabels ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setShowEdgeLabels(prev => !prev)}
+                        className="h-7 px-2 text-[10px]"
+                      >
+                        {showEdgeLabels ? labels.hideLabels : labels.showLabels}
+                      </Button>
+                      <Button
+                        variant={showSecondaryEdges ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setShowSecondaryEdges(prev => !prev)}
+                        className="h-7 px-2 text-[10px]"
+                      >
+                        {showSecondaryEdges ? labels.allLinks : labels.primaryLinks}
+                      </Button>
                     </div>
                   </Panel>
                 )}
@@ -1221,14 +1396,14 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
           {/* Zen Mode exit button (appears on hover at top) */}
           {isZenMode && <FullscreenExitButton onExit={toggleZenMode} />}
 
-          {/* Node Info Panel - Bottom panel for non-Zen mode */}
+          {/* Node Info Panel - Side panel for non-Zen mode */}
           {selectedNode && !isZenMode && (
-            <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 z-20 max-h-[70vh] overflow-y-auto">
+            <div className="absolute top-4 right-4 bottom-4 left-4 sm:left-auto sm:w-[380px] z-20">
               <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 20, opacity: 0 }}
-                className="rounded-xl p-5 backdrop-blur-xl border"
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 20, opacity: 0 }}
+                className="h-full rounded-xl p-5 backdrop-blur-xl border overflow-y-auto"
                 style={{
                   background: 'linear-gradient(135deg, hsl(265 70% 20% / 0.95), hsl(265 60% 15% / 0.98))',
                   borderColor: 'hsl(265 60% 50% / 0.5)',
@@ -1238,11 +1413,21 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       <Sparkles className="h-4 w-4 text-purple-400" />
                       <span className="text-xs uppercase tracking-wider text-purple-300 font-medium px-2 py-0.5 rounded-full bg-purple-500/20">
                         {selectedNode.category}
                       </span>
+                      {selectedNode.isHighYield && (
+                        <span className="text-[10px] uppercase tracking-wider text-amber-200 font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40">
+                          High-Yield
+                        </span>
+                      )}
+                      {selectedNode.isGhost && (
+                        <span className="text-[10px] uppercase tracking-wider text-slate-200 font-semibold px-2 py-0.5 rounded-full bg-slate-500/20 border border-slate-400/40">
+                          Ghost
+                        </span>
+                      )}
                     </div>
                     <h3 className="text-xl font-bold text-white">{selectedNode.label}</h3>
                   </div>
@@ -1256,90 +1441,133 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
                   </Button>
                 </div>
 
-                {/* Description */}
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <BookOpen className="h-4 w-4 text-purple-400" />
-                    <span className="text-sm font-semibold text-purple-200">Description</span>
-                  </div>
-                  <p className="text-sm text-purple-100/90 leading-relaxed">{selectedNode.description}</p>
-                </div>
-
-                {selectedNode.sourceSnippet && (
-                  <div className="mb-4">
+                <div className="space-y-4">
+                  {/* Description */}
+                  <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Info className="h-4 w-4 text-purple-400" />
-                      <span className="text-sm font-semibold text-purple-200">Source Snippet</span>
+                      <BookOpen className="h-4 w-4 text-purple-400" />
+                      <span className="text-sm font-semibold text-purple-200">Description</span>
                     </div>
-                    <p className="text-xs text-purple-100/80 leading-relaxed whitespace-pre-wrap">
-                      {selectedNode.sourceSnippet}
-                    </p>
+                    <p className="text-sm text-purple-100/90 leading-relaxed">{selectedNode.description}</p>
                   </div>
-                )}
 
-                {/* Key Details */}
-                {selectedNode.details && selectedNode.details.length > 0 && (
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Info className="h-4 w-4 text-purple-400" />
-                      <span className="text-sm font-semibold text-purple-200">Key Facts</span>
+                  {selectedNode.sourceSnippet && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Info className="h-4 w-4 text-purple-400" />
+                        <span className="text-sm font-semibold text-purple-200">Source Snippet</span>
+                      </div>
+                      <p className="text-xs text-purple-100/80 leading-relaxed whitespace-pre-wrap">
+                        {selectedNode.sourceSnippet}
+                      </p>
                     </div>
-                    <ul className="space-y-1.5">
-                      {selectedNode.details.map((detail, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm text-purple-100/80">
-                          <span className="text-purple-400 mt-0.5">•</span>
-                          <span>{detail}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                  )}
 
-                {/* Connected Concepts */}
-                {selectedNode.connections && selectedNode.connections.length > 0 && (
-                  <div className="pt-3 border-t border-purple-500/30">
-                    <div className="flex items-center gap-2 mb-2">
-                      <ArrowRight className="h-4 w-4 text-purple-400" />
-                      <span className="text-sm font-semibold text-purple-200">Connected To</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedNode.connections.map((conn, index) => (
-                        <span
-                          key={index}
-                          className="text-xs px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30"
+                  {showOutlinePanel && (
+                    <div className="pt-3 border-t border-purple-500/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-purple-400" />
+                          <span className="text-sm font-semibold text-purple-200">{labels.outline}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowOutlinePanel(false)}
+                          className="h-7 w-7 text-purple-300 hover:text-white hover:bg-purple-500/20"
                         >
-                          {conn}
-                        </span>
-                      ))}
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      {outlineContent ? (
+                        <pre className="text-xs text-purple-100/90 whitespace-pre-wrap leading-relaxed max-h-[35vh] overflow-y-auto">
+                          {outlineContent}
+                        </pre>
+                      ) : (
+                        <p className="text-xs text-purple-100/70">
+                          {labels.outlinePlaceholder}
+                        </p>
+                      )}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {!outlineContent && (
+                          <Button variant="outline" size="sm" onClick={() => void handleGenerateOutline()}>
+                            {labels.outline}
+                          </Button>
+                        )}
+                        <Button variant="outline" size="sm" onClick={() => void handleDownloadOutline()}>
+                          {labels.download}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => void handleCopyOutline()}>
+                          {labels.copyOutline}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {selectedNode.isGhost && (
-                  <div className="pt-3 border-t border-purple-500/30 flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAcceptGhostNode}
-                      className="flex-1 border-green-400/50 text-green-200 hover:bg-green-500/20"
-                    >
-                      Accept Node
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDismissGhostNode}
-                      className="flex-1 border-red-400/50 text-red-200 hover:bg-red-500/20"
-                    >
-                      Dismiss
-                    </Button>
-                  </div>
-                )}
+                  {/* Key Details */}
+                  {selectedNode.details && selectedNode.details.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Info className="h-4 w-4 text-purple-400" />
+                        <span className="text-sm font-semibold text-purple-200">Key Facts</span>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {selectedNode.details.map((detail, index) => (
+                          <li key={index} className="flex items-start gap-2 text-sm text-purple-100/80">
+                            <span className="text-purple-400 mt-0.5">•</span>
+                            <span>{detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Connected Concepts */}
+                  {selectedNode.connections && selectedNode.connections.length > 0 && (
+                    <div className="pt-3 border-t border-purple-500/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ArrowRight className="h-4 w-4 text-purple-400" />
+                        <span className="text-sm font-semibold text-purple-200">Connected To</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedNode.connections.map((conn, index) => (
+                          <span
+                            key={index}
+                            className="text-xs px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30"
+                          >
+                            {conn}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedNode.isGhost && (
+                    <div className="pt-3 border-t border-purple-500/30 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAcceptGhostNode}
+                        className="flex-1 border-green-400/50 text-green-200 hover:bg-green-500/20"
+                      >
+                        Accept Node
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDismissGhostNode}
+                        className="flex-1 border-red-400/50 text-red-200 hover:bg-red-500/20"
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </motion.div>
             </div>
           )}
 
-          {showOutlinePanel && outlineContent && !isZenMode && (
+          {showOutlinePanel && outlineContent && !isZenMode && !selectedNode && (
             <div className="absolute top-20 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 z-20 max-h-[70vh] overflow-y-auto">
               <motion.div
                 initial={{ y: -20, opacity: 0 }}
@@ -1366,9 +1594,12 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
                 <pre className="text-xs text-blue-100/90 whitespace-pre-wrap leading-relaxed max-h-[50vh] overflow-y-auto">
                   {outlineContent}
                 </pre>
-                <div className="mt-3 flex justify-end">
-                  <Button variant="outline" size="sm" onClick={handleDownloadOutline}>
+                <div className="mt-3 flex flex-wrap gap-2 justify-end">
+                  <Button variant="outline" size="sm" onClick={() => void handleDownloadOutline()}>
                     {labels.download}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => void handleCopyOutline()}>
+                    {labels.copyOutline}
                   </Button>
                 </div>
               </motion.div>
@@ -1381,6 +1612,14 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
       <ZenModeSidePanel
         isOpen={isZenMode && !!selectedNode}
         node={selectedNode}
+        outline={outlineContent}
+        showOutline={showOutlinePanel}
+        outlineLabel={labels.outline}
+        outlinePlaceholder={labels.outlinePlaceholder}
+        downloadLabel={labels.download}
+        copyLabel={labels.copyOutline}
+        onDownloadOutline={() => void handleDownloadOutline()}
+        onCopyOutline={() => void handleCopyOutline()}
         onClose={closeInfoPanel}
         onEditLabel={(nodeId, label) => setEditingNode({ id: nodeId, label })}
       />

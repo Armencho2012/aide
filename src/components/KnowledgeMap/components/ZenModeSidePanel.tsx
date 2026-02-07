@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, BookOpen, Info, ArrowRight, Sparkles, Pencil } from 'lucide-react';
+import { X, BookOpen, Info, ArrowRight, Sparkles, Pencil, FileText, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ZenModeSidePanelProps {
@@ -15,11 +15,32 @@ interface ZenModeSidePanelProps {
     isGhost?: boolean;
     isHighYield?: boolean;
   } | null;
+  outline?: string | null;
+  showOutline?: boolean;
+  outlineLabel?: string;
+  outlinePlaceholder?: string;
+  downloadLabel?: string;
+  copyLabel?: string;
+  onDownloadOutline?: () => void;
+  onCopyOutline?: () => void;
   onClose: () => void;
   onEditLabel?: (nodeId: string, currentLabel: string) => void;
 }
 
-export const ZenModeSidePanel = ({ isOpen, node, onClose, onEditLabel }: ZenModeSidePanelProps) => {
+export const ZenModeSidePanel = ({
+  isOpen,
+  node,
+  outline,
+  showOutline,
+  outlineLabel = 'Outline',
+  outlinePlaceholder = 'Outline not generated yet.',
+  downloadLabel = 'Download .md',
+  copyLabel = 'Copy for Notion',
+  onDownloadOutline,
+  onCopyOutline,
+  onClose,
+  onEditLabel
+}: ZenModeSidePanelProps) => {
   if (!node) return null;
 
   return (
@@ -104,6 +125,41 @@ export const ZenModeSidePanel = ({ isOpen, node, onClose, onEditLabel }: ZenMode
                   <p className="text-sm text-purple-100/80 leading-relaxed whitespace-pre-wrap">
                     {node.sourceSnippet}
                   </p>
+                </motion.div>
+              )}
+
+              {showOutline && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.18 }}
+                  className="pt-4 border-t"
+                  style={{ borderColor: 'hsl(265 60% 30% / 0.3)' }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <FileText className="h-5 w-5 text-purple-400" />
+                    <span className="text-sm font-semibold text-purple-200">{outlineLabel}</span>
+                  </div>
+                  {outline ? (
+                    <pre className="text-xs text-purple-100/90 whitespace-pre-wrap leading-relaxed max-h-[32vh] overflow-y-auto">
+                      {outline}
+                    </pre>
+                  ) : (
+                    <p className="text-xs text-purple-100/70">{outlinePlaceholder}</p>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {onDownloadOutline && (
+                      <Button variant="outline" size="sm" onClick={onDownloadOutline}>
+                        {downloadLabel}
+                      </Button>
+                    )}
+                    {onCopyOutline && (
+                      <Button variant="outline" size="sm" onClick={onCopyOutline}>
+                        <Copy className="mr-2 h-3.5 w-3.5" />
+                        {copyLabel}
+                      </Button>
+                    )}
+                  </div>
                 </motion.div>
               )}
 

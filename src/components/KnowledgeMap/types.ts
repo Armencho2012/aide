@@ -41,6 +41,7 @@ export interface ConceptEdge {
   type?: EdgeType;
   direction?: EdgeDirection;
   strength?: string | number;
+  is_ghost?: boolean;
 }
 
 export interface KnowledgeMapData {
