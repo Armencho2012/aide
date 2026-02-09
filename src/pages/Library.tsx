@@ -126,7 +126,11 @@ const Library = () => {
   };
 
   const filteredContent = useMemo(() => {
-    let filtered = contentList;
+    const withoutCourseMode = contentList.filter(item => 
+      item.content_type !== 'course' && item.generation_status?.course !== true
+    );
+
+    let filtered = withoutCourseMode;
     
     // Filter by content type tab
     if (activeTab === 'analyse') {
@@ -134,7 +138,7 @@ const Library = () => {
     } else if (activeTab === 'chat') {
       filtered = filtered.filter(item => item.content_type === 'chat');
     } else if (activeTab === 'course') {
-      filtered = filtered.filter(item => item.content_type === 'course' || item.generation_status?.course === true);
+      filtered = []; // Course Mode lives in dashboards and direct links
     }
     
     // Filter by search query
@@ -249,7 +253,9 @@ const Library = () => {
         {filteredContent.length === 0 ? (
           <Card className="p-6 sm:p-8 text-center">
             <p className="text-sm sm:text-base text-muted-foreground">
-              {labels.noContent}
+              {activeTab === 'course'
+                ? 'Course Mode sessions now live in your Dashboard. Open them from there or via a direct library link.'
+                : labels.noContent}
             </p>
           </Card>
         ) : (

@@ -187,20 +187,121 @@ const ContentDetail = () => {
 
         if (error) throw error;
 
-        // Update the content with the new data
+        const existingAnalysis = content.analysis_data || {};
+
+        const mergeQuizQuestions = (existing: any[] = [], incoming: any[] = []) => {
+          const seen = new Set(
+            existing
+              .map(q => (q?.question || '').trim().toLowerCase())
+              .filter(Boolean)
+          );
+          return [
+            ...existing,
+            ...incoming.filter(q => {
+              const key = (q?.question || '').trim().toLowerCase();
+              if (!key) return false;
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            })
+          ];
+        };
+
+        const mergeFlashcards = (existing: any[] = [], incoming: any[] = []) => {
+          const seen = new Set(
+            existing
+              .map(fc => `${(fc?.front || '').trim().toLowerCase()}::${(fc?.back || '').trim().toLowerCase()}`)
+              .filter(Boolean)
+          );
+          return [
+            ...existing,
+            ...incoming.filter(fc => {
+              const front = (fc?.front || '').trim().toLowerCase();
+              const back = (fc?.back || '').trim().toLowerCase();
+              if (!front && !back) return false;
+              const key = `${front}::${back}`;
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            })
+          ];
+        };
+
+        const mergeKnowledgeMap = (
+          existing: { nodes?: any[]; edges?: any[] } = {},
+          incoming: { nodes?: any[]; edges?: any[] } = {}
+        ) => {
+          const mergedNodes = [...(existing.nodes || [])];
+          const mergedEdges = [...(existing.edges || [])];
+
+          const nodeIds = new Set(
+            mergedNodes.map((n) => (n?.id || n?.label || '').toString())
+          );
+          (incoming.nodes || []).forEach((node) => {
+            const key = (node?.id || node?.label || '').toString();
+            if (!key) return;
+            if (nodeIds.has(key)) return;
+            nodeIds.add(key);
+            mergedNodes.push(node);
+          });
+
+          const edgeKeys = new Set(
+            mergedEdges.map((e) =>
+              [e?.id, e?.source, e?.target, e?.label].filter(Boolean).join('::')
+            )
+          );
+          (incoming.edges || []).forEach((edge) => {
+            const key = [edge?.id, edge?.source, edge?.target, edge?.label]
+              .filter(Boolean)
+              .join('::');
+            if (!key) return;
+            if (edgeKeys.has(key)) return;
+            edgeKeys.add(key);
+            mergedEdges.push(edge);
+          });
+
+          return {
+            ...existing,
+            nodes: mergedNodes,
+            edges: mergedEdges
+          };
+        };
+
+        const hasNewQuiz = generationOptions.quiz && Array.isArray(data.quiz_questions) && data.quiz_questions.length > 0;
+        const hasNewFlashcards = generationOptions.flashcards && Array.isArray(data.flashcards) && data.flashcards.length > 0;
+        const hasNewMap =
+          generationOptions.map &&
+          data.knowledge_map &&
+          Array.isArray(data.knowledge_map.nodes) &&
+          data.knowledge_map.nodes.length > 0;
+
         const updatedAnalysisData = {
-          ...content.analysis_data,
-          ...(data.quiz_questions && { quiz_questions: data.quiz_questions }),
-          ...(data.flashcards && { flashcards: data.flashcards }),
-          ...(data.knowledge_map && { knowledge_map: data.knowledge_map })
+          ...existingAnalysis,
+          ...(hasNewQuiz && {
+            quiz_questions: mergeQuizQuestions(existingAnalysis.quiz_questions, data.quiz_questions)
+          }),
+          ...(hasNewFlashcards && {
+            flashcards: mergeFlashcards(existingAnalysis.flashcards, data.flashcards)
+          }),
+          ...(hasNewMap && {
+            knowledge_map: mergeKnowledgeMap(existingAnalysis.knowledge_map, data.knowledge_map)
+          })
         };
 
         const updatedGenerationStatus = {
           ...content.generation_status,
-          quiz: generationOptions.quiz ? true : content.generation_status?.quiz,
-          flashcards: generationOptions.flashcards ? true : content.generation_status?.flashcards,
-          map: generationOptions.map ? true : content.generation_status?.map,
-          course: generationOptions.course ? true : content.generation_status?.course
+          quiz: generationOptions.quiz
+            ? (hasNewQuiz || content.generation_status?.quiz)
+            : content.generation_status?.quiz,
+          flashcards: generationOptions.flashcards
+            ? (hasNewFlashcards || content.generation_status?.flashcards)
+            : content.generation_status?.flashcards,
+          map: generationOptions.map
+            ? (hasNewMap || content.generation_status?.map)
+            : content.generation_status?.map,
+          course: generationOptions.course
+            ? true
+            : content.generation_status?.course
         };
 
         await supabase
@@ -605,7 +706,7 @@ const ContentDetail = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="h-[500px] sm:h-[600px] md:h-[700px]">
+                <div className="h-[440px] sm:h-[620px] md:h-[720px] touch-pan-x touch-pan-y">
                   <KnowledgeMap
                     data={analysisData?.knowledge_map}
                     analysisId={content?.id}

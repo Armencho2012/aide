@@ -65,9 +65,14 @@ Deno.serve(async (req: Request) => {
     const languageInstruction = {
       'en': 'Respond in English.',
       'ru': 'Отвечайте на русском языке.',
-      'hy': 'Պdelays խdelays delays:',
+      'hy': 'Պատասխանեք հայերեն։',
       'ko': '한국어로 답변하세요.'
     }[language as string] || 'Respond in English.';
+
+    const wantsCitation = typeof question === 'string' && /where is this from|cite the source|citation|source/i.test(question);
+    const privacyInstruction = wantsCitation
+      ? 'If the user requests a source, cite only the relevant idea from the provided context (no filenames or file paths). Keep the reference brief.'
+      : 'Do NOT mention filenames, file paths, URLs, or source metadata. Answer directly without adding citations unless explicitly asked.';
 
     // Build chat history for context
     const historyContext = chatHistory
@@ -80,8 +85,9 @@ Deno.serve(async (req: Request) => {
 OUTPUT CONSTRAINTS:
 1. ${languageInstruction}
 2. Structure your answer using markdown.
-3. FACT-CHECKING: When making a specific claim based on the provided content, append a source tag like [[source:Snippet of text]] at the end of the sentence.
+3. ${privacyInstruction}
 4. If you use math, use LaTeX format like $x^2$.
+5. Keep the tone Socratic and concept-focused; prefer questions that guide the student to think.
 
 --- ORIGINAL CONTENT ---
 ${contentText.substring(0, 10000)}

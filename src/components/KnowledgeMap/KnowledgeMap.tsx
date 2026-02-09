@@ -322,7 +322,7 @@ const createForcePositions = (
 ): globalThis.Map<string, { x: number; y: number }> => {
   const positions = new globalThis.Map<string, { x: number; y: number }>();
   const nodeCount = conceptNodes.length || 1;
-  const radius = isZenMode ? 520 : 420;
+  const radius = isZenMode ? 640 : 520;
 
   conceptNodes.forEach((node, index) => {
     const angle = (index / nodeCount) * Math.PI * 2;
@@ -332,10 +332,10 @@ const createForcePositions = (
     });
   });
 
-  const iterations = isZenMode ? 220 : 140;
-  const repulsion = 12000;
-  const spring = 0.05;
-  const desired = 220;
+  const iterations = isZenMode ? 260 : 180;
+  const repulsion = 18000;
+  const spring = 0.06;
+  const desired = 260;
 
   for (let iter = 0; iter < iterations; iter += 1) {
     const forces = new globalThis.Map<string, { x: number; y: number }>();
@@ -514,8 +514,8 @@ const createTreeLayout = (
     positions = createForcePositions(conceptNodes, showSecondaryEdges ? conceptEdges : renderEdges, isZenMode);
   } else {
     // Radial Tree Layout - MUCH more spacing, guaranteed no crossing
-    const LAYER_SPACING = 400 * scaleFactor; // Much bigger spacing between layers
-    const MIN_NODE_SPACING = 0.3; // Minimum angle gap between siblings (radians)
+    const LAYER_SPACING = 520 * scaleFactor; // Much bigger spacing between layers
+    const MIN_NODE_SPACING = 0.45; // Minimum angle gap between siblings (radians)
 
     const layoutNode = (u: string, startAngle: number, endAngle: number) => {
       const depth = depths.get(u) || 0;
@@ -591,6 +591,14 @@ const createTreeLayout = (
   });
 
   // 8. Create edges from the original data (preserve types + direction)
+  const parallelGroups = new Map<string, ConceptEdge[]>();
+  renderEdges.forEach((edge) => {
+    const key = edgeKey(edge.source, edge.target);
+    const list = parallelGroups.get(key) || [];
+    list.push(edge);
+    parallelGroups.set(key, list);
+  });
+
   const flowEdges: Edge[] = renderEdges
     .map((edge, index) => {
       const isGhostEdge = !!edge.is_ghost;
@@ -605,6 +613,12 @@ const createTreeLayout = (
         strokeWidth: isHighlightedEdge ? (isZenMode ? 4 : 3) : edgeStyle.strokeWidth,
         opacity: finalOpacity,
       };
+      const groupKey = edgeKey(edge.source, edge.target);
+      const group = parallelGroups.get(groupKey) || [edge];
+      const groupIndex = Math.max(0, group.findIndex((g) => g === edge));
+      const offsetIndex = groupIndex - (group.length - 1) / 2;
+      const curveOffset = group.length > 1 ? offsetIndex * 28 : 0;
+      const labelOffset = group.length > 1 ? offsetIndex * 14 : 0;
       const markerScale =
         edge.type === 'enables' || edge.type === 'essential_for'
           ? 1.35
@@ -623,7 +637,8 @@ const createTreeLayout = (
         id: edge.id || `map-edge-${index}`,
         source: edge.source,
         target: edge.target,
-        type: 'straight',
+        type: 'smoothstep',
+        pathOptions: { offset: Math.max(Math.abs(curveOffset), 12), borderRadius: 16 },
         label,
         labelStyle: showEdgeLabels
           ? {
@@ -631,6 +646,7 @@ const createTreeLayout = (
               fontWeight: 600,
               fontSize: isZenMode ? 14 : 11,
               textShadow: '0 1px 3px hsl(0 0% 0% / 0.8)',
+              transform: labelOffset ? `translateY(${labelOffset}px)` : undefined,
             }
           : undefined,
         labelBgStyle: showEdgeLabels
@@ -687,6 +703,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
   const [isScanning, setIsScanning] = useState(false);
   const [positionHistory, setPositionHistory] = useState<Map<string, { x: number; y: number }>[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Edit modal state
   const [editingNode, setEditingNode] = useState<{ id: string; label: string } | null>(null);
@@ -697,6 +714,13 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
   const [userNodeLabels, setUserNodeLabels] = useState<Map<string, string>>(new Map());
 
   const labels = uiLabels[language] || uiLabels.en;
+
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth < 768);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   const hoveredNodes = useMemo(() => {
     if (!hoveredNodeId) return new Set<string>();
@@ -1167,7 +1191,11 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
               borderRadius: isZenMode ? 0 : undefined,
             }}
           >
-            <div ref={flowRef} className="w-full h-full">
+            <div
+              ref={flowRef}
+              className="w-full h-full"
+              style={{ touchAction: 'pan-x pan-y pinch-zoom' }}
+            >
               <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -1396,20 +1424,35 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
           {/* Zen Mode exit button (appears on hover at top) */}
           {isZenMode && <FullscreenExitButton onExit={toggleZenMode} />}
 
-          {/* Node Info Panel - Side panel for non-Zen mode */}
+          {/* Node Info Panel - responsive: side panel desktop, bottom sheet mobile */}
           {selectedNode && !isZenMode && (
-            <div className="absolute top-4 right-4 bottom-4 left-4 sm:left-auto sm:w-[380px] z-20">
+            <div
+              className={
+                isMobile
+                  ? "fixed inset-x-0 bottom-0 z-30 px-3 pb-3"
+                  : "absolute top-4 right-4 bottom-4 left-4 sm:left-auto sm:w-[380px] z-20"
+              }
+            >
               <motion.div
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 20, opacity: 0 }}
-                className="h-full rounded-xl p-5 backdrop-blur-xl border overflow-y-auto"
+                initial={{ x: 20, opacity: 0, y: isMobile ? 20 : 0 }}
+                animate={{ x: 0, opacity: 1, y: 0 }}
+                exit={{ x: 20, opacity: 0, y: isMobile ? 20 : 0 }}
+                className={`backdrop-blur-xl border overflow-y-auto ${
+                  isMobile
+                    ? "h-[60vh] rounded-t-2xl shadow-2xl"
+                    : "h-full rounded-xl"
+                } p-5`}
                 style={{
                   background: 'linear-gradient(135deg, hsl(265 70% 20% / 0.95), hsl(265 60% 15% / 0.98))',
                   borderColor: 'hsl(265 60% 50% / 0.5)',
-                  boxShadow: '0 20px 50px -10px hsl(265 60% 30% / 0.5)',
+                  boxShadow: isMobile
+                    ? '0 -10px 40px -8px hsl(265 60% 20% / 0.45)'
+                    : '0 20px 50px -10px hsl(265 60% 30% / 0.5)',
                 }}
               >
+                {isMobile && (
+                  <div className="mx-auto mb-3 h-1 w-12 rounded-full bg-white/40" />
+                )}
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex-1">
