@@ -217,7 +217,6 @@ const Library = () => {
         </div>
 
         {/* Tabs for filtering content type */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'analyse' | 'chat' | 'course')} className="mb-4 sm:mb-6">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'analyse' | 'chat')} className="mb-4 sm:mb-6">
           <TabsList className="bg-card/50">
             <TabsTrigger value="all" className="flex items-center gap-2">
