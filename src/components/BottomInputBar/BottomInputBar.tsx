@@ -1,4 +1,4 @@
-import { useState, useRef, DragEvent, useCallback } from 'react';
+import { useState, useRef, DragEvent, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,8 @@ import {
   Plus,
   Upload,
   Send,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useVoiceInput } from './useVoiceInput';
 import { BottomInputBarProps, PrimaryMode, GenerationOptions, QUIZ_LIMITS, FLASHCARD_LIMITS, uiLabels } from './types';
@@ -27,7 +29,9 @@ export const BottomInputBar = ({
   isLocked,
   isSessionLocked = false,
   onDraftStart,
-  userPlan: propUserPlan
+  userPlan: propUserPlan,
+  isOpen = true,
+  onToggle
 }: BottomInputBarProps) => {
   const [primaryMode, setPrimaryMode] = useState<PrimaryMode>('analyse');
   const [text, setText] = useState('');
@@ -37,6 +41,14 @@ export const BottomInputBar = ({
   const labels = uiLabels[language];
   const { userPlan: hookUserPlan } = useUsageLimit();
   const userPlan = propUserPlan || hookUserPlan;
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth < 768);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   // Generation options - Quiz and Flashcards checked by default
   const [generationOptions, setGenerationOptions] = useState<GenerationOptions>({
@@ -169,7 +181,8 @@ export const BottomInputBar = ({
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-50 p-4 transition-all ${isDragging ? 'bg-primary/5' : ''}`}
+      className={`fixed bottom-0 left-0 right-0 z-[60] p-3 sm:p-4 transition-all ${isDragging ? 'bg-primary/5' : ''}`}
+      style={{ pointerEvents: 'none' }}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -185,8 +198,32 @@ export const BottomInputBar = ({
         </div>
       )}
 
-      <div className="container max-w-3xl mx-auto">
-        <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl p-4 sm:p-5">
+      <div className="container max-w-3xl mx-auto" style={{ pointerEvents: 'auto' }}>
+        <div
+          className={`relative bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl transition-all duration-200 overflow-hidden ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-95 translate-y-[calc(100%-56px)] sm:translate-y-0'} ${isMobile ? 'max-h-[22vh] overflow-y-auto' : ''}`}
+          style={{
+            touchAction: 'auto'
+          }}
+        >
+          {/* Toggle button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            className="absolute right-2 top-2 h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/70 z-20"
+            title={isOpen ? labels.collapse : labels.expand}
+          >
+            {isOpen ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+          </Button>
+
+          {!isOpen && (
+            <div className="flex items-center justify-center py-4 gap-2">
+              <span className="text-sm text-muted-foreground">{labels.expand}</span>
+            </div>
+          )}
+
+          {isOpen && (
+            <div className="p-4 sm:p-5 space-y-4">
           {/* Primary Mode Toggle - Analyse | Chat */}
           <div className="flex justify-center mb-4">
             <ToggleGroup
@@ -377,6 +414,8 @@ export const BottomInputBar = ({
               )}
             </Button>
           </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

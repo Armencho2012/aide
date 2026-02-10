@@ -138,6 +138,7 @@ const Dashboard = () => {
   const [analysisId, setAnalysisId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSessionLocked, setIsSessionLocked] = useState(false);
+  const [isInputOpen, setIsInputOpen] = useState(true);
 
   const labels = uiLabels[language];
 
@@ -290,6 +291,7 @@ const Dashboard = () => {
         }
 
         toast({ title: 'Great job!', description: "You're mastering this subject. Keep it up!" });
+        setIsInputOpen(false);
       }
     } catch (error) {
       console.error('Processing error:', error);
@@ -322,7 +324,10 @@ const Dashboard = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 pb-[500px]">
+    <div
+      className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20"
+      style={{ paddingBottom: `calc(${isInputOpen ? '32vh' : '18vh'} + env(safe-area-inset-bottom, 24px))` }}
+    >
       <div className="container max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8 animate-in fade-in-50 slide-in-from-top-4">
@@ -518,6 +523,8 @@ const Dashboard = () => {
         isSessionLocked={isSessionLocked}
         onDraftStart={handleDraftStart}
         userPlan={userPlan}
+        isOpen={isInputOpen}
+        onToggle={() => setIsInputOpen(prev => !prev)}
       />
     </div>
   );

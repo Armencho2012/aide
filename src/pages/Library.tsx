@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Search, Trash2, Calendar, PlayCircle, Menu, MessageCircle, FileText, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Search, Trash2, Calendar, PlayCircle, Menu, MessageCircle, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useContent } from '@/hooks/useContent';
 import { useSettings } from '@/hooks/useSettings';
@@ -114,7 +114,7 @@ const Library = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'analyse' | 'chat' | 'course'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'analyse' | 'chat'>('all');
   const navigate = useNavigate();
   const labels = uiLabels[language as Language] || uiLabels.en;
 
@@ -126,19 +126,17 @@ const Library = () => {
   };
 
   const filteredContent = useMemo(() => {
-    const withoutCourseMode = contentList.filter(item => 
+    const filteredBase = contentList.filter(item => 
       item.content_type !== 'course' && item.generation_status?.course !== true
     );
 
-    let filtered = withoutCourseMode;
+    let filtered = filteredBase;
     
     // Filter by content type tab
     if (activeTab === 'analyse') {
       filtered = filtered.filter(item => item.content_type !== 'chat' && item.content_type !== 'course');
     } else if (activeTab === 'chat') {
       filtered = filtered.filter(item => item.content_type === 'chat');
-    } else if (activeTab === 'course') {
-      filtered = []; // Course Mode lives in dashboards and direct links
     }
     
     // Filter by search query
@@ -220,6 +218,7 @@ const Library = () => {
 
         {/* Tabs for filtering content type */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'analyse' | 'chat' | 'course')} className="mb-4 sm:mb-6">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'analyse' | 'chat')} className="mb-4 sm:mb-6">
           <TabsList className="bg-card/50">
             <TabsTrigger value="all" className="flex items-center gap-2">
               {labels.all}
@@ -231,10 +230,6 @@ const Library = () => {
             <TabsTrigger value="chat" className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4" />
               <span className="hidden sm:inline">{labels.chats}</span>
-            </TabsTrigger>
-            <TabsTrigger value="course" className="flex items-center gap-2">
-              <GraduationCap className="h-4 w-4" />
-              <span className="hidden sm:inline">{labels.courses}</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -253,9 +248,7 @@ const Library = () => {
         {filteredContent.length === 0 ? (
           <Card className="p-6 sm:p-8 text-center">
             <p className="text-sm sm:text-base text-muted-foreground">
-              {activeTab === 'course'
-                ? 'Course Mode sessions now live in your Dashboard. Open them from there or via a direct library link.'
-                : labels.noContent}
+              {labels.noContent}
             </p>
           </Card>
         ) : (

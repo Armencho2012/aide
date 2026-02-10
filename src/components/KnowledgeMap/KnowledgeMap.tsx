@@ -1194,7 +1194,7 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
             <div
               ref={flowRef}
               className="w-full h-full"
-              style={{ touchAction: 'pan-x pan-y pinch-zoom' }}
+              style={{ touchAction: 'none', paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 56px)' }}
             >
               <ReactFlow
                 nodes={nodes}

@@ -40,6 +40,8 @@ export interface BottomInputBarProps {
   isSessionLocked?: boolean;
   onDraftStart?: () => void;
   userPlan?: 'free' | 'pro' | 'class';
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
 export const uiLabels = {
@@ -82,6 +84,8 @@ export const uiLabels = {
     dropFiles: 'Drop files here',
     voiceInput: 'Voice input',
     listening: 'Listening...',
+    expand: 'Open input',
+    collapse: 'Collapse input',
     // Quantity labels
     questionsCount: 'Questions',
     flashcardsCount: 'Flashcards',
@@ -126,6 +130,8 @@ export const uiLabels = {
     dropFiles: 'Перетащите файлы сюда',
     voiceInput: 'Голосовой ввод',
     listening: 'Слушаю...',
+    expand: 'Открыть ввод',
+    collapse: 'Свернуть ввод',
     // Quantity labels
     questionsCount: 'Вопросы',
     flashcardsCount: 'Карточки',
@@ -170,6 +176,8 @@ export const uiLabels = {
     dropFiles: 'Գցեք ֆայլերը այստեղ',
     voiceInput: 'Ձայնային մուտքագրում',
     listening: 'Լսում եմ...',
+    expand: 'Բացել մուտքագրումը',
+    collapse: 'Փակել մուտքագրումը',
     // Quantity labels
     questionsCount: 'Հարցեր',
     flashcardsCount: 'Քարտեր',
@@ -214,6 +222,8 @@ export const uiLabels = {
     dropFiles: '파일을 여기에 놓으세요',
     voiceInput: '음성 입력',
     listening: '듣는 중...',
+    expand: '입력 열기',
+    collapse: '입력 접기',
     // Quantity labels
     questionsCount: '문항',
     flashcardsCount: '플래시카드',
