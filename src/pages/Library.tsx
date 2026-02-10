@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Search, Trash2, Calendar, PlayCircle, Menu, MessageCircle, FileText } from 'lucide-react';
+import { ArrowLeft, Search, Trash2, Calendar, PlayCircle, Menu, MessageCircle, FileText, GraduationCap } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useContent } from '@/hooks/useContent';
 import { useSettings } from '@/hooks/useSettings';
@@ -114,7 +114,7 @@ const Library = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'analyse' | 'chat'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'analyse' | 'chat' | 'course'>('all');
   const navigate = useNavigate();
   const labels = uiLabels[language as Language] || uiLabels.en;
 
@@ -126,17 +126,15 @@ const Library = () => {
   };
 
   const filteredContent = useMemo(() => {
-    const filteredBase = contentList.filter(item => 
-      item.content_type !== 'course' && item.generation_status?.course !== true
-    );
-
-    let filtered = filteredBase;
+    let filtered = contentList;
     
     // Filter by content type tab
     if (activeTab === 'analyse') {
       filtered = filtered.filter(item => item.content_type !== 'chat' && item.content_type !== 'course');
     } else if (activeTab === 'chat') {
       filtered = filtered.filter(item => item.content_type === 'chat');
+    } else if (activeTab === 'course') {
+      filtered = filtered.filter(item => item.content_type === 'course' || item.generation_status?.course === true || item.course_data);
     }
     
     // Filter by search query
@@ -217,7 +215,7 @@ const Library = () => {
         </div>
 
         {/* Tabs for filtering content type */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'analyse' | 'chat')} className="mb-4 sm:mb-6">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'analyse' | 'chat' | 'course')} className="mb-4 sm:mb-6">
           <TabsList className="bg-card/50">
             <TabsTrigger value="all" className="flex items-center gap-2">
               {labels.all}
@@ -229,6 +227,10 @@ const Library = () => {
             <TabsTrigger value="chat" className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4" />
               <span className="hidden sm:inline">{labels.chats}</span>
+            </TabsTrigger>
+            <TabsTrigger value="course" className="flex items-center gap-2">
+              <GraduationCap className="h-4 w-4" />
+              <span className="hidden sm:inline">{labels.courses}</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -276,7 +278,6 @@ const Library = () => {
                       {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown date'}
                     </div>
                     <div className="flex items-center space-x-1">
-                      {/* Start Course Button */}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -290,6 +291,21 @@ const Library = () => {
                         <PlayCircle className="h-4 w-4 mr-1" />
                         <span className="hidden sm:inline text-xs">{labels.back}</span>
                       </Button>
+                      {(item.generation_status?.course || item.course_data) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-accent hover:text-accent hover:bg-accent/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/library/course/${item.id}`);
+                          }}
+                          title={labels.courses}
+                        >
+                          <GraduationCap className="h-4 w-4 mr-1" />
+                          <span className="hidden sm:inline text-xs">{labels.courses}</span>
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"

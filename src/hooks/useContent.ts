@@ -22,6 +22,7 @@ export interface ContentItem {
   content_type: string | null;
   generation_status: GenerationStatus | null;
   podcast_url: string | null;
+  course_data?: any | null;
 }
 
 interface UseContentOptions {

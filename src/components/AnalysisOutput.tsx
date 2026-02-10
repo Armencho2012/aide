@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -43,6 +42,7 @@ interface AnalysisData {
       tasks: string[];
     }>;
   };
+  course_data?: any;
 }
 
 interface AnalysisOutputProps {
@@ -69,7 +69,10 @@ const uiLabels = {
     day: 'Day',
     topics: 'Topics',
     count: 'Count',
-    viewFull: 'View Full Analysis'
+    viewFull: 'View Full Analysis',
+    coursePreview: 'Course Preview',
+    viewCourse: 'Show more',
+    coursePreviewEmpty: 'Your course is ready. Jump in for the full experience.'
   },
   ru: {
     summary: 'Ключевое Резюме',
@@ -86,7 +89,10 @@ const uiLabels = {
     day: 'День',
     topics: 'Темы',
     count: 'Количество',
-    viewFull: 'Посмотреть полный анализ'
+    viewFull: 'Посмотреть полный анализ',
+    coursePreview: 'Курс',
+    viewCourse: 'Показать больше',
+    coursePreviewEmpty: 'Ваш курс готов. Откройте полный опыт обучения.'
   },
   hy: {
     summary: 'Կարևոր Ամփոփում',
@@ -103,7 +109,10 @@ const uiLabels = {
     day: 'Օր',
     topics: 'Թեմաներ',
     count: 'Քանակ',
-    viewFull: 'Դիտել ամբողջական վերլուծությունը'
+    viewFull: 'Դիտել ամբողջական վերլուծությունը',
+    coursePreview: 'Դասընթացի նախադիտում',
+    viewCourse: 'Տեսնել ավելին',
+    coursePreviewEmpty: 'Ձեր դասընթացը պատրաստ է։ Մուտք գործեք ամբողջ փորձառության համար։'
   },
   ko: {
     summary: '주요 요약',
@@ -120,7 +129,10 @@ const uiLabels = {
     day: '일차',
     topics: '주제',
     count: '개수',
-    viewFull: '전체 분석 보기'
+    viewFull: '전체 분석 보기',
+    coursePreview: '코스 미리보기',
+    viewCourse: '더 보기',
+    coursePreviewEmpty: '코스가 준비되었습니다. 전체 경험을 확인하세요.'
   }
 };
 
@@ -129,6 +141,17 @@ export const AnalysisOutput = ({ data, language, preview = false, previewLimit =
   const [numQuestions, setNumQuestions] = useState<number>(10);
   const labels = uiLabels[language] || uiLabels.en;
   const isPreview = preview;
+  const courseData = data.course_data || {};
+  const previewItems: string[] = (
+    courseData?.modules ||
+    courseData?.weeks ||
+    courseData?.lessons ||
+    courseData?.units ||
+    []
+  )
+    .map((item: any) => item?.title || item?.name || item?.topic)
+    .filter(Boolean)
+    .slice(0, 3);
 
   const lessonSections = useMemo(() => (data.lesson_sections && data.lesson_sections.length > 0 ? data.lesson_sections : []), [data.lesson_sections]);
 
@@ -183,6 +206,33 @@ export const AnalysisOutput = ({ data, language, preview = false, previewLimit =
 
   return (
     <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4">
+      {/* Course Preview */}
+      {(data.course_data || data.study_plan) && (
+        <Card className="border-accent/20 shadow-md">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-accent text-base sm:text-lg">{labels.coursePreview}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {previewItems.length > 0 ? (
+              <ul className="space-y-2 text-sm sm:text-base text-muted-foreground">
+                {previewItems.map((item, index) => (
+                  <li key={index} className="flex gap-2">
+                    <span className="text-accent font-bold">•</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm sm:text-base text-muted-foreground">{labels.coursePreviewEmpty}</p>
+            )}
+            {analysisId && (
+              <Button asChild variant="outline" size="sm" className="w-fit">
+                <Link to={`/library/course/${analysisId}`}>{labels.viewCourse}</Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
       {/* 7-Day Study Plan */}
       {data.study_plan && data.study_plan.days && (
         <Card className="border-primary/20 shadow-lg bg-gradient-to-br from-background to-primary/5">
@@ -260,30 +310,6 @@ export const AnalysisOutput = ({ data, language, preview = false, previewLimit =
           </CardContent>
         </Card>
       )}
-
-      <Card className="border-accent/20 shadow-md">
-        <CardHeader>
-          <CardTitle className="text-accent">{labels.terms}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2.5">
-            {data.key_terms.map((termItem, index) => {
-              const term = typeof termItem === 'string' ? termItem : termItem.term;
-              const def = typeof termItem === 'object' ? termItem.definition : undefined;
-              return (
-                <Badge
-                  key={index}
-                  variant="secondary"
-                  className="px-4 py-2 text-sm bg-accent/5 hover:bg-accent/10 border-accent/20 transition-all cursor-help"
-                  title={def}
-                >
-                  {term}
-                </Badge>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
 
       {allQuizQuestions.length > 0 && (
         <Card className="border-primary/20 shadow-md">

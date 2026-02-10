@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, FileText, Layers, Bot, Download, Map, BookOpen, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useContent } from '@/hooks/useContent';
@@ -38,7 +37,10 @@ const uiLabels = {
     commandCenter: 'Command Center',
     podcast: 'Podcast',
     startCourse: 'Start Course',
-    overview: 'Overview'
+    overview: 'Overview',
+    coursePreview: 'Course Preview',
+    viewCourse: 'Show more',
+    coursePreviewEmpty: 'Your course is ready. Jump in for the full experience.'
   },
   ru: {
     backToLibrary: 'Назад в библиотеку',
@@ -56,7 +58,10 @@ const uiLabels = {
     commandCenter: 'Центр управления',
     podcast: 'Подкаст',
     startCourse: 'Начать курс',
-    overview: 'Обзор'
+    overview: 'Обзор',
+    coursePreview: 'Курс',
+    viewCourse: 'Показать больше',
+    coursePreviewEmpty: 'Ваш курс готов. Откройте полный опыт обучения.'
   },
   hy: {
     backToLibrary: 'Վերադառնալ գրադարան',
@@ -74,7 +79,10 @@ const uiLabels = {
     commandCenter: 'Հրամանների կենտրոն',
     podcast: 'Պոդկաստ',
     startCourse: 'Սկսել դասընթացը',
-    overview: 'Ընդամեն'
+    overview: 'Ընդամեն',
+    coursePreview: 'Դասընթացի նախադիտում',
+    viewCourse: 'Տեսնել ավելին',
+    coursePreviewEmpty: 'Ձեր դասընթացը պատրաստ է։ Մուտք գործեք ամբողջ փորձառության համար։'
   },
   ko: {
     backToLibrary: '라이브러리로 돌아가기',
@@ -92,7 +100,10 @@ const uiLabels = {
     commandCenter: '명령 센터',
     podcast: '팟캐스트',
     startCourse: '코스 시작',
-    overview: '개요'
+    overview: '개요',
+    coursePreview: '코스 미리보기',
+    viewCourse: '더 보기',
+    coursePreviewEmpty: '코스가 준비되었습니다. 전체 경험을 확인하세요.'
   }
 };
 
@@ -523,6 +534,17 @@ const ContentDetail = () => {
   const language = (content.language as Language) || 'en';
   const labels = uiLabels[language];
   const analysisData = content.analysis_data;
+  const courseData = content.course_data || analysisData?.course_data;
+  const previewItems: string[] = (
+    courseData?.modules ||
+    courseData?.weeks ||
+    courseData?.lessons ||
+    courseData?.units ||
+    []
+  )
+    .map((item: any) => item?.title || item?.name || item?.topic)
+    .filter(Boolean)
+    .slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
@@ -631,6 +653,32 @@ const ContentDetail = () => {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4">
+            {(courseData || content.generation_status?.course) && (
+              <Card className="border-accent/20 shadow-md">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-accent text-base sm:text-lg">{labels.coursePreview}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {previewItems.length > 0 ? (
+                    <ul className="space-y-2 text-sm sm:text-base text-muted-foreground">
+                      {previewItems.map((item, index) => (
+                        <li key={index} className="flex gap-2">
+                          <span className="text-accent font-bold">•</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm sm:text-base text-muted-foreground">
+                      {labels.coursePreviewEmpty}
+                    </p>
+                  )}
+                  <Button asChild variant="outline" size="sm" className="w-fit">
+                    <Link to={`/library/course/${id}`}>{labels.viewCourse}</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
             {analysisData?.three_bullet_summary && (
               <Card className="border-primary/20 shadow-md">
                 <CardHeader className="pb-3">
@@ -665,25 +713,6 @@ const ContentDetail = () => {
               </Card>
             )}
 
-            {analysisData?.key_terms && analysisData.key_terms.length > 0 && (
-              <Card className="border-accent/20 shadow-md">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-accent text-base sm:text-lg">{labels.terms}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {analysisData.key_terms.map((termItem: string | { term: string }, index: number) => {
-                      const term = typeof termItem === 'string' ? termItem : termItem.term;
-                      return (
-                        <Badge key={index} variant="secondary" className="px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-base">
-                          {term}
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </TabsContent>
 
           {/* Podcast Tab */}
