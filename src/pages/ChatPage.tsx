@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, Send, Bot, User, Map } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, Bot, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { KnowledgeMapPanel } from '@/components/KnowledgeMap';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useContent } from '@/hooks/useContent';
 import { ContentDetailSkeleton } from '@/components/ui/skeleton-loader';
@@ -67,10 +66,6 @@ const ChatPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [showKnowledgeMap, setShowKnowledgeMap] = useState(false);
-  const [activeNode, setActiveNode] = useState<string | undefined>();
-  const [activeNodeContext, setActiveNodeContext] = useState<{ description?: string; category?: string } | null>(null);
-  const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set());
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -113,15 +108,13 @@ const ChatPage = () => {
           contentText: content.original_text,
           analysisData: content.analysis_data,
           language,
-          chatHistory: messages,
-          activeNodeContext
+          chatHistory: messages
         }),
       });
 
       if (!response.ok) throw new Error("Failed to get response");
       if (!response.body) throw new Error("No response body");
 
-      setActiveNodeContext(null);
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
       const reader = response.body.getReader();
@@ -162,48 +155,10 @@ const ChatPage = () => {
   };
 
   useEffect(() => {
-    if (messages.length > 0 && content?.analysis_data?.knowledge_map?.nodes) {
-      const latestMessage = messages[messages.length - 1];
-      const nodes = content.analysis_data.knowledge_map.nodes;
-      const mentionedNodes = new Set<string>();
-
-      nodes.forEach((node: any) => {
-        const nodeLabel = node.label?.toLowerCase() || '';
-        const messageContent = latestMessage.content.toLowerCase();
-
-        const mentionRegex = new RegExp(`\\b${nodeLabel}\\b`, 'i');
-        if (nodeLabel && (messageContent.includes(nodeLabel) || mentionRegex.test(messageContent))) {
-          mentionedNodes.add(node.id);
-        }
-      });
-
-      if (mentionedNodes.size > 0) {
-        setHighlightedNodes(mentionedNodes);
-        setTimeout(() => {
-          setHighlightedNodes(new Set());
-        }, 3000);
-      }
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages, content]);
-
-  const handleKnowledgeMapNodeClick = (question: string, description?: string, category?: string) => {
-    setInput(question);
-    setActiveNodeContext({ description, category });
-
-    const match = question.match(/Tell me more about (.+?)(?:\s|\.|$)/);
-    if (match) {
-      const nodeName = match[1].trim().replace(/[.,!?]$/, "");
-
-      if (content?.analysis_data?.knowledge_map?.nodes) {
-        const node = content.analysis_data.knowledge_map.nodes.find(
-          (n: any) => n.label?.toLowerCase() === nodeName.toLowerCase()
-        );
-        if (node) {
-          setActiveNode(node.id);
-        }
-      }
-    }
-  };
 
   if (!isAuthChecked || isLoading) {
     return <ContentDetailSkeleton />;
@@ -242,17 +197,6 @@ const ChatPage = () => {
                 {labels.title}
               </h1>
             </div>
-          </div>
-          <div className="flex justify-end">
-            <Button
-              variant={showKnowledgeMap ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setShowKnowledgeMap(!showKnowledgeMap)}
-              className="gap-2 hidden lg:flex"
-            >
-              <Map className="h-4 w-4" />
-              {labels.knowledgeMap}
-            </Button>
           </div>
         </div>
 
@@ -327,29 +271,6 @@ const ChatPage = () => {
                 </div>
               </CardContent>
             </Card>
-          </div>
-
-          {showKnowledgeMap && (
-            <div className="hidden lg:block w-[400px] xl:w-[500px] border-l border-border">
-              <KnowledgeMapPanel
-                onAskAboutNode={handleKnowledgeMapNodeClick}
-                activeNodeId={activeNode}
-                data={content?.analysis_data?.knowledge_map}
-                highlightedNodes={highlightedNodes}
-                language={language}
-              />
-            </div>
-          )}
-
-          <div className="lg:hidden">
-            <KnowledgeMapPanel
-              onAskAboutNode={handleKnowledgeMapNodeClick}
-              activeNodeId={activeNode}
-              data={content?.analysis_data?.knowledge_map}
-              highlightedNodes={highlightedNodes}
-              isMobile={true}
-              language={language}
-            />
           </div>
         </div>
       </div>

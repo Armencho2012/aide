@@ -9,13 +9,13 @@ const DEFAULT_QUIZ_COUNT = 5;
 const DEFAULT_FLASHCARD_COUNT = 10;
 const QUIZ_LIMITS = {
   free: { min: 1, max: 5 },
-  pro: { min: 1, max: 5 },
-  class: { min: 1, max: 5 }
+  pro: { min: 1, max: 15 },
+  class: { min: 1, max: 50 }
 };
 const FLASHCARD_LIMITS = {
-  free: { min: 1, max: 10 },
-  pro: { min: 1, max: 10 },
-  class: { min: 1, max: 10 }
+  free: { min: 1, max: 5 },
+  pro: { min: 1, max: 20 },
+  class: { min: 1, max: 40 }
 };
 const BASE_MAX_TOKENS = 8192;
 const PRO_MAP_MAX_TOKENS = 12288;

@@ -30,4 +30,4 @@ git remote -v – View remote repository URLs.
 
 
 
-supabase functions deploy content-chat
+supabase functions deploy analyze-text
