@@ -1,6 +1,27 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "./_shared-index.ts";
 
+const GEMINI_MODEL = "gemini-1.5-flash";
+
+const extractGeminiText = (payload: any): string => {
+  const parts = payload?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return "";
+  return parts
+    .map((part: any) => (typeof part?.text === "string" ? part.text : ""))
+    .join("");
+};
+
+const parseGeminiJson = (rawText: string): any => {
+  const trimmed = rawText.trim();
+  if (!trimmed) return {};
+  const cleaned = trimmed
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+  return JSON.parse(cleaned);
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -18,7 +39,7 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!supabaseUrl || !apiKey || !serviceRoleKey) {
       return new Response(JSON.stringify({ error: "Missing environment variables" }), {
@@ -65,33 +86,37 @@ Rules:
 - Keep ghost_nodes to 3 items.
 - Use types and directions that match the relationship.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Original Text:\n${text}\n\nKnowledge Map:\n${JSON.stringify(knowledge_map)}` }
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 2048
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [{
+          role: "user",
+          parts: [{ text: `Original Text:\n${text}\n\nKnowledge Map:\n${JSON.stringify(knowledge_map)}` }]
+        }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 2048,
+          responseMimeType: "application/json"
+        }
       })
     });
 
     if (!response.ok) {
-      console.error("AI gateway error:", response.status, await response.text());
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
+      console.error("Gemini API error:", response.status, await response.text());
+      return new Response(JSON.stringify({ error: "Gemini API error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
     const responseData = await response.json();
-    const parsed = JSON.parse(responseData.choices?.[0]?.message?.content || "{}");
+    const parsed = parseGeminiJson(extractGeminiText(responseData));
 
     return new Response(JSON.stringify(parsed), {
       status: 200,

@@ -19,6 +19,26 @@ const FLASHCARD_LIMITS = {
 };
 const BASE_MAX_TOKENS = 8192;
 const PRO_MAP_MAX_TOKENS = 12288;
+const GEMINI_MODEL = "gemini-1.5-flash";
+
+const extractGeminiText = (payload: any): string => {
+  const parts = payload?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return "";
+  return parts
+    .map((part: any) => (typeof part?.text === "string" ? part.text : ""))
+    .join("");
+};
+
+const parseGeminiJson = (rawText: string): any => {
+  const trimmed = rawText.trim();
+  if (!trimmed) return {};
+  const cleaned = trimmed
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+  return JSON.parse(cleaned);
+};
 
 Deno.serve(async (req: Request) => {
   // 1. Handle CORS Preflight
@@ -39,7 +59,7 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!supabaseUrl || !apiKey || !serviceRoleKey) {
       return new Response(JSON.stringify({ error: "Missing environment variables" }), {
@@ -92,7 +112,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 4. AI Integration using Lovable AI Gateway
+    // 4. AI Integration using Gemini API
     const contentContext = text.substring(0, 15000);
     const mediaContext = media ? "\n[Analyzing attached visual media]" : "";
 
@@ -167,43 +187,41 @@ ${knowledgeMapInstruction ?? ''}`.trim();
 
     console.log(`Analyzing for user: ${user.id} (Plan: ${userPlan}, Quiz: ${opts.quiz}, Flashcards: ${opts.flashcards}, Map: ${opts.map}, QuizCount: ${quizCount}, FlashcardsCount: ${flashcardCount})`);
 
-    // Use Lovable AI Gateway with JSON response mode
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Content: ${contentContext}${mediaContext}` }
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: maxTokens
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [{
+          role: "user",
+          parts: [{ text: `Content: ${contentContext}${mediaContext}` }]
+        }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: maxTokens,
+          responseMimeType: "application/json"
+        }
       })
     });
 
     if (!response.ok) {
-      console.error("AI gateway error:", response.status, await response.text());
+      console.error("Gemini API error:", response.status, await response.text());
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
-      throw new Error("AI gateway error");
+      throw new Error("Gemini API error");
     }
 
     const responseData = await response.json();
-    let analysis = JSON.parse(responseData.choices?.[0]?.message?.content || "{}");
+    const jsonText = extractGeminiText(responseData);
+    let analysis = parseGeminiJson(jsonText);
 
     // Validate and ensure all required fields exist
     if (!analysis.metadata) {

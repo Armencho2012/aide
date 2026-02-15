@@ -4,6 +4,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
+const GEMINI_MODEL = "gemini-1.5-flash";
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -45,7 +46,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "API key not configured" }), {
         status: 500,
@@ -54,8 +55,15 @@ Deno.serve(async (req: Request) => {
     }
 
     // Build context from analysis
-    const summaryContext = analysisData?.three_bullet_summary?.join('\n') || '';
-    const termsContext = analysisData?.key_terms?.join(', ') || '';
+    const summaryContext = Array.isArray(analysisData?.three_bullet_summary)
+      ? analysisData.three_bullet_summary.join('\n')
+      : '';
+    const termsContext = Array.isArray(analysisData?.key_terms)
+      ? analysisData.key_terms
+        .map((term: any) => (typeof term === "string" ? term : term?.term))
+        .filter(Boolean)
+        .join(', ')
+      : '';
 
     // CONTEXTUAL INJECTION: Add selected node context if provided
     const nodeContext = activeNodeContext
@@ -93,23 +101,33 @@ OUTPUT CONSTRAINTS:
 ${contentText.substring(0, 10000)}
 ${nodeContext}
 
+--- ANALYSIS SNAPSHOT ---
+Summary:
+${summaryContext}
+
+Key Terms:
+${termsContext}
+
 --- PREVIOUS CONVERSATION ---
 ${historyContext}`;
 
-    // Use Lovable AI Gateway with streaming
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: question }
-        ],
-        stream: true
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [{
+          role: "user",
+          parts: [{ text: question }]
+        }],
+        generationConfig: {
+          temperature: 0.5,
+          maxOutputTokens: 2048
+        }
       })
     });
 
@@ -120,18 +138,11 @@ ${historyContext}`;
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error("AI gateway error");
+      console.error("Gemini API error:", response.status, errorText);
+      throw new Error("Gemini API error");
     }
 
-    // Proxy the stream back to the client
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     const { readable, writable } = new TransformStream();
@@ -146,6 +157,33 @@ ${historyContext}`;
 
       try {
         let buffer = "";
+        let emittedText = "";
+
+        const writeFromChunk = async (jsonStr: string) => {
+          if (!jsonStr || jsonStr === "[DONE]") return;
+          try {
+            const data = JSON.parse(jsonStr);
+            const parts = data?.candidates?.[0]?.content?.parts;
+            if (!Array.isArray(parts)) return;
+            const text = parts
+              .map((part: any) => (typeof part?.text === "string" ? part.text : ""))
+              .join("");
+            if (!text) return;
+
+            if (text.startsWith(emittedText)) {
+              const delta = text.slice(emittedText.length);
+              emittedText = text;
+              if (delta) await writer.write(encoder.encode(delta));
+              return;
+            }
+
+            emittedText += text;
+            await writer.write(encoder.encode(text));
+          } catch {
+            // Ignore parse errors for incomplete chunks
+          }
+        };
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -157,36 +195,12 @@ ${historyContext}`;
           for (const line of lines) {
             if (line.startsWith(':') || line.trim() === '') continue;
             if (!line.startsWith('data: ')) continue;
-            
-            const jsonStr = line.slice(6).trim();
-            if (jsonStr === '[DONE]') continue;
-
-            try {
-              const data = JSON.parse(jsonStr);
-              const content = data.choices?.[0]?.delta?.content;
-              if (content) {
-                await writer.write(encoder.encode(content));
-              }
-            } catch (e) {
-              // Ignore parse errors for incomplete chunks
-            }
+            await writeFromChunk(line.slice(6).trim());
           }
         }
         
-        // Process remaining buffer
         if (buffer.trim() && buffer.startsWith('data: ')) {
-          const jsonStr = buffer.slice(6).trim();
-          if (jsonStr !== '[DONE]') {
-            try {
-              const data = JSON.parse(jsonStr);
-              const content = data.choices?.[0]?.delta?.content;
-              if (content) {
-                await writer.write(encoder.encode(content));
-              }
-            } catch (e) {
-              // Ignore
-            }
-          }
+          await writeFromChunk(buffer.slice(6).trim());
         }
       } catch (e) {
         console.error("Streaming error:", e);
@@ -198,7 +212,7 @@ ${historyContext}`;
     return new Response(readable, {
       headers: {
         ...corsHeaders,
-        "Content-Type": "text/event-stream",
+        "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-cache",
         "Connection": "keep-alive"
       }
