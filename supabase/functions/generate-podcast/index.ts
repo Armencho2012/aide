@@ -163,8 +163,8 @@ Speaker 2: ...`;
 
     console.log(`Generating dialogue for user ${user.id}...`);
 
-    // Use gemini-1.5-flash for dialogue generation
-    const dialogueUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Use gemini-2.0-flash for dialogue generation
+    const dialogueUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
     
     const dialoguePayload = {
       contents: [{

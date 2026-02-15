@@ -19,7 +19,7 @@ const FLASHCARD_LIMITS = {
 };
 const BASE_MAX_TOKENS = 8192;
 const PRO_MAP_MAX_TOKENS = 12288;
-const GEMINI_MODEL = "gemini-1.5-flash";
+const GEMINI_MODEL = "gemini-2.0-flash";
 
 const extractGeminiText = (payload: any): string => {
   const parts = payload?.candidates?.[0]?.content?.parts;
