@@ -129,6 +129,14 @@ export const ChatPanel = ({ language, onClose, initialMessage }: ChatPanelProps)
           return updated;
         });
       }
+
+      if (!assistantContent.trim()) {
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'assistant', content: l.error };
+          return updated;
+        });
+      }
     } catch (error) {
       console.error('Chat error:', error);
       setMessages(prev => [...prev, { 

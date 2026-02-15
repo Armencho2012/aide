@@ -137,6 +137,17 @@ const ChatPage = () => {
           return newMessages;
         });
       }
+
+      if (!assistantAnswer.trim()) {
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1] = {
+            role: 'assistant',
+            content: labels.error
+          };
+          return newMessages;
+        });
+      }
     } catch (error) {
       console.error('Chat error:', error);
       const language = (content.language as Language) || 'en';

@@ -201,13 +201,13 @@ ${historyContext}`;
 
           for (const line of lines) {
             if (line.startsWith(':') || line.trim() === '') continue;
-            if (!line.startsWith('data: ')) continue;
-            await writeFromChunk(line.slice(6).trim());
+            if (!line.startsWith('data:')) continue;
+            await writeFromChunk(line.slice(5).trim());
           }
         }
         
-        if (buffer.trim() && buffer.startsWith('data: ')) {
-          await writeFromChunk(buffer.slice(6).trim());
+        if (buffer.trim() && buffer.startsWith('data:')) {
+          await writeFromChunk(buffer.slice(5).trim());
         }
       } catch (e) {
         console.error("Streaming error:", e);
