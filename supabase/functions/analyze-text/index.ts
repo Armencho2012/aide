@@ -38,21 +38,39 @@ const parseGeminiJson = (rawText: string): any => {
     .replace(/^```\s*/i, "")
     .replace(/\s*```$/, "")
     .trim();
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    const firstBrace = cleaned.indexOf("{");
-    const lastBrace = cleaned.lastIndexOf("}");
-    if (firstBrace >= 0 && lastBrace > firstBrace) {
-      const candidate = cleaned.slice(firstBrace, lastBrace + 1);
-      try {
-        return JSON.parse(candidate);
-      } catch {
-        return {};
-      }
+  const normalized = cleaned
+    .replace(/,\s*([}\]])/g, "$1")
+    .replace(/[“”]/g, "\"")
+    .replace(/[‘’]/g, "'");
+
+  const tryParse = (value: string): any | null => {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
     }
-    return {};
+  };
+
+  const direct = tryParse(normalized);
+  if (direct) return direct;
+
+  const firstBrace = normalized.indexOf("{");
+  const lastBrace = normalized.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    const candidate = normalized.slice(firstBrace, lastBrace + 1);
+    const fromBraces = tryParse(candidate);
+    if (fromBraces) return fromBraces;
   }
+
+  const firstBracket = normalized.indexOf("[");
+  const lastBracket = normalized.lastIndexOf("]");
+  if (firstBracket >= 0 && lastBracket > firstBracket) {
+    const candidateArray = normalized.slice(firstBracket, lastBracket + 1);
+    const fromArray = tryParse(candidateArray);
+    if (fromArray) return { items: fromArray };
+  }
+
+  return {};
 };
 
 Deno.serve(async (req: Request) => {
@@ -214,6 +232,7 @@ ${knowledgeMapInstruction ?? ''}`.trim();
       generationConfig: {
         temperature: 0.2,
         maxOutputTokens: maxTokens,
+        responseMimeType: "application/json",
       }
     });
     const model = GEMINI_MODEL;
@@ -244,6 +263,20 @@ ${knowledgeMapInstruction ?? ''}`.trim();
 
     const responseData = await response.json();
     const jsonText = extractGeminiText(responseData);
+    if (!jsonText) {
+      return new Response(JSON.stringify({
+        error: "Gemini returned an empty response",
+        model,
+        apiVersion,
+        details: JSON.stringify({
+          promptFeedback: responseData?.promptFeedback ?? null,
+          finishReason: responseData?.candidates?.[0]?.finishReason ?? null
+        })
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
     let analysis = parseGeminiJson(jsonText);
 
     // Validate and ensure all required fields exist

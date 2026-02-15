@@ -20,20 +20,30 @@ const parseGeminiJson = (rawText: string): any => {
     .replace(/^```\s*/i, "")
     .replace(/\s*```$/, "")
     .trim();
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    const firstBrace = cleaned.indexOf("{");
-    const lastBrace = cleaned.lastIndexOf("}");
-    if (firstBrace >= 0 && lastBrace > firstBrace) {
-      try {
-        return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
-      } catch {
-        return {};
-      }
+  const normalized = cleaned
+    .replace(/,\s*([}\]])/g, "$1")
+    .replace(/[“”]/g, "\"")
+    .replace(/[‘’]/g, "'");
+
+  const tryParse = (value: string): any | null => {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
     }
-    return {};
+  };
+
+  const direct = tryParse(normalized);
+  if (direct) return direct;
+
+  const firstBrace = normalized.indexOf("{");
+  const lastBrace = normalized.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    const fromBraces = tryParse(normalized.slice(firstBrace, lastBrace + 1));
+    if (fromBraces) return fromBraces;
   }
+
+  return {};
 };
 
 Deno.serve(async (req: Request) => {
@@ -118,7 +128,8 @@ Rules:
         }],
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 2048
+          maxOutputTokens: 2048,
+          responseMimeType: "application/json"
         }
       })
     });
@@ -133,7 +144,22 @@ Rules:
     }
 
     const responseData = await response.json();
-    const parsed = parseGeminiJson(extractGeminiText(responseData));
+    const jsonText = extractGeminiText(responseData);
+    if (!jsonText) {
+      return new Response(JSON.stringify({
+        error: "Gemini returned an empty response",
+        model: selectedModel,
+        apiVersion: selectedApiVersion,
+        details: JSON.stringify({
+          promptFeedback: responseData?.promptFeedback ?? null,
+          finishReason: responseData?.candidates?.[0]?.finishReason ?? null
+        })
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+    const parsed = parseGeminiJson(jsonText);
 
     return new Response(JSON.stringify(parsed), {
       status: 200,
