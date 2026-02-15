@@ -24,7 +24,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { useToast } from '@/hooks/use-toast';
 import ConceptNodeComponent from './ConceptNodeComponent';
 import { initialNodes, initialEdges, nodeDescriptions } from './mockData';
-import { ConceptNode, ConceptEdge, KnowledgeMapData, categoryColors, NodeCategory, EdgeType } from './types';
+import { ConceptNode, ConceptEdge, KnowledgeMapData, categoryColors, NodeCategory, EdgeType, EdgeDirection } from './types';
 import { ZenModeSidePanel } from './components/ZenModeSidePanel';
 import { EditableNodeLabel } from './components/EditableNodeLabel';
 import { FullscreenExitButton } from './components/FullscreenExitButton';
@@ -664,7 +664,7 @@ const createTreeLayout = (
         data: { edgeType: edge.type, direction: edge.direction, isGhost: isGhostEdge },
       };
     })
-    .filter((edge): edge is Edge => edge !== null);
+    .filter((edge): edge is NonNullable<typeof edge> => edge !== null) as any[];
 
   return { nodes: flowNodes, edges: flowEdges };
 };
@@ -745,10 +745,10 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
       category: normalizeCategory(node.category),
       label: userNodeLabels.get(node.id) || node.label,
     }));
-    const edges = [...sourceEdges, ...ghostEdges].map(edge => ({
+    const edges: ConceptEdge[] = [...sourceEdges, ...ghostEdges].map(edge => ({
       ...edge,
       type: normalizeEdgeType(edge.type),
-      direction: edge.direction === 'bi' ? 'bi' : 'uni',
+      direction: (edge.direction === 'bi' ? 'bi' : 'uni') as EdgeDirection,
       is_ghost: edge.is_ghost,
     }));
     return { nodes, edges };
@@ -1009,8 +1009,9 @@ export const KnowledgeMap = ({ onNodeClick, activeNodeId, data, highlightedNodes
         console.error('Outline fetch error:', fetchError);
         return;
       }
+      const existingData = (existing?.analysis_data && typeof existing.analysis_data === 'object') ? existing.analysis_data : {};
       const updatedAnalysis = {
-        ...(existing?.analysis_data || {}),
+        ...existingData,
         structured_outline_md: outline,
       };
       const { error: updateError } = await supabase
