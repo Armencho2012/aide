@@ -278,6 +278,20 @@ ${knowledgeMapInstruction ?? ''}`.trim();
       });
     }
     let analysis = parseGeminiJson(jsonText);
+    const summaryItems = Array.isArray(analysis?.three_bullet_summary)
+      ? analysis.three_bullet_summary.filter((item: unknown) => typeof item === "string" && item.trim().length > 0)
+      : [];
+    if (summaryItems.length === 0) {
+      return new Response(JSON.stringify({
+        error: "Gemini returned invalid analysis JSON",
+        model,
+        apiVersion,
+        details: jsonText.slice(0, 1200)
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
 
     // Validate and ensure all required fields exist
     if (!analysis.metadata) {
