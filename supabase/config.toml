@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.scan-knowledge-map]
 verify_jwt = false
+
+[functions.gumroad-checkout]
+verify_jwt = false

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -169,12 +169,6 @@ const uiLabels = {
   }
 };
 
-declare global {
-  interface Window {
-    GumroadOverlay: any;
-  }
-}
-
 const Billing = () => {
   const [user, setUser] = useState<User | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'free' | 'pro' | 'class'>('free');
@@ -184,23 +178,11 @@ const Billing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { language } = useSettings();
-  const gumroadScriptLoaded = useRef(false);
   const labels = uiLabels[language];
 
   // Fix FOUC - ensure component is mounted before rendering
   useEffect(() => {
     setIsMounted(true);
-  }, []);
-
-  // Load Gumroad script
-  useEffect(() => {
-    if (!gumroadScriptLoaded.current) {
-      const script = document.createElement('script');
-      script.src = 'https://gumroad.com/js/gumroad.js';
-      script.async = true;
-      document.body.appendChild(script);
-      gumroadScriptLoaded.current = true;
-    }
   }, []);
 
   // Check for success redirect from Gumroad
@@ -272,23 +254,62 @@ const Billing = () => {
     }
   };
 
-  const handleUpgrade = (productUrl: string) => {
+  const appendCheckoutParams = (baseUrl: string) => {
+    const url = new URL(baseUrl);
+    url.searchParams.set('wanted', 'true');
+    if (user?.email) {
+      url.searchParams.set('email', user.email);
+    }
+    url.searchParams.set('success_url', `${window.location.origin}/billing?status=success`);
+    return url.toString();
+  };
+
+  const openCheckout = (checkoutUrl: string) => {
+    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleUpgrade = async (plan: 'pro' | 'class') => {
     if (!user) return;
 
     setLoading(true);
 
-    // Always use direct link - Gumroad overlay is unreliable
-    const successUrl = encodeURIComponent(`${window.location.origin}/billing?status=success`);
-    const email = encodeURIComponent(user.email || '');
-    const gumroadUrl = `${productUrl}?wanted=true&email=${email}&success_url=${successUrl}`;
+    try {
+      const { data, error } = await supabase.functions.invoke('gumroad-checkout', {
+        body: { plan }
+      });
 
-    window.open(gumroadUrl, '_blank');
+      if (!error && data?.checkout_url) {
+        openCheckout(data.checkout_url);
+        return;
+      }
 
-    setLoading(false);
+      const fallbackUrl = plan === 'pro'
+        ? import.meta.env.VITE_GUMROAD_PRO_URL
+        : import.meta.env.VITE_GUMROAD_CLASS_URL;
+
+      if (fallbackUrl && typeof fallbackUrl === 'string') {
+        openCheckout(appendCheckoutParams(fallbackUrl));
+        return;
+      }
+
+      throw new Error(
+        error?.message ||
+        'Checkout URL is not configured. Set Gumroad URLs or edge-function secrets.'
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to start checkout';
+      toast({
+        title: 'Checkout Error',
+        description: message,
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleProUpgrade = () => handleUpgrade('https://websmith82.gumroad.com/l/sceqs');
-  const handleClassUpgrade = () => handleUpgrade('https://websmith82.gumroad.com/l/class'); // Update with actual Class product URL
+  const handleProUpgrade = () => handleUpgrade('pro');
+  const handleClassUpgrade = () => handleUpgrade('class');
 
   // Show loading skeleton to prevent FOUC - ensure styles are applied
   if (!isMounted) {
