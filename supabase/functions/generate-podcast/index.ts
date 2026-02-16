@@ -31,6 +31,50 @@ function base64ToUint8Array(base64: string): Uint8Array {
   return bytes;
 }
 
+function parseSampleRateFromMimeType(mimeType: string): number {
+  const match = mimeType.match(/rate=(\d+)/i);
+  if (!match) return 24000;
+  const value = Number(match[1]);
+  return Number.isFinite(value) && value > 0 ? value : 24000;
+}
+
+function pcm16ToWavBytes(
+  pcmBytes: Uint8Array,
+  sampleRate = 24000,
+  channels = 1,
+  bitDepth = 16
+): Uint8Array {
+  const byteRate = sampleRate * channels * (bitDepth / 8);
+  const blockAlign = channels * (bitDepth / 8);
+  const dataSize = pcmBytes.length;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+  const out = new Uint8Array(buffer);
+
+  const writeString = (offset: number, value: string) => {
+    for (let i = 0; i < value.length; i++) {
+      view.setUint8(offset + i, value.charCodeAt(i));
+    }
+  };
+
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, channels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(36, "data");
+  view.setUint32(40, dataSize, true);
+  out.set(pcmBytes, 44);
+
+  return out;
+}
+
 async function fetchWithRetry(
   url: string, 
   options: RequestInit, 
@@ -90,7 +134,7 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const apiKey = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
 
     if (!supabaseUrl || !apiKey || !serviceRoleKey) {
       return new Response(JSON.stringify({ error: "Missing environment variables" }), {
@@ -277,21 +321,39 @@ Speaker 2: ...`;
     }
 
     const audioBase64 = audioPart.inlineData.data;
-    const audioMimeType = audioPart.inlineData.mimeType;
+    const audioMimeType = (audioPart.inlineData.mimeType || "audio/L16;rate=24000").toLowerCase();
     
     console.log(`Audio: ${audioMimeType}, base64 length: ${audioBase64.length}`);
 
-    const audioBytes = base64ToUint8Array(audioBase64);
-    console.log(`Audio size: ${audioBytes.length} bytes`);
+    const rawAudioBytes = base64ToUint8Array(audioBase64);
+    console.log(`Raw audio size: ${rawAudioBytes.length} bytes`);
+
+    let uploadBytes = rawAudioBytes;
+    let uploadMimeType = audioMimeType;
+    let extension = "mp3";
+
+    // Gemini TTS often returns raw PCM (e.g. audio/L16); convert to WAV for browser playback.
+    if (audioMimeType.includes("wav")) {
+      uploadMimeType = "audio/wav";
+      extension = "wav";
+    } else if (audioMimeType.includes("mpeg") || audioMimeType.includes("mp3")) {
+      uploadMimeType = "audio/mpeg";
+      extension = "mp3";
+    } else {
+      const sampleRate = parseSampleRateFromMimeType(audioMimeType);
+      uploadBytes = pcm16ToWavBytes(rawAudioBytes, sampleRate, 1, 16);
+      uploadMimeType = "audio/wav";
+      extension = "wav";
+      console.log(`Converted PCM to WAV at ${sampleRate}Hz (${uploadBytes.length} bytes)`);
+    }
 
     const timestamp = Date.now();
-    const extension = audioMimeType.includes('wav') ? 'wav' : 'mp3';
     const filename = `${user.id}/${timestamp}.${extension}`;
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from('podcasts')
-      .upload(filename, audioBytes, {
-        contentType: audioMimeType,
+      .upload(filename, uploadBytes, {
+        contentType: uploadMimeType,
         upsert: true
       });
 
