@@ -9,8 +9,10 @@ import {
   Bot,
   Brain,
   Check,
+  Download,
   FileText,
   HelpCircle,
+  Languages,
   Library,
   Mail,
   Map,
@@ -68,6 +70,22 @@ interface LandingCopy {
   featuresSubtitle: string;
   capabilitiesTitle: string;
   capabilitiesSubtitle: string;
+  capabilityIngestionTitle: string;
+  capabilityIngestionDesc: string;
+  capabilityControlsTitle: string;
+  capabilityControlsDesc: string;
+  capabilityTutorTitle: string;
+  capabilityTutorDesc: string;
+  capabilityMapTitle: string;
+  capabilityMapDesc: string;
+  capabilityPodcastTitle: string;
+  capabilityPodcastDesc: string;
+  capabilityLibraryExportTitle: string;
+  capabilityLibraryExportDesc: string;
+  capabilityLanguagesTitle: string;
+  capabilityLanguagesDesc: string;
+  capabilityOneClickTitle: string;
+  capabilityOneClickDesc: string;
   capabilityItems: string[];
   ctaTitle: string;
   ctaSubtitle: string;
@@ -123,6 +141,22 @@ const copy: Record<Language, LandingCopy> = {
     featuresSubtitle: "Everything you need to dominate your syllabus.",
     capabilitiesTitle: "Live Capability Stack",
     capabilitiesSubtitle: "The technology inside your study assistant.",
+    capabilityIngestionTitle: "Multimodal Ingestion",
+    capabilityIngestionDesc: "Talk, upload, or paste to start.",
+    capabilityControlsTitle: "Adaptive Quiz Engine",
+    capabilityControlsDesc: "Custom question counts, flashcards, and active recall loops.",
+    capabilityTutorTitle: "24/7 AI Tutor",
+    capabilityTutorDesc: "Context-aware help that knows your materials and explains mistakes in real time.",
+    capabilityMapTitle: "Interactive Knowledge Maps",
+    capabilityMapDesc: "Visualize concept links, scan for gaps, and reorganize understanding as you study.",
+    capabilityPodcastTitle: "AI Podcasts",
+    capabilityPodcastDesc: "Turn your notes into focused audio sessions for commute-time revision.",
+    capabilityLibraryExportTitle: "Library & Pro Exports",
+    capabilityLibraryExportDesc: "Notion, PDF, and Markdown from one searchable study archive.",
+    capabilityLanguagesTitle: "4 Languages",
+    capabilityLanguagesDesc: "English, Russian, Armenian, Korean",
+    capabilityOneClickTitle: "One-click Export",
+    capabilityOneClickDesc: "Ship final notes instantly",
     capabilityItems: [
       "Drag-and-drop PDF, text, and photo uploads (OCR).",
       "Talk to your notes: Instant voice-to-study conversion.",
@@ -221,6 +255,22 @@ const copy: Record<Language, LandingCopy> = {
     featuresSubtitle: "모든 과목을 정복하기 위한 필수 기능.",
     capabilitiesTitle: "Aide 핵심 기능",
     capabilitiesSubtitle: "당신의 학습을 돕는 강력한 기술들.",
+    capabilityIngestionTitle: "멀티모달 입력",
+    capabilityIngestionDesc: "말하기, 업로드, 붙여넣기로 바로 시작하세요.",
+    capabilityControlsTitle: "적응형 퀴즈 엔진",
+    capabilityControlsDesc: "문항 수와 플래시카드를 조정하며 능동 회상 학습을 진행합니다.",
+    capabilityTutorTitle: "24/7 AI 튜터",
+    capabilityTutorDesc: "내 자료를 이해하고 오답 이유를 실시간으로 설명하는 맞춤형 튜터.",
+    capabilityMapTitle: "인터랙티브 지식 맵",
+    capabilityMapDesc: "개념 연결을 시각화하고 학습 공백을 빠르게 찾아 정리합니다.",
+    capabilityPodcastTitle: "AI 팟캐스트",
+    capabilityPodcastDesc: "노트를 이동 중에도 들을 수 있는 오디오 학습 세션으로 변환.",
+    capabilityLibraryExportTitle: "라이브러리 & Pro 내보내기",
+    capabilityLibraryExportDesc: "Notion, PDF, Markdown을 검색 가능한 학습 아카이브에서 즉시 생성.",
+    capabilityLanguagesTitle: "4개 언어",
+    capabilityLanguagesDesc: "한국어, 영어, 러시아어, 아르메니아어",
+    capabilityOneClickTitle: "원클릭 내보내기",
+    capabilityOneClickDesc: "최종 노트를 즉시 공유",
     capabilityItems: [
       "PDF, 텍스트, 사진 업로드 및 텍스트 추출(OCR).",
       "노트와 대화하기: 실시간 음성-학습 변환.",
@@ -319,6 +369,22 @@ const copy: Record<Language, LandingCopy> = {
     featuresSubtitle: "Инструменты для победы над любым предметом.",
     capabilitiesTitle: "Функции Aide",
     capabilitiesSubtitle: "Что умеет твой помощник.",
+    capabilityIngestionTitle: "Мультимодальный старт",
+    capabilityIngestionDesc: "Говори, загружай или вставляй материал и начинай сразу.",
+    capabilityControlsTitle: "Адаптивный движок тестов",
+    capabilityControlsDesc: "Настраивай количество вопросов, карточки и цикл активного повторения.",
+    capabilityTutorTitle: "AI-тьютор 24/7",
+    capabilityTutorDesc: "Контекстный помощник, который знает твои материалы и объясняет ошибки сразу.",
+    capabilityMapTitle: "Интерактивные карты знаний",
+    capabilityMapDesc: "Визуализируй связи между темами, находи пробелы и строй целостную картину.",
+    capabilityPodcastTitle: "AI-подкасты",
+    capabilityPodcastDesc: "Преобразуй конспекты в удобный аудиоформат для повторения в дороге.",
+    capabilityLibraryExportTitle: "Библиотека и Pro-экспорт",
+    capabilityLibraryExportDesc: "Notion, PDF и Markdown из единого структурированного архива.",
+    capabilityLanguagesTitle: "4 языка",
+    capabilityLanguagesDesc: "RU, EN, HY, KO",
+    capabilityOneClickTitle: "Экспорт в один клик",
+    capabilityOneClickDesc: "Мгновенно делись готовыми материалами",
     capabilityItems: [
       "Загрузка PDF, текста и фото (через OCR).",
       "Голосовой ввод: превращай слова в учебные материалы.",
@@ -405,10 +471,10 @@ const copy: Record<Language, LandingCopy> = {
     previewNodeChat: "Օգնություն",
     flowTitle: "Սովորիր ավելի հեշտ",
     flowSubtitle: "3 քայլ դեպի հաջողություն:",
-    transitionTitle: "Ֆոկուսի ռեժիմ",
-    transitionSubtitle: "Տես, թե ինչպես է Aide-ը փոխվում սքրոլ անելիս:",
+    transitionTitle: "Կենտրոնացման ռեժիմ",
+    transitionSubtitle: "Տես, թե ինչպես է Aide-ին փոխում մտածելակերպդ դպրոցի մասին այն օգտագործելիս:",
     step1Title: "Վերբեռնիր",
-    step1Desc: "PDF, տեքստ կամ պարզապես ձայնագրիր քո խոսքը: Aide-ը կանի մնացածը:",
+    step1Desc: "PDF, տեքստ կամ պարզապես ձայնագրիր քո խոսքը: Aide-ին կանի մնացածը:",
     step2Title: "Ընտրիր",
     step2Desc: "Ի՞նչ է պետք՝ թեստե՞ր, քարտեզնե՞ր, թե՞ աուդիո պոդկաստ:",
     step3Title: "Յուրացրու",
@@ -418,17 +484,17 @@ const copy: Record<Language, LandingCopy> = {
     capabilitiesTitle: "Aide-ի հնարավորությունները",
     capabilitiesSubtitle: "Տեխնոլոգիաներ, որոնք կօգնեն քեզ սովորել:",
     capabilityItems: [
-      "PDF-ի, տեքստի և նկարների վերբեռնում (OCR):",
+      "PDF-ի, տեքստի և նկարների վերբեռնում:",
       "Ձայնային մուտք. խոսիր նշումներիդ հետ և ստացիր նյութեր:",
       "Ինտերակտիվ թեստեր, քարտեր և գիտելիքի քարտեզներ:",
       "Դու ես որոշում բարդությունը և հարցերի քանակը:",
       "7-օրյա պատրաստի ուսումնական պլաններ:",
       "Խելացի թեստեր, որոնք բացատրում են սխալները:",
-      "Հիշողության քարտեր, որոնք հետևում են քո առաջընթացին:",
+      "Ֆլեշքարտեր, որոնք հետևում են քո առաջընթացին:",
       "AI ուսուցիչ 24/7, որը գիտի քո նյութը ամբողջությամբ:",
-      "Գիտելիքի քարտեզներ՝ տեսողական սովորելու համար:",
-      "Բացթողումների որոնում. Aide-ը կգտնի այն, ինչ բաց ես թողել:",
-      "Արտահանում դեպի PDF, Notion կամ Markdown մեկ քլիքով:",
+      "Գիտելիքի նեյրոնային քարտեզներ՝ տեսողական սովորելու համար:",
+      "Բացթողումների որոնում. Aide-ին կգտնի այն, ինչ բաց ես թողել:",
+      "Արտահանում դեպի PDF, Notion կամ Markdown մեկ հպումով:",
       "Հարմար գրադարան բոլոր առարկաները կազմակերպելու համար:",
       "AI պոդկաստներ. լսիր դասերդ ճանապարհին:",
       "Հասանելի է հայերենով, անգլերենով, ռուսերենով և կորեերենով:"
