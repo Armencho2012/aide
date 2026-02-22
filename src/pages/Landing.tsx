@@ -57,6 +57,8 @@ interface LandingCopy {
   previewNodeChat: string;
   flowTitle: string;
   flowSubtitle: string;
+  transitionTitle: string;
+  transitionSubtitle: string;
   step1Title: string;
   step1Desc: string;
   step2Title: string;
@@ -111,6 +113,8 @@ const copy: Record<Language, LandingCopy> = {
     previewNodeChat: "Chat Node",
     flowTitle: "How It Works",
     flowSubtitle: "Three steps. No setup friction.",
+    transitionTitle: "Scroll Into Midnight Mode",
+    transitionSubtitle: "Watch the workspace evolve from daylight focus to deep-study blue.",
     step1Title: "Drop Material",
     step1Desc: "Paste text, upload PDF/image, or dictate with voice input.",
     step2Title: "Select Outputs",
@@ -209,6 +213,8 @@ const copy: Record<Language, LandingCopy> = {
     previewNodeChat: "Узел чата",
     flowTitle: "Как это работает",
     flowSubtitle: "Три шага. Без сложной настройки.",
+    transitionTitle: "Переход в Midnight Mode",
+    transitionSubtitle: "По мере скролла интерфейс плавно переходит от светлого режима к глубокому синему.",
     step1Title: "Загрузите материал",
     step1Desc: "Вставьте текст, загрузите PDF/изображение или используйте голос.",
     step2Title: "Выберите результаты",
@@ -307,6 +313,8 @@ const copy: Record<Language, LandingCopy> = {
     previewNodeChat: "Զրույցի հանգույց",
     flowTitle: "Ինչպես է աշխատում",
     flowSubtitle: "3 քայլ։ Առանց բարդ կարգավորման։",
+    transitionTitle: "Անցում դեպի Midnight Mode",
+    transitionSubtitle: "Սքրոլի ընթացքում միջերեսը սահուն անցնում է բաց միջավայրից խորը կապույտ ուսուցման ռեժիմի։",
     step1Title: "Ավելացրեք նյութը",
     step1Desc: "Տեղադրեք տեքստ, վերբեռնեք PDF/պատկեր կամ օգտագործեք ձայնային մուտք:",
     step2Title: "Ընտրեք ելքերը",
@@ -405,6 +413,8 @@ const copy: Record<Language, LandingCopy> = {
     previewNodeChat: "채팅 노드",
     flowTitle: "작동 방식",
     flowSubtitle: "3단계. 설정 부담 없음.",
+    transitionTitle: "Midnight Mode로 전환",
+    transitionSubtitle: "스크롤과 함께 밝은 학습 화면이 깊은 블루 학습 환경으로 부드럽게 전환됩니다.",
     step1Title: "자료 입력",
     step1Desc: "텍스트 붙여넣기, PDF/이미지 업로드, 음성 입력 사용.",
     step2Title: "출력 선택",
@@ -480,12 +490,12 @@ const copy: Record<Language, LandingCopy> = {
 };
 
 const bentoClasses = [
-  "xl:col-span-2",
-  "xl:col-span-1",
-  "xl:col-span-1 xl:row-span-2",
-  "xl:col-span-2",
-  "xl:col-span-1",
-  "xl:col-span-1",
+  "lg:col-span-5 lg:row-span-2",
+  "lg:col-span-4",
+  "lg:col-span-3",
+  "lg:col-span-4",
+  "lg:col-span-3",
+  "lg:col-span-5",
 ];
 
 const Landing = () => {
@@ -536,15 +546,24 @@ const Landing = () => {
       gsap.ticker.add(onTick);
       gsap.ticker.lagSmoothing(500, 33);
       const media = ScrollTrigger.matchMedia();
+      const previousBodyBackground = document.body.style.backgroundColor;
+      const previousBodyColor = document.body.style.color;
+      const previousRootColor = root.style.color;
+
+      gsap.set(document.body, { backgroundColor: "#ffffff", color: "#0f172a" });
+      gsap.set(root, { color: "#0f172a" });
+      const blueSection = root.querySelector<HTMLElement>("#blue-section");
+      const transitionTarget = blueSection || root;
 
       const ctx = gsap.context(() => {
         if (prefersReducedMotion) {
-          gsap.set("[data-hero-word], [data-hero-subtitle], [data-hero-cta], [data-hero-badges], [data-preview-panel], [data-reveal], [data-sticky-card], [data-bento-card]", {
+          gsap.set("[data-hero-word], [data-hero-subtitle], [data-hero-cta], [data-hero-badges], [data-preview-panel], [data-reveal], [data-sticky-card], [data-bento-card], [data-mascot-shell]", {
             autoAlpha: 1,
             y: 0,
             scale: 1,
             clearProps: "all",
           });
+          gsap.set("[data-mascot-glow]", { autoAlpha: 0 });
           return;
         }
 
@@ -574,6 +593,26 @@ const Landing = () => {
           }
         );
 
+        gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((el, index) => {
+          gsap.fromTo(
+            el,
+            { autoAlpha: 0, y: 34 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: 0.85,
+              delay: Math.min(index * 0.02, 0.2),
+              ease: "power3.out",
+              scrollTrigger: {
+                trigger: el,
+                start: "top 88%",
+                end: "top 65%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        });
+
         gsap.to("[data-depth='panel']", {
           yPercent: -9,
           ease: "none",
@@ -596,48 +635,150 @@ const Landing = () => {
           },
         });
 
-        gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((el, index) => {
-          gsap.fromTo(
-            el,
-            { autoAlpha: 0, y: 34 },
-            {
-              autoAlpha: 1,
-              y: 0,
-              duration: 0.85,
-              delay: Math.min(index * 0.02, 0.2),
-              ease: "power3.out",
-              scrollTrigger: {
-                trigger: el,
-                start: "top 88%",
-                end: "top 65%",
-                toggleActions: "play none none reverse",
-              },
-            }
-          );
-        });
+        if (blueSection) {
+          gsap.to("body", {
+            backgroundColor: "#1459ff",
+            color: "#eef4ff",
+            ease: "none",
+            scrollTrigger: {
+              trigger: blueSection,
+              start: "top 88%",
+              end: "top 12%",
+              scrub: true,
+            },
+          });
 
-        gsap.utils.toArray<HTMLElement>("[data-bento-card]").forEach((card, index) => {
-          gsap.fromTo(
-            card,
-            { autoAlpha: 0, y: 36, scale: 0.985 },
-            {
-              autoAlpha: 1,
-              y: 0,
-              scale: 1,
-              duration: 0.8,
-              delay: Math.min(index * 0.03, 0.2),
-              ease: "power3.out",
-              scrollTrigger: {
-                trigger: card,
-                start: "top 88%",
-                end: "top 60%",
-                toggleActions: "play none none reverse",
-              },
-            }
-          );
+          gsap.to("[data-invert]", {
+            color: "#f8fbff",
+            ease: "none",
+            scrollTrigger: {
+              trigger: transitionTarget,
+              start: "top 88%",
+              end: "top 18%",
+              scrub: true,
+            },
+          });
+
+          gsap.to("[data-nav]", {
+            backgroundColor: "rgba(7, 26, 74, 0.58)",
+            borderColor: "rgba(255,255,255,0.22)",
+            ease: "none",
+            scrollTrigger: {
+              trigger: blueSection,
+              start: "top 90%",
+              end: "top 15%",
+              scrub: true,
+            },
+          });
+
+          gsap.to("[data-nav-muted]", {
+            color: "#d6e4ff",
+            ease: "none",
+            scrollTrigger: {
+              trigger: blueSection,
+              start: "top 90%",
+              end: "top 15%",
+              scrub: true,
+            },
+          });
+
+          gsap.to("[data-nav-strong]", {
+            color: "#ffffff",
+            ease: "none",
+            scrollTrigger: {
+              trigger: blueSection,
+              start: "top 90%",
+              end: "top 15%",
+              scrub: true,
+            },
+          });
+
+          gsap.to("[data-mascot-glow]", {
+            autoAlpha: 1,
+            scale: 1.08,
+            ease: "none",
+            scrollTrigger: {
+              trigger: blueSection,
+              start: "top 86%",
+              end: "top 24%",
+              scrub: true,
+            },
+          });
+
+          gsap.to("[data-mascot-shell]", {
+            filter: "drop-shadow(0 0 42px rgba(63,150,255,0.68)) saturate(1.28)",
+            scale: 1.035,
+            ease: "none",
+            scrollTrigger: {
+              trigger: blueSection,
+              start: "top 86%",
+              end: "top 24%",
+              scrub: true,
+            },
+          });
+        }
+
+        media.add("(max-width: 1023px)", () => {
+          gsap.utils.toArray<HTMLElement>("[data-bento-card]").forEach((card, index) => {
+            gsap.fromTo(
+              card,
+              { autoAlpha: 0, y: 36, scale: 0.985 },
+              {
+                autoAlpha: 1,
+                y: 0,
+                scale: 1,
+                duration: 0.8,
+                delay: Math.min(index * 0.03, 0.2),
+                ease: "power3.out",
+                scrollTrigger: {
+                  trigger: card,
+                  start: "top 88%",
+                  end: "top 60%",
+                  toggleActions: "play none none reverse",
+                },
+              }
+            );
+          });
         });
 
         media.add("(min-width: 1024px)", () => {
+          const bentoCards = gsap.utils.toArray<HTMLElement>("[data-bento-card]");
+          if (bentoCards.length > 0 && blueSection) {
+            gsap.fromTo(
+              bentoCards,
+              { autoAlpha: 0, y: 46, scale: 0.96 },
+              {
+                autoAlpha: 1,
+                y: 0,
+                scale: 1,
+                duration: 0.82,
+                ease: "power3.out",
+                stagger: 0.11,
+                scrollTrigger: {
+                  trigger: blueSection,
+                  start: "top 76%",
+                  end: "top 44%",
+                  toggleActions: "play none none reverse",
+                },
+              }
+            );
+          }
+
+          gsap.utils.toArray<HTMLElement>("[data-speed]").forEach((el) => {
+            const speed = Number(el.dataset.speed || "1");
+            const amplitude = (speed - 1) * 420;
+            gsap.to(el, {
+              y: amplitude,
+              ease: "none",
+              scrollTrigger: {
+                trigger: root,
+                start: "top top",
+                end: "bottom bottom",
+                scrub: true,
+              },
+            });
+          });
+
           if (!stickySectionRef.current || !stickyPinRef.current || !stickyTrackRef.current) {
             return;
           }
@@ -695,6 +836,9 @@ const Landing = () => {
         lenis.destroy();
         media.kill();
         gsap.ticker.remove(onTick);
+        document.body.style.backgroundColor = previousBodyBackground;
+        document.body.style.color = previousBodyColor;
+        root.style.color = previousRootColor;
       };
     };
 
