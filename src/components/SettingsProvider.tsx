@@ -3,6 +3,7 @@ import {
     loadSettings,
     saveSettings,
     applyTheme,
+    syncLanguageQueryParam,
     Language,
     Theme
 } from '@/lib/settings';
@@ -20,7 +21,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const [language, setLanguageState] = useState<Language>('en');
-    const [theme, setThemeState] = useState<Theme>('light');
+    const [theme, setThemeState] = useState<Theme>('dark');
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
@@ -34,6 +35,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const setLanguage = (lang: Language) => {
         setLanguageState(lang);
         saveSettings({ language: lang });
+        syncLanguageQueryParam(lang);
     };
 
     const setTheme = (newTheme: Theme) => {
@@ -45,6 +47,16 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const t = (key: TranslationKey) => {
         return translations[language]?.[key] || translations['en'][key] || key;
     };
+
+    useEffect(() => {
+        const langMap: Record<Language, string> = {
+            en: 'en',
+            ru: 'ru',
+            hy: 'hy',
+            ko: 'ko',
+        };
+        document.documentElement.lang = langMap[language] || 'en';
+    }, [language]);
 
     if (!isLoaded) {
         return null; // Or a loading spinner

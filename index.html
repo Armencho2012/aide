@@ -3,6 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('aide_user_settings');
+          var parsed = raw ? JSON.parse(raw) : null;
+          var theme = parsed && parsed.theme ? parsed.theme : 'dark';
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <title>Aide | Turn Notes into Quizzes, Flashcards, Maps, and Podcasts</title>
     <meta name="google-site-verification" content="Xxa2Jnnu8pbpy9kMF7LMXpcIkT_DPJr-ZnYFnMJfUt0" />
     <meta name="description" content="Aide transforms notes, PDFs, and images into AI study materials: summaries, quizzes, flashcards, knowledge maps, tutor chat, course plans, and podcasts." />
