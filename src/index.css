@@ -215,6 +215,85 @@ html.lenis body {
   }
 }
 
+/* GPA review marquee */
+.gpa-review-marquee {
+  position: relative;
+  overflow: hidden;
+}
+
+.gpa-review-track {
+  display: flex;
+  align-items: stretch;
+  gap: 1rem;
+  width: max-content;
+  will-change: transform;
+  animation: gpa-review-scroll 38s linear infinite;
+}
+
+.gpa-review-card {
+  width: min(84vw, 320px);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 12px 32px rgba(79, 70, 229, 0.1);
+  padding: 0.95rem 1rem;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.dark .gpa-review-card {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(15, 23, 42, 0.5);
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.5);
+}
+
+.gpa-review-gpa {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #4338ca;
+}
+
+.dark .gpa-review-gpa {
+  color: #c4b5fd;
+}
+
+.gpa-review-student {
+  margin-top: 0.2rem;
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dark .gpa-review-student {
+  color: #f8fafc;
+}
+
+.gpa-review-quote {
+  margin-top: 0.38rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.dark .gpa-review-quote {
+  color: rgba(224, 231, 255, 0.86);
+}
+
+@keyframes gpa-review-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gpa-review-track {
+    animation: none;
+  }
+}
+
 /* Capability bento system */
 .capability-bento-grid {
   display: grid;

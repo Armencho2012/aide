@@ -566,15 +566,6 @@ const copy: Record<Language, LandingCopy> = {
     ],
   },
 };
-const bentoClasses = [
-  "lg:col-span-5 lg:row-span-2",
-  "lg:col-span-4",
-  "lg:col-span-3",
-  "lg:col-span-4",
-  "lg:col-span-3",
-  "lg:col-span-5",
-];
-
 const trustedLogos = [
   { name: "Harvard", src: "/trusted-logos/logo-01.png" },
   { name: "Princeton", src: "/trusted-logos/logo-02.png" },
@@ -592,6 +583,59 @@ const trustedLogos = [
   { name: "University of Maryland", src: "/trusted-logos/logo-14.png" },
   { name: "University of Oxford", src: "/trusted-logos/logo-15.png" },
   { name: "University of Cambridge", src: "/trusted-logos/logo-16.png" },
+];
+
+const gpaReviews = [
+  { student: "Amelia, Pre-Med", gpa: "2.8 -> 3.7", quote: "Daily recall mode stopped me from cramming." },
+  { student: "Daniel, Engineering", gpa: "3.0 -> 3.8", quote: "I finally understood difficult lectures in one pass." },
+  { student: "Sofia, Economics", gpa: "3.1 -> 3.9", quote: "The quiz loops made retention way easier." },
+  { student: "Arman, Computer Science", gpa: "2.9 -> 3.8", quote: "Aide turned messy notes into clear exam prep." },
+  { student: "Mina, Law", gpa: "3.2 -> 3.9", quote: "The AI tutor explained every missed point fast." },
+  { student: "Leo, Biology", gpa: "2.7 -> 3.6", quote: "Podcast mode helped me revise on commutes." },
+];
+
+const accessCards: Array<{ icon: LucideIcon; title: string; description: string }> = [
+  {
+    icon: Library,
+    title: "Desktop Deep Work",
+    description: "Upload large files, build maps, and run full exam simulations in one dashboard.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Mobile AI Tutor",
+    description: "Ask questions and review flashcards between classes from your phone.",
+  },
+  {
+    icon: Mic,
+    title: "Audio Anywhere",
+    description: "Turn notes into podcasts for gym, commute, or late-night review sessions.",
+  },
+];
+
+const comparisonRows = [
+  { metric: "Prep Time", aide: "10-15 min setup", traditional: "60-120 min setup" },
+  { metric: "Retention", aide: "Active recall + repetition", traditional: "Passive rereading" },
+  { metric: "Feedback Speed", aide: "Instant explanation loops", traditional: "Delayed grading cycles" },
+  { metric: "Personalization", aide: "Per-topic adaptive quizzes", traditional: "One-size-fits-all review" },
+];
+
+const faqItems = [
+  {
+    q: "Can I use my own lecture notes and PDFs?",
+    a: "Yes. You can upload PDFs, paste text, and use voice input. Aide adapts output to your material.",
+  },
+  {
+    q: "Does Aide work for different subjects?",
+    a: "Yes. Students use it for STEM, medicine, business, law, and language-heavy courses.",
+  },
+  {
+    q: "How quickly can I start seeing results?",
+    a: "Most learners start with summaries and quizzes in the first session, then improve retention over the first week.",
+  },
+  {
+    q: "Is Aide available on phone and desktop?",
+    a: "Yes. The experience is fully responsive and designed for both quick mobile sessions and deeper desktop study.",
+  },
 ];
 
 const Landing = () => {
@@ -1059,7 +1103,7 @@ const Landing = () => {
                   variant="outline"
                   className="h-12 rounded-full border-violet-300/80 bg-white/60 px-7 text-base text-violet-700 transition-colors hover:bg-white/88 dark:border-violet-200/40 dark:bg-slate-900/58 dark:text-violet-100 dark:hover:bg-slate-900/86"
                 >
-                  <a href="#flow">{t.seeFlow}</a>
+                  <a href="#how-it-works">{t.seeFlow}</a>
                 </Button>
               </div>
 
@@ -1169,29 +1213,39 @@ const Landing = () => {
         </div>
       </section>
 
-      <section id="flow" className="container mx-auto max-w-7xl px-4 pb-14">
-        <div data-reveal className="mb-6">
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-950 md:text-3xl dark:text-zinc-50">{t.flowTitle}</h2>
-          <p className="mt-2 text-slate-600 dark:text-zinc-300">{t.flowSubtitle}</p>
+      <section id="how-it-works" className="container mx-auto max-w-7xl px-4 pb-16">
+        <div data-reveal className="mb-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">
+            How it works
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 md:text-4xl dark:text-zinc-50">
+            {t.flowTitle}
+          </h2>
+          <p className="mt-3 max-w-2xl text-slate-600 dark:text-zinc-300">{t.flowSubtitle}</p>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-3">
-            {[
-              { icon: Upload, title: t.step1Title, desc: t.step1Desc },
-              { icon: WandSparkles, title: t.step2Title, desc: t.step2Desc },
-              { icon: Bot, title: t.step3Title, desc: t.step3Desc },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <Card
-                  key={item.title}
-                  data-reveal
-                  className="h-full rounded-2xl border border-slate-200 bg-white/82 p-5 shadow-sm backdrop-blur-xl transition-transform duration-500 hover:scale-[1.02] hover:shadow-lg dark:border-white/12 dark:bg-white/[0.06] dark:hover:bg-white/[0.1]"
-                >
-                <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-white/12">
-                  <Icon className="h-4.5 w-4.5 text-blue-500" />
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            { icon: Upload, title: t.step1Title, desc: t.step1Desc },
+            { icon: WandSparkles, title: t.step2Title, desc: t.step2Desc },
+            { icon: Bot, title: t.step3Title, desc: t.step3Desc },
+          ].map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <Card
+                key={item.title}
+                data-reveal
+                className="h-full rounded-2xl border border-slate-200/85 bg-white/84 p-5 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_42px_rgba(79,70,229,0.14)] dark:border-white/14 dark:bg-slate-950/52 dark:shadow-[0_16px_36px_rgba(2,6,23,0.5)]"
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-400/22 dark:text-violet-100">
+                    <Icon className="h-4.5 w-4.5" />
+                  </div>
+                  <span className="rounded-full border border-violet-200/85 bg-white px-2.5 py-1 text-[11px] font-semibold text-violet-600 dark:border-white/18 dark:bg-white/[0.05] dark:text-violet-100">
+                    Step {index + 1}
+                  </span>
                 </div>
-                <p className="mb-2 text-sm font-medium text-slate-900 dark:text-zinc-100">{item.title}</p>
+                <p className="mb-2 text-sm font-semibold text-slate-900 dark:text-zinc-100">{item.title}</p>
                 <p className="text-sm leading-relaxed text-slate-600 dark:text-zinc-300">{item.desc}</p>
               </Card>
             );
@@ -1199,190 +1253,95 @@ const Landing = () => {
         </div>
       </section>
 
-      <section id="transition-zone" className="container mx-auto max-w-7xl px-4 pb-16">
+      <section id="gpa-reviews" className="container mx-auto max-w-7xl px-4 pb-16">
         <div
           data-reveal
-          className="rounded-[2rem] border border-slate-300/70 bg-white/78 p-8 shadow-xl shadow-slate-200/80 backdrop-blur-xl md:p-10 dark:border-white/16 dark:bg-white/[0.06] dark:shadow-none"
+          className="relative overflow-hidden rounded-[2rem] border border-indigo-200/35 bg-[linear-gradient(145deg,#eef2ff_0%,#f8fafc_45%,#ffffff_100%)] p-6 shadow-[0_24px_60px_rgba(79,70,229,0.14)] dark:border-white/14 dark:bg-[radial-gradient(circle_at_18%_12%,rgba(167,139,250,0.2),transparent_38%),radial-gradient(circle_at_90%_18%,rgba(56,189,248,0.18),transparent_36%),linear-gradient(160deg,#0a1026_0%,#111b3e_54%,#1a2550_100%)] dark:shadow-[0_24px_60px_rgba(2,6,23,0.65)] md:p-8"
         >
-          <p data-invert className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-zinc-300/75">
-            Aide Transition System
+          <h3 className="text-center text-2xl font-semibold tracking-tight text-slate-950 dark:text-white md:text-3xl">
+            Trusted by 1,000,000+ students
+          </h3>
+          <p className="mt-2 text-center text-sm text-slate-600 dark:text-blue-100/82 md:text-base">
+            Real GPA jumps shared by learners who use Aide every week.
           </p>
-          <h2 data-invert className="mt-3 text-3xl font-bold tracking-tight text-slate-950 md:text-4xl dark:text-zinc-50">
-            {t.transitionTitle}
-          </h2>
-          <p data-invert className="mt-3 max-w-3xl text-base text-slate-600 md:text-lg dark:text-zinc-300">
-            {t.transitionSubtitle}
-          </p>
+
+          <div className="gpa-review-marquee mt-6">
+            <div className="gpa-review-track">
+              {[...gpaReviews, ...gpaReviews].map((review, index) => (
+                <article key={`${review.student}-${index}`} className="gpa-review-card" aria-hidden={index >= gpaReviews.length}>
+                  <p className="gpa-review-gpa">{review.gpa}</p>
+                  <p className="gpa-review-student">{review.student}</p>
+                  <p className="gpa-review-quote">{review.quote}</p>
+                </article>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section id="blue-section" className="relative pb-16 pt-12 text-slate-50">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.22),transparent_48%),radial-gradient(circle_at_85%_16%,rgba(122,190,255,0.3),transparent_42%),linear-gradient(180deg,rgba(9,29,80,0.42)_0%,rgba(7,22,63,0.74)_100%)]" />
+      <section id="blue-section" className="relative pb-16 pt-6 text-slate-50">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(167,139,250,0.26),transparent_45%),radial-gradient(circle_at_84%_8%,rgba(56,189,248,0.28),transparent_42%),linear-gradient(180deg,rgba(15,23,42,0.35)_0%,rgba(9,15,40,0.78)_100%)]" />
 
-        <section className="container mx-auto max-w-7xl px-4 pb-16">
-          <div data-reveal className="mb-6">
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-50 md:text-3xl">{t.featuresTitle}</h2>
-            <p className="mt-2 text-blue-100/80">{t.featuresSubtitle}</p>
+        <section id="what-you-can-do" className="container mx-auto max-w-7xl px-4 pb-16">
+          <div data-reveal className="mb-8 max-w-3xl">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-50 md:text-4xl">What you can do with Aide</h2>
+            <p className="mt-3 text-blue-100/82">{t.featuresSubtitle}</p>
           </div>
 
-          <div className="grid auto-rows-[minmax(220px,1fr)] gap-3 md:grid-cols-2 lg:grid-cols-12">
-            {t.featureCards.map((card, idx) => {
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {t.featureCards.map((card) => {
               const Icon = card.icon;
               return (
-                <article
+                <Card
                   key={card.title}
                   data-bento-card
-                  className={`group ${bentoClasses[idx % bentoClasses.length]}`}
+                  className="h-full rounded-2xl border border-white/18 bg-white/[0.08] p-5 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:border-violet-200/55 hover:bg-white/[0.14]"
                 >
-                  <Card className="h-full rounded-2xl border-white/20 bg-white/[0.08] p-5 backdrop-blur-xl transition-all duration-500 hover:scale-[1.02] hover:border-cyan-200/60 hover:bg-white/[0.14]">
-                    <div className="mb-3 flex items-start justify-between gap-4">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
-                        <Icon className="h-4.5 w-4.5 text-blue-100" />
-                      </div>
-                      <div className="inline-flex items-center text-[10px] uppercase tracking-wider text-blue-100/75">
-                        <Check className="mr-1 h-3 w-3" />
-                        {t.shipped}
-                      </div>
-                    </div>
-                    <h3 className="mb-2 text-sm font-semibold text-slate-50">{card.title}</h3>
-                    <p className="mb-4 text-sm leading-relaxed text-blue-100/85">{card.description}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {card.chips.map((chip) => (
-                        <span
-                          key={chip}
-                          className="rounded-md border border-white/18 bg-black/20 px-2 py-1 text-[11px] text-blue-50/90"
-                        >
-                          {chip}
-                        </span>
-                      ))}
-                    </div>
-                  </Card>
-                </article>
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/14">
+                    <Icon className="h-5 w-5 text-violet-100" />
+                  </div>
+                  <h3 className="mb-2 text-base font-semibold text-slate-50">{card.title}</h3>
+                  <p className="mb-4 text-sm leading-relaxed text-blue-100/85">{card.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {card.chips.map((chip) => (
+                      <span key={chip} className="rounded-full border border-white/18 bg-black/20 px-2.5 py-1 text-[11px] text-blue-50/92">
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                </Card>
               );
             })}
           </div>
         </section>
 
-        <section id="capability-bento" className="container mx-auto max-w-7xl px-4 pb-16">
-          <div data-reveal className="mb-6 max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-100/75">
-              Live Capability Stack
-            </p>
-            <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-50 md:text-4xl">
-              {t.capabilitiesTitle}
-            </h3>
-            <p className="mt-3 text-sm leading-relaxed text-blue-100/88 md:text-base">
-              {t.capabilitiesSubtitle}
-            </p>
-          </div>
-
-          <div className="capability-bento-grid">
-            <article data-capability-tile className="capability-tile capability-area-tutor p-5 md:p-6">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-300/14 text-cyan-100">
-                  <Bot className="h-5 w-5" />
-                </div>
-                <div className="inline-flex items-center rounded-full border border-cyan-200/25 bg-cyan-300/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-100/85">
-                  {t.shipped}
-                </div>
-              </div>
-              <h4 className="text-lg font-semibold text-slate-50 md:text-xl">{t.capabilityTutorTitle}</h4>
-              <p className="mt-2 max-w-[40ch] text-sm leading-relaxed text-blue-100/88">{t.capabilityTutorDesc}</p>
-              <div className="mt-5 space-y-2">
-                <div className="max-w-[72%] rounded-xl border border-white/12 bg-white/[0.08] px-3 py-2 text-[11px] text-blue-50/90">
-                  Why is this concept true?
-                </div>
-                <div className="max-w-[86%] rounded-xl border border-cyan-200/26 bg-cyan-300/12 px-3 py-2 text-[11px] text-cyan-50/95">
-                  Because each step preserves the same relation between terms.
-                </div>
-                <div className="max-w-[62%] rounded-xl border border-white/12 bg-white/[0.06] px-3 py-2 text-[11px] text-blue-50/90">
-                  Generate 3 harder quizzes.
-                </div>
-              </div>
-            </article>
-
-            <article data-capability-tile className="capability-tile capability-area-map capability-tile-map p-5 md:p-6">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-300/14 text-blue-50">
-                  <Map className="h-5 w-5" />
-                </div>
-                <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-blue-100/78">Neural Studio</span>
-              </div>
-              <h4 className="text-lg font-semibold text-slate-50 md:text-xl">{t.capabilityMapTitle}</h4>
-              <p className="mt-2 max-w-[42ch] text-sm leading-relaxed text-blue-100/88">{t.capabilityMapDesc}</p>
-              <div className="map-signal mt-5">
-                <svg viewBox="0 0 260 120" className="map-signal-lines" aria-hidden="true">
-                  <path d="M130 24 L74 88" />
-                  <path d="M130 24 L189 90" />
-                  <path d="M74 88 L189 90" />
-                </svg>
-                <span className="map-signal-node map-signal-core" />
-                <span className="map-signal-node map-signal-left" />
-                <span className="map-signal-node map-signal-right" />
-              </div>
-            </article>
-
-            <article data-capability-tile className="capability-tile capability-area-ingest p-5">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-blue-100">
-                <Upload className="h-4.5 w-4.5" />
-              </div>
-              <h4 className="text-base font-semibold text-slate-50">{t.capabilityIngestionTitle}</h4>
-              <p className="mt-2 text-sm leading-relaxed text-blue-100/84">{t.capabilityIngestionDesc}</p>
-            </article>
-
-            <article data-capability-tile className="capability-tile capability-area-controls p-5">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-blue-100">
-                <WandSparkles className="h-4.5 w-4.5" />
-              </div>
-              <h4 className="text-base font-semibold text-slate-50">{t.capabilityControlsTitle}</h4>
-              <p className="mt-2 text-sm leading-relaxed text-blue-100/84">{t.capabilityControlsDesc}</p>
-            </article>
-
-            <article data-capability-tile className="capability-tile capability-area-podcast p-5">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-blue-100">
-                <Mic className="h-4.5 w-4.5" />
-              </div>
-              <h4 className="text-base font-semibold text-slate-50">{t.capabilityPodcastTitle}</h4>
-              <p className="mt-2 text-sm leading-relaxed text-blue-100/84">{t.capabilityPodcastDesc}</p>
-            </article>
-
-            <article data-capability-tile className="capability-tile capability-area-exports p-5">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-blue-100">
-                <Library className="h-4.5 w-4.5" />
-              </div>
-              <h4 className="text-base font-semibold text-slate-50">{t.capabilityLibraryExportTitle}</h4>
-              <p className="mt-2 text-sm leading-relaxed text-blue-100/84">{t.capabilityLibraryExportDesc}</p>
-            </article>
-
-            <article data-capability-tile className="capability-tile capability-area-languages p-5">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-blue-100">
-                <Languages className="h-4.5 w-4.5" />
-              </div>
-              <h4 className="text-base font-semibold text-slate-50">{t.capabilityLanguagesTitle}</h4>
-              <p className="mt-2 text-sm leading-relaxed text-blue-100/84">{t.capabilityLanguagesDesc}</p>
-            </article>
-
-            <article data-capability-tile className="capability-tile capability-area-oneclick p-5">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-blue-100">
-                <Download className="h-4.5 w-4.5" />
-              </div>
-              <h4 className="text-base font-semibold text-slate-50">{t.capabilityOneClickTitle}</h4>
-              <p className="mt-2 text-sm leading-relaxed text-blue-100/84">{t.capabilityOneClickDesc}</p>
-            </article>
-          </div>
-        </section>
-
-        <section className="container mx-auto max-w-7xl px-4 pb-16">
+        <section id="access-anywhere" className="container mx-auto max-w-7xl px-4 pb-16">
           <div
             data-reveal
-            className="rounded-3xl border border-white/18 bg-white/[0.08] p-7 backdrop-blur-xl md:p-10"
+            className="relative overflow-hidden rounded-[2rem] border border-white/18 bg-white/[0.08] p-6 backdrop-blur-xl md:p-10"
           >
-            <div className="max-w-3xl">
-              <h3 className="text-2xl font-semibold tracking-tight text-slate-50 md:text-4xl">
-                {t.ctaTitle}
-              </h3>
-              <p className="mt-4 text-base text-blue-100/85">{t.ctaSubtitle}</p>
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-50 md:text-4xl">
+              Access the Aide AI Study Tool Anywhere, Anytime
+            </h2>
+            <p className="mt-3 max-w-3xl text-blue-100/84">
+              Start on desktop, continue on mobile, and keep your progress synced across every study session.
+            </p>
+
+            <div className="mt-7 grid gap-3 md:grid-cols-3">
+              {accessCards.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Card key={item.title} className="h-full rounded-2xl border border-white/16 bg-black/20 p-4 backdrop-blur-xl">
+                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
+                      <Icon className="h-4.5 w-4.5 text-blue-100" />
+                    </div>
+                    <p className="mb-1.5 text-sm font-semibold text-white">{item.title}</p>
+                    <p className="text-sm text-blue-100/82">{item.description}</p>
+                  </Card>
+                );
+              })}
             </div>
+
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="bg-white text-blue-700 hover:bg-blue-50">
                 <Link to="/auth">
@@ -1405,6 +1364,62 @@ const Landing = () => {
           </div>
         </section>
 
+        <section id="transition-zone" className="container mx-auto max-w-7xl px-4 pb-16">
+          <div
+            data-reveal
+            className="rounded-[2rem] border border-white/18 bg-white/[0.08] p-6 backdrop-blur-xl md:p-10"
+          >
+            <h2 data-invert className="text-2xl font-bold tracking-tight text-slate-50 md:text-4xl">
+              Why Our AI Study Tool Outperforms Traditional Methods
+            </h2>
+            <p data-invert className="mt-3 max-w-4xl text-sm leading-relaxed text-blue-100/84 md:text-base">
+              Experience the advantages of AI-powered studying compared to conventional methods. Our approach is
+              designed to save you time, boost retention, and make learning more effective.
+            </p>
+
+            <div className="mt-7 overflow-hidden rounded-2xl border border-white/16">
+              <div className="hidden grid-cols-3 bg-white/[0.1] text-xs font-semibold uppercase tracking-[0.14em] text-blue-100/85 md:grid">
+                <div className="px-4 py-3">Category</div>
+                <div className="px-4 py-3">Aide AI</div>
+                <div className="px-4 py-3">Traditional Methods</div>
+              </div>
+              {comparisonRows.map((row) => (
+                <div key={row.metric} className="grid border-t border-white/12 md:grid-cols-3 md:items-center">
+                  <div className="px-4 pt-4 text-sm font-semibold text-slate-50 md:py-4">{row.metric}</div>
+                  <div className="px-4 py-2 text-sm text-emerald-200 md:py-4">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Check className="h-4 w-4" />
+                      {row.aide}
+                    </span>
+                  </div>
+                  <div className="px-4 pb-4 text-sm text-blue-100/80 md:py-4">{row.traditional}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="container mx-auto max-w-7xl px-4 pb-16">
+          <div data-reveal className="mb-8">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-50 md:text-4xl">FAQ&apos;s</h2>
+          </div>
+          <div className="space-y-3">
+            {faqItems.map((item) => (
+              <details
+                key={item.q}
+                data-reveal
+                className="group rounded-2xl border border-white/16 bg-white/[0.08] backdrop-blur-xl"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-sm font-medium text-slate-50">
+                  <span>{item.q}</span>
+                  <span className="text-lg leading-none text-blue-100 transition-transform duration-300 group-open:rotate-45">+</span>
+                </summary>
+                <p className="px-5 pb-5 text-sm leading-relaxed text-blue-100/85">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
         <footer className="container mx-auto max-w-7xl px-4 pb-10">
           <div className="rounded-3xl border-t border-[rgba(255,255,255,0.1)] bg-gradient-to-b from-slate-950/88 via-slate-950/92 to-blue-950/92 px-6 py-8 shadow-[0_-18px_45px_rgba(2,6,23,0.28)] md:px-8 md:py-10">
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -1414,11 +1429,11 @@ const Landing = () => {
                   <Link to="/help" className="text-white/60 transition-colors duration-300 hover:text-white">
                     About Page
                   </Link>
-                  <a href="#flow" className="text-white/60 transition-colors duration-300 hover:text-white">
+                  <a href="#how-it-works" className="text-white/60 transition-colors duration-300 hover:text-white">
                     How it Works
                   </a>
-                  <a href="#blue-section" className="text-white/60 transition-colors duration-300 hover:text-white">
-                    Success Stories
+                  <a href="#what-you-can-do" className="text-white/60 transition-colors duration-300 hover:text-white">
+                    What You Can Do
                   </a>
                 </div>
               </div>
