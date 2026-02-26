@@ -162,6 +162,59 @@ html.lenis body {
   overflow: hidden;
 }
 
+/* Trusted logo marquee */
+.trusted-logo-marquee {
+  position: relative;
+  overflow: hidden;
+}
+
+.trusted-logo-track {
+  display: flex;
+  align-items: center;
+  gap: 2.75rem;
+  width: max-content;
+  will-change: transform;
+  animation: trusted-logo-scroll 34s linear infinite;
+}
+
+.trusted-logo-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: clamp(120px, 12vw, 170px);
+  height: clamp(64px, 8vw, 86px);
+}
+
+.trusted-logo-image {
+  max-height: 76px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  filter: grayscale(100%) contrast(0.92) brightness(1.25);
+  opacity: 0.72;
+  transition: opacity 240ms ease, filter 240ms ease;
+}
+
+.trusted-logo-item:hover .trusted-logo-image {
+  opacity: 0.95;
+  filter: grayscale(100%) contrast(1) brightness(1.34);
+}
+
+@keyframes trusted-logo-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trusted-logo-track {
+    animation: none;
+  }
+}
+
 /* Capability bento system */
 .capability-bento-grid {
   display: grid;

@@ -575,12 +575,23 @@ const bentoClasses = [
   "lg:col-span-5",
 ];
 
-const trustedBrands = [
-  { name: "NORTHBRIDGE", className: "text-[1.55rem] font-semibold tracking-[-0.03em]" },
-  { name: "DUKEFORD", className: "font-serif text-[1.75rem] tracking-[-0.03em]" },
-  { name: "OXFORDIA", className: "font-serif text-[1.7rem] tracking-[0.01em]" },
-  { name: "GOOGLEX", className: "text-[2rem] font-semibold tracking-[-0.04em]" },
-  { name: "PRINCETONIC", className: "font-serif text-[1.45rem] tracking-[0.1em]" },
+const trustedLogos = [
+  { name: "Harvard", src: "/trusted-logos/logo-01.png" },
+  { name: "Princeton", src: "/trusted-logos/logo-02.png" },
+  { name: "Columbia", src: "/trusted-logos/logo-03.png" },
+  { name: "Cornell", src: "/trusted-logos/logo-04.png" },
+  { name: "Stanford", src: "/trusted-logos/logo-05.png" },
+  { name: "MIT", src: "/trusted-logos/logo-06.png" },
+  { name: "UC Berkeley", src: "/trusted-logos/logo-07.png" },
+  { name: "Caltech", src: "/trusted-logos/logo-08.png" },
+  { name: "UChicago", src: "/trusted-logos/logo-09.png" },
+  { name: "University 10", src: "/trusted-logos/logo-10.png" },
+  { name: "University 11", src: "/trusted-logos/logo-11.png" },
+  { name: "University of Washington", src: "/trusted-logos/logo-12.png" },
+  { name: "Yale", src: "/trusted-logos/logo-13.png" },
+  { name: "University of Maryland", src: "/trusted-logos/logo-14.png" },
+  { name: "University of Oxford", src: "/trusted-logos/logo-15.png" },
+  { name: "University of Cambridge", src: "/trusted-logos/logo-16.png" },
 ];
 
 const Landing = () => {
@@ -1129,22 +1140,28 @@ const Landing = () => {
           data-reveal
           className="relative overflow-hidden rounded-[1.9rem] border border-cyan-200/15 bg-[radial-gradient(circle_at_50%_-22%,rgba(34,211,238,0.16),transparent_46%),linear-gradient(180deg,#020c16_0%,#041321_54%,#020d18_100%)] px-5 py-8 shadow-[0_22px_70px_rgba(2,12,26,0.45)] dark:border-white/12 dark:bg-[radial-gradient(circle_at_50%_-22%,rgba(125,211,252,0.15),transparent_48%),linear-gradient(180deg,#020b14_0%,#03101d_52%,#020910_100%)] dark:shadow-[0_26px_78px_rgba(2,6,23,0.66)] sm:px-8"
         >
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#020d18] to-transparent dark:from-[#020910]" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#020d18] to-transparent dark:from-[#020910]" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-[#020d18] to-transparent dark:from-[#020910]" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[#020d18] to-transparent dark:from-[#020910]" />
 
           <p className="text-center text-[0.96rem] font-semibold text-slate-100/92">
             {t.trustedBy}
           </p>
 
-          <div className="mt-6 flex overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <div className="mx-auto flex min-w-max items-end gap-8 px-3 text-slate-400/72 sm:gap-12 sm:px-10">
-              {trustedBrands.map((brand) => (
-                <span
-                  key={brand.name}
-                  className={`whitespace-nowrap leading-none transition-colors duration-300 hover:text-slate-200/90 ${brand.className}`}
+          <div className="trusted-logo-marquee mt-6">
+            <div className="trusted-logo-track">
+              {[...trustedLogos, ...trustedLogos].map((logo, index) => (
+                <div
+                  key={`${logo.name}-${index}`}
+                  className="trusted-logo-item"
+                  aria-hidden={index >= trustedLogos.length}
                 >
-                  {brand.name}
-                </span>
+                  <img
+                    src={logo.src}
+                    alt={`${logo.name} logo`}
+                    loading="lazy"
+                    className="trusted-logo-image"
+                  />
+                </div>
               ))}
             </div>
           </div>
