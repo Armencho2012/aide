@@ -1,7 +1,13 @@
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+}
+
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   })
 
 const extractText = (data: any) => {
@@ -11,6 +17,10 @@ const extractText = (data: any) => {
 }
 
 Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   if (req.method !== 'POST') {
     return jsonResponse({ error: 'Method not allowed' }, 405)
   }
@@ -92,7 +102,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const contentType = ttsRes.headers.get('content-type') || 'audio/mpeg'
-    return new Response(ttsRes.body, { status: 200, headers: { 'Content-Type': contentType } })
+    return new Response(ttsRes.body, {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': contentType }
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     return jsonResponse({ error: message }, 500)
